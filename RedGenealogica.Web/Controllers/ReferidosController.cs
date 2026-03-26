@@ -45,4 +45,11 @@ public class ReferidosController : Controller
 
         return RedirectToAction("Panel", "Usuario");
     }
+
+    [HttpPost]
+    public async Task<IActionResult> Activar(int id)
+    {
+        await _servicioReferidos.ActivarReferidoAsync(id);
+        return RedirectToAction("Panel", "Usuario");
+    }
 }
