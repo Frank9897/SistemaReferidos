@@ -1,0 +1,29 @@
+@model RedGenealogica.Web.ViewModels.RegistrarReferidoViewModel
+
+<h2>Registrar Referido</h2>
+
+<div asp-validation-summary="All"></div>
+
+<form method="post">
+    <div>
+        <label>Nombre</label>
+        <input asp-for="NombreCompleto" />
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input asp-for="CorreoElectronico" />
+    </div>
+
+    <div>
+        <label>Teléfono</label>
+        <input asp-for="Telefono" />
+    </div>
+
+    <div>
+        <label>Producto</label>
+        <input asp-for="ProductoId" value="1" />
+    </div>
+
+    <button type="submit">Registrar</button>
+</form>
