@@ -1,0 +1,32 @@
+@model RedGenealogica.Web.ViewModels.RegistroUsuarioViewModel
+
+<h2>Registro</h2>
+
+<form method="post">
+    <div>
+        <label>Nombres</label>
+        <input asp-for="Nombres" />
+    </div>
+
+    <div>
+        <label>Apellidos</label>
+        <input asp-for="Apellidos" />
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input asp-for="Email" />
+    </div>
+
+    <div>
+        <label>Password</label>
+        <input asp-for="Password" type="password" />
+    </div>
+
+    <div>
+        <label>Confirmar Password</label>
+        <input asp-for="ConfirmarPassword" type="password" />
+    </div>
+
+    <button type="submit">Registrarse</button>
+</form>
