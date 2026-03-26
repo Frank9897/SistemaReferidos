@@ -97,7 +97,7 @@ public class AutenticacionController : Controller
             return View(modelo);
         }
 
-        return RedirectToAction("Index", "Inicio");
+        return RedirectToAction("Panel", "Usuario");
     }
 
     [HttpPost]

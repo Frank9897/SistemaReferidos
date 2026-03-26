@@ -1,0 +1,30 @@
+@model RedGenealogica.Web.Models.Usuario
+
+<h2>Panel de Usuario</h2>
+
+<p><strong>Nombre:</strong> @Model.Nombres @Model.Apellidos</p>
+<p><strong>Email:</strong> @Model.Email</p>
+<p><strong>Puntos:</strong> @Model.PuntosAcumulados</p>
+<p><strong>Estado:</strong> @Model.EstadoUsuario</p>
+<p><strong>Rango:</strong> @Model.TipoRangoActual</p>
+
+<hr />
+
+@if (Model.EstadoUsuario.ToString() != "Activo")
+{
+    <h3>Activar cuenta</h3>
+
+    <form asp-action="ActivarCuenta" method="post">
+        <button type="submit">Activar (Simulación de pago)</button>
+    </form>
+}
+else
+{
+    <p style="color: green;">✔ Cuenta activa</p>
+}
+
+<hr />
+
+<form asp-controller="Autenticacion" asp-action="Logout" method="post">
+    <button type="submit">Cerrar sesión</button>
+</form>
