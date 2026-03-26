@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
-
+using RedGenealogica.Web.Enumeraciones;
 namespace RedGenealogica.Web.Controllers;
 
 public class AutenticacionController : Controller
@@ -22,6 +22,8 @@ public class AutenticacionController : Controller
         _userManager = userManager;
     }
 
+    
+
     [HttpGet]
     public IActionResult Registro()
     {
@@ -34,15 +36,31 @@ public class AutenticacionController : Controller
         if (!ModelState.IsValid)
             return View(modelo);
 
-        var usuario = await _servicioUsuarios.RegistrarAsync(modelo);
+        var codigo = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-        if (usuario == null)
+        var usuario = new Usuario
         {
-            ModelState.AddModelError("", "Error al registrar");
+            UserName = modelo.Email,
+            Email = modelo.Email,
+            Nombres = modelo.Nombres,
+            Apellidos = modelo.Apellidos,
+            CodigoReferido = codigo,
+            EstadoUsuario = EstadoUsuario.Pendiente
+        };
+
+        var resultado = await _userManager.CreateAsync(usuario, modelo.Password);
+
+        if (!resultado.Succeeded)
+        {
+            foreach (var error in resultado.Errors)
+            {
+                ModelState.AddModelError("", error.Description);
+            }
+
             return View(modelo);
         }
 
-        await _signInManager.SignInAsync(usuario, isPersistent: false);
+        await _signInManager.SignInAsync(usuario, false);
 
         return RedirectToAction("Index", "Inicio");
     }
@@ -59,8 +77,16 @@ public class AutenticacionController : Controller
         if (!ModelState.IsValid)
             return View(modelo);
 
+        var usuario = await _userManager.FindByEmailAsync(modelo.Email);
+
+        if (usuario == null)
+        {
+            ModelState.AddModelError("", "Usuario no encontrado");
+            return View(modelo);
+        }
+
         var resultado = await _signInManager.PasswordSignInAsync(
-            modelo.Email,
+            usuario.UserName!,
             modelo.Password,
             false,
             false);
@@ -74,9 +100,10 @@ public class AutenticacionController : Controller
         return RedirectToAction("Index", "Inicio");
     }
 
+    [HttpPost]
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();
-        return RedirectToAction("Login");
+        return RedirectToAction("Login", "Autenticacion");
     }
 }
