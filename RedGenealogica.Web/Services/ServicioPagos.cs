@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Enumeraciones;
@@ -13,8 +14,13 @@ public class ServicioPagos
         _contexto = contexto;
     }
 
-    public async Task<Pago> CrearPagoSimuladoAsync(int usuarioId, int productoId, decimal monto)
+    public async Task<Pago> CrearPagoYActivarUsuarioAsync(int usuarioId, int productoId, decimal monto)
     {
+        var usuario = await _contexto.Users.FirstOrDefaultAsync(x => x.Id == usuarioId);
+
+        if (usuario == null)
+            throw new Exception("Usuario no encontrado");
+
         var pago = new Pago
         {
             UsuarioId = usuarioId,
@@ -27,6 +33,11 @@ public class ServicioPagos
         };
 
         _contexto.Pagos.Add(pago);
+
+        // 🔥 ACTIVAR USUARIO
+        usuario.EstadoUsuario = EstadoUsuario.Activo;
+        usuario.FechaActivacion = DateTime.UtcNow;
+
         await _contexto.SaveChangesAsync();
 
         return pago;
