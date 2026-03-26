@@ -3,7 +3,7 @@ using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
-
+using RedGenealogica.Web.Services;
 namespace RedGenealogica.Web.Services;
 
 public class ServicioReferidos
@@ -55,8 +55,14 @@ public class ServicioReferidos
         referido.Estado = EstadoUsuario.Activo;
         referido.FechaActivacion = DateTime.UtcNow;
 
-        // 🎯 suma puntos
+        // 🎯 SUMAR PUNTOS
         referido.Usuario!.PuntosAcumulados += 100;
+
+        // 🔥 RECALCULAR RANGO
+        var servicioRangos = new ServicioRangos(_contexto);
+        var nuevoRango = await servicioRangos.ObtenerRangoAsync(referido.Usuario.PuntosAcumulados);
+
+        referido.Usuario.TipoRangoActual = nuevoRango;
 
         _contexto.MovimientosPuntos.Add(new MovimientoPuntos
         {
