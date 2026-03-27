@@ -1,3 +1,7 @@
+html, body {
+    background: #0B1020 !important;
+    color: #EAF0FF !important;
+}
 /* ===== RESET ===== */
 body {
     margin: 0;
@@ -114,16 +118,30 @@ h1, h2, h3 {
 /* ===== TABLA ===== */
 .table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: collapse; 
+    background: transparent;
+    color: #EAF0FF;
 }
 
 .table td, .table th {
     padding: 10px;
     border-bottom: 1px solid #24304A;
+    color: #8EA0C8;
 }
 
 /* ===== LINKS ===== */
 a {
     color: #38BDF8;
     text-decoration: none;
+}
+button {
+    all: unset;
+}
+
+button {
+    padding: 10px 15px;
+    border-radius: 10px;
+    background: #3B82F6;
+    color: white;
+    cursor: pointer;
 }
