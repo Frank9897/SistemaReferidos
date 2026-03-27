@@ -29,4 +29,21 @@ public class GenealogiaController : Controller
 
         return View(referidos);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ObtenerArbol()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+
+        var nodos = await _contexto.Users
+            .Select(u => new
+            {
+                id = u.Id,
+                nombre = u.Nombres,
+                padreId = u.IdUsuarioPadre
+            })
+            .ToListAsync();
+
+        return Json(nodos);
+    }
 }
