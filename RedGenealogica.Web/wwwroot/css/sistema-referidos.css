@@ -170,6 +170,12 @@ button {
     cursor: pointer;
 }
 
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 /* NAVBAR FIX */
 nav ul {
     list-style: none;

@@ -19,9 +19,22 @@
             </div>
 
             <div class="nav-links">
+
                 <a href="/">Inicio</a>
                 <a href="/Usuario/Panel">Panel</a>
                 <a href="/Ranking">Ranking</a>
+
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <form asp-controller="Autenticacion" asp-action="Logout" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-secondary">Salir</button>
+                    </form>
+                }
+                else
+                {
+                    <a href="/Autenticacion/Login">Login</a>
+                }
+
             </div>
 
         </div>
