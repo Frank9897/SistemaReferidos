@@ -33,16 +33,25 @@ public class GenealogiaController : Controller
     [HttpGet]
     public async Task<IActionResult> ObtenerArbol()
     {
-        var usuario = await _userManager.GetUserAsync(User);
-
-        var nodos = await _contexto.Users
+        var usuarios = await _contexto.Users
             .Select(u => new
             {
-                id = u.Id,
+                id = "U_" + u.Id,
                 nombre = u.Nombres,
-                padreId = u.IdUsuarioPadre
+                padreId = u.IdUsuarioPadre != null ? "U_" + u.IdUsuarioPadre : null
             })
             .ToListAsync();
+
+        var referidos = await _contexto.Referidos
+            .Select(r => new
+            {
+                id = "R_" + r.Id,
+                nombre = r.NombreCompleto,
+                padreId = "U_" + r.UsuarioId
+            })
+            .ToListAsync();
+
+        var nodos = usuarios.Concat(referidos);
 
         return Json(nodos);
     }

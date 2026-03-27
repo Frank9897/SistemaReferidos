@@ -45,7 +45,7 @@ fetch('/Genealogia/ObtenerArbol')
         .attr('cx', d => d.x + 50)
         .attr('cy', d => d.y + 50)
         .attr('r', 20)
-        .attr('fill', '#3B82F6');
+        .attr('fill', d => d.id.startsWith("U_") ? '#3B82F6' : '#F97316');
 
     // texto
     svg.selectAll('text')

@@ -41,4 +41,6 @@ public class Referido
     public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
     public DateTime? FechaActivacion { get; set; }
+
+    public int? UsuarioConvertidoId { get; set; }
 }
