@@ -42,4 +42,52 @@ public class ServicioPagos
 
         return pago;
     }
+
+    private readonly Dictionary<int, decimal> niveles = new()
+    {
+        { 1, 0.10m }, // 10%
+        { 2, 0.05m }, // 5%
+        { 3, 0.02m }  // 2%
+    };
+
+    public async Task GenerarComisiones(int usuarioId, decimal montoBase)
+    {
+        int nivelActual = 1;
+        int? usuarioActualId = usuarioId;
+
+        while (usuarioActualId != null && niveles.ContainsKey(nivelActual))
+        {
+            // 🔍 buscar padre
+            var usuario = await _contexto.Users
+                .FirstOrDefaultAsync(u => u.Id == usuarioActualId);
+
+            if (usuario?.IdUsuarioPadre == null)
+                break;
+
+            var padre = await _contexto.Users
+                .FirstOrDefaultAsync(u => u.Id == usuario.IdUsuarioPadre);
+
+            if (padre == null)
+                break;
+
+            var porcentaje = niveles[nivelActual];
+            var comision = montoBase * porcentaje;
+
+            // 💰 guardar comisión
+            _contexto.MovimientosPuntos.Add(new MovimientoPuntos
+            {
+                UsuarioId = padre.Id,
+                Monto = comision,
+                Motivo = $"Comisión nivel {nivelActual}",
+                Nivel = nivelActual,
+                FechaMovimiento = DateTime.UtcNow
+            });
+
+            // subir nivel
+            usuarioActualId = padre.Id;
+            nivelActual++;
+        }
+
+        await _contexto.SaveChangesAsync();
+    }
 }

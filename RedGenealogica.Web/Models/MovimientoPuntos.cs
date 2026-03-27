@@ -23,4 +23,8 @@ public class MovimientoPuntos
     public Referido? Referido { get; set; }
 
     public DateTime FechaMovimiento { get; set; } = DateTime.UtcNow;
+
+    public decimal Monto { get; set; }
+    
+    public int Nivel { get; set; }
 }
