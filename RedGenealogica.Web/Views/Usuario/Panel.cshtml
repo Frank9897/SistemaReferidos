@@ -84,16 +84,16 @@
                 <tr>
                     <td>@r.NombreCompleto</td>
                     <td>
-                        @if (r.Estado == EstadoUsuario.Pendiente)
+                        @if (r.Estado.ToString() == "Pendiente")
                         {
-                            <form method="post" asp-controller="Referidos" asp-action="Activar">
+                            <form asp-controller="Referidos" asp-action="ConfirmarPago" method="post">
                                 <input type="hidden" name="id" value="@r.Id" />
-                                <button class="btn btn-primary">Activar</button>
+                                <button class="btn btn-primary">Simular Pago</button>
                             </form>
                         }
                         else
                         {
-                            <span>Activo</span>
+                            <span class="badge">Activo</span>
                         }
                     </td>
                 </tr>

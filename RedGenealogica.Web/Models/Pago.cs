@@ -37,4 +37,6 @@ public class Pago
     public DateTime FechaSolicitud { get; set; } = DateTime.UtcNow;
 
     public DateTime? FechaConfirmacion { get; set; }
+
+    public bool Confirmado { get; set; }
 }

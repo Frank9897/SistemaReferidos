@@ -90,4 +90,29 @@ public class ServicioPagos
 
         await _contexto.SaveChangesAsync();
     }
+
+    public async Task ConfirmarPago(int referidoId)
+    {
+        var referido = await _contexto.Referidos
+            .Include(r => r.Usuario)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+            return;
+
+        if (referido.Estado == EstadoUsuario.Activo)
+            return;
+
+        // 🟢 activar referido
+        referido.Estado = EstadoUsuario.Activo;
+        referido.FechaActivacion = DateTime.UtcNow;
+
+        // 🎯 sumar puntos
+        referido.Usuario!.PuntosAcumulados += 100;
+
+        // 💰 generar comisiones
+        await GenerarComisiones(referido.UsuarioId, 100);
+
+        await _contexto.SaveChangesAsync();
+    }
 }

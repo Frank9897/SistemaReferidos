@@ -56,4 +56,6 @@ public class ReferidosController : Controller
 
         return RedirectToAction("Panel", "Usuario");
     }
+
+
 }
