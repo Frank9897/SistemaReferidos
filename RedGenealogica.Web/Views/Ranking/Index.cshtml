@@ -1,0 +1,20 @@
+@model List<RedGenealogica.Web.Models.Usuario>
+
+<h2>Ranking</h2>
+
+<table class="table">
+    <tr>
+        <th>#</th>
+        <th>Usuario</th>
+        <th>Puntos</th>
+    </tr>
+
+@for (int i = 0; i < Model.Count; i++)
+{
+    <tr>
+        <td>@(i + 1)</td>
+        <td>@Model[i].Nombres</td>
+        <td>@Model[i].PuntosAcumulados</td>
+    </tr>
+}
+</table>
