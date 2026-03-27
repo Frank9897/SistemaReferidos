@@ -43,4 +43,5 @@ public class Referido
     public DateTime? FechaActivacion { get; set; }
 
     public int? UsuarioConvertidoId { get; set; }
+    public Usuario? UsuarioConvertido { get; set; }
 }

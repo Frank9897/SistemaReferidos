@@ -4,15 +4,18 @@ using RedGenealogica.Web.Models;
 using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Services;
+using Microsoft.AspNetCore.Identity;
 namespace RedGenealogica.Web.Services;
 
 public class ServicioReferidos
 {
     private readonly ContextoAplicacion _contexto;
-
-    public ServicioReferidos(ContextoAplicacion contexto)
+    private readonly UserManager<Usuario> _userManager;
+    public ServicioReferidos(ContextoAplicacion contexto,UserManager<Usuario> userManager)
     {
         _contexto = contexto;
+        _userManager = userManager;
+        
     }
 
     public async Task<bool> PuedeReferirAsync(int usuarioId)
