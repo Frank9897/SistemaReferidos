@@ -5,6 +5,8 @@ using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
+using RedGenealogica.Web.ViewModels;
+using Microsoft.EntityFrameworkCore;
 namespace RedGenealogica.Web.Controllers;
 
 [Authorize]
@@ -27,13 +29,20 @@ public class UsuarioController : Controller
     {
         var usuario = await _userManager.GetUserAsync(User);
 
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
         var referidos = await _contexto.Referidos
             .Where(r => r.UsuarioId == usuario.Id)
             .ToListAsync();
 
-        ViewBag.Referidos = referidos;
+        var modelo = new PanelUsuarioViewModel
+        {
+            Usuario = usuario,
+            Referidos = referidos
+        };
 
-        return View(usuario);
+        return View(modelo);
     }
 
     [HttpPost]

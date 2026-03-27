@@ -1,16 +1,16 @@
-@model RedGenealogica.Web.Models.Usuario
+@model RedGenealogica.Web.ViewModels.PanelUsuarioViewModel
 
 <div class="container-dashboard">
 
     <!-- HEADER -->
     <div class="card">
-        <h1 class="titulo-principal">Hola, @Model.Nombres 👋</h1>
+        <h1 class="titulo-principal">Hola, @Model.Usuario.Nombres 👋</h1>
         <p class="subtitulo">Sigue construyendo tu red y sube de nivel</p>
 
         <br />
 
-        <span class="badge @Model.TipoRangoActual.ToString().ToLower()">
-            @Model.TipoRangoActual
+        <span class="badge @Model.Usuario.TipoRangoActual.ToString().ToLower()">
+            @Model.Usuario.TipoRangoActual
         </span>
     </div>
 
@@ -18,7 +18,7 @@
     <div class="grid">
 
         <div class="card">
-            <div class="metric">@Model.PuntosAcumulados</div>
+            <div class="metric">@Model.Usuario.PuntosAcumulados</div>
             <div class="metric-label">Puntos totales</div>
         </div>
 
@@ -33,7 +33,7 @@
         </div>
 
         <div class="card">
-            <div class="metric">@Model.PuntosAcumulados / 100</div>
+            <div class="metric">@Model.Usuario.PuntosAcumulados / 100</div>
             <div class="metric-label">Total red</div>
         </div>
 
@@ -44,7 +44,7 @@
         <h3>Progreso al siguiente rango</h3>
 
         @{
-            int puntos = Model.PuntosAcumulados;
+            int puntos = Model.Usuario.PuntosAcumulados;
             int siguiente = 1000;
             int progreso = (puntos * 100) / siguiente;
         }
