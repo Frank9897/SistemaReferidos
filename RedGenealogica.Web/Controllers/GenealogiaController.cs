@@ -36,17 +36,15 @@ public class GenealogiaController : Controller
     [HttpGet]
     public async Task<IActionResult> ObtenerArbol()
     {
-        var usuario = await _userManager.GetUserAsync(User);
-
-        if (usuario == null)
-            return Unauthorized();
-
         var usuarios = await _contexto.Users
             .Select(u => new
             {
                 id = "U_" + u.Id,
                 nombre = u.Nombres,
-                padreId = u.IdUsuarioPadre != null ? "U_" + u.IdUsuarioPadre : null
+                padreId = u.IdUsuarioPadre != null ? "U_" + u.IdUsuarioPadre : null,
+                tipo = "usuario",
+                puntos = u.PuntosAcumulados,
+                rango = u.TipoRangoActual.ToString()
             })
             .ToListAsync();
 
@@ -55,7 +53,10 @@ public class GenealogiaController : Controller
             {
                 id = "R_" + r.Id,
                 nombre = r.NombreCompleto,
-                padreId = (string?)("U_" + r.UsuarioId) // 🔥 clave
+                padreId = "U_" + r.UsuarioId,
+                tipo = "referido",
+                puntos = 0,
+                rango = "Pendiente"
             })
             .ToListAsync();
 
