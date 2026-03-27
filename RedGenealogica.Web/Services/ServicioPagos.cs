@@ -2,16 +2,22 @@ using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Enumeraciones;
-
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 namespace RedGenealogica.Web.Services;
 
 public class ServicioPagos
 {
     private readonly ContextoAplicacion _contexto;
+    private readonly IConfiguration _configuration;
+    private readonly HttpClient _http;
 
-    public ServicioPagos(ContextoAplicacion contexto)
+    public ServicioPagos(ContextoAplicacion contexto, IConfiguration configuration)
     {
         _contexto = contexto;
+        _configuration = configuration;
+        _http = new HttpClient();
     }
 
     public async Task<Pago> CrearPagoYActivarUsuarioAsync(int usuarioId, int productoId, decimal monto)
@@ -114,5 +120,54 @@ public class ServicioPagos
         await GenerarComisiones(referido.UsuarioId, 100);
 
         await _contexto.SaveChangesAsync();
+    }
+
+    public async Task<string> CrearPreferencia(int referidoId)
+    {
+        var referido = await _contexto.Referidos
+            .Include(r => r.Producto)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+            throw new Exception("Referido no encontrado");
+
+        var accessToken = _configuration["MercadoPago:AccessToken"];
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var body = new
+        {
+            items = new[]
+            {
+                new {
+                    title = referido.Producto.Nombre,
+                    quantity = 1,
+                    unit_price = referido.Producto.Precio
+                }
+            },
+            back_urls = new
+            {
+                success = "https://localhost:5185/Pagos/Exito",
+                failure = "https://localhost:5185/Pagos/Error",
+                pending = "https://localhost:5185/Pagos/Pendiente"
+            },
+            auto_return = "approved",
+            notification_url = "https://TU_NGROK_URL/Pagos/Webhook",
+            external_reference = referidoId.ToString()
+        };
+
+        var json = JsonSerializer.Serialize(body);
+
+        var response = await _http.PostAsync(
+            "https://api.mercadopago.com/checkout/preferences",
+            new StringContent(json, Encoding.UTF8, "application/json")
+        );
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        var result = JsonDocument.Parse(content);
+
+        return result.RootElement.GetProperty("init_point").GetString()!;
     }
 }

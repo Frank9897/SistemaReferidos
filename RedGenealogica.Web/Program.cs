@@ -4,7 +4,6 @@ using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
@@ -28,6 +27,9 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
 })
 .AddEntityFrameworkStores<ContextoAplicacion>()
 .AddDefaultTokenProviders();
+
+
+builder.Configuration.AddJsonFile("appsettings.json");
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
