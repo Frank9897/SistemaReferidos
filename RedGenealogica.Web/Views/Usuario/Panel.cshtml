@@ -77,19 +77,20 @@
             <tr>
                 <th>Nombre</th>
                 <th>Estado</th>
+                <th>Acción</th>
             </tr>
 
             @foreach (var r in Model.Referidos)
             {
                 <tr>
                     <td>@r.NombreCompleto</td>
+                    <td>@r.Estado</td>
                     <td>
                         @if (r.Estado.ToString() == "Pendiente")
                         {
-                            <form asp-controller="Referidos" asp-action="ConfirmarPago" method="post">
-                                <input type="hidden" name="id" value="@r.Id" />
-                                <button class="btn btn-primary">Simular Pago</button>
-                            </form>
+                            <a href="/Pagos/Pagar?referidoId=@r.Id" class="btn btn-primary">
+                                💳 Pagar
+                            </a>
                         }
                         else
                         {
