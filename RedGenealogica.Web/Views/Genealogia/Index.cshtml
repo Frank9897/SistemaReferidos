@@ -1,0 +1,10 @@
+@model List<RedGenealogica.Web.Models.Usuario>
+
+<h2>Árbol Genealógico</h2>
+
+<ul>
+@foreach (var r in Model)
+{
+    <li>@r.Nombres (@r.TipoRangoActual)</li>
+}
+</ul>
