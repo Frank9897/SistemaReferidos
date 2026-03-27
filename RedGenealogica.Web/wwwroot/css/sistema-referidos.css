@@ -1,0 +1,129 @@
+/* ===== RESET ===== */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0B1020;
+    color: #EAF0FF;
+}
+
+/* ===== CONTENEDOR ===== */
+.container-dashboard {
+    padding: 25px;
+}
+
+/* ===== TITULOS ===== */
+h1, h2, h3 {
+    margin: 0;
+}
+
+.titulo-principal {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.subtitulo {
+    color: #8EA0C8;
+    font-size: 14px;
+}
+
+/* ===== TARJETAS ===== */
+.card {
+    background: #11182D;
+    border: 1px solid #24304A;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    border-color: #3B82F6;
+}
+
+/* ===== GRID ===== */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+/* ===== METRICAS ===== */
+.metric {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.metric-label {
+    font-size: 12px;
+    color: #8EA0C8;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.bronce { background: #F97316; }
+.plata { background: #A3A3A3; }
+.oro { background: #FACC15; }
+.platino { background: #22D3EE; }
+.diamante { background: #60A5FA; }
+
+/* ===== BOTONES ===== */
+.btn {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: #3B82F6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563EB;
+}
+
+.btn-secondary {
+    background: #1E293B;
+    color: white;
+}
+
+/* ===== PROGRESO ===== */
+.progress-bar {
+    background: #1E293B;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3B82F6, #38BDF8);
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+/* ===== TABLA ===== */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table td, .table th {
+    padding: 10px;
+    border-bottom: 1px solid #24304A;
+}
+
+/* ===== LINKS ===== */
+a {
+    color: #38BDF8;
+    text-decoration: none;
+}
