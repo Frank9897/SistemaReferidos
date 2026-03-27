@@ -2,13 +2,19 @@
     ViewData["Title"] = "Inicio";
 }
 
-<h1>Sistema de Referidos</h1>
+<div class="container-dashboard">
 
-<p>Bienvenido al sistema</p>
+    <div class="card" style="max-width:600px; margin:auto; text-align:left;">
 
-<a href="/Autenticacion/Registro">Registrarse</a>
-<br />
-<a href="/Autenticacion/Login">Iniciar sesión</a>
-<form asp-controller="Autenticacion" asp-action="Logout" method="post">
-    <button type="submit">Cerrar sesión</button>
-</form>
+        <h1 class="titulo-principal">Sistema de Referidos</h1>
+
+        <p class="subtitulo">Bienvenido al sistema</p>
+
+        <br />
+
+        <a href="/Autenticacion/Registro" class="btn btn-primary">Registrarse</a>
+        <br /><br />
+        <a href="/Autenticacion/Login" class="btn btn-secondary">Iniciar sesión</a>
+    </div>
+
+</div>

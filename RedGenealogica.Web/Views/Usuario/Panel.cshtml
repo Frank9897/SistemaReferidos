@@ -9,7 +9,7 @@
 
         <br />
 
-        <span class="badge @Model.Usuario.TipoRangoActual.ToString().ToLower()">
+        <span class="badge @(Model.Usuario.TipoRangoActual.ToString().ToLower())">
             @Model.Usuario.TipoRangoActual
         </span>
     </div>
@@ -18,22 +18,22 @@
     <div class="grid">
 
         <div class="card">
-            <div class="metric">@Model.Usuario.PuntosAcumulados</div>
+            <div class="metric metric-blue">@Model.Usuario.PuntosAcumulados</div>
             <div class="metric-label">Puntos totales</div>
         </div>
 
         <div class="card">
-            <div class="metric">@((List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos).Count</div>
+            <div class="metric metric-green">@Model.Referidos.Count</div>
             <div class="metric-label">Referidos directos</div>
         </div>
 
         <div class="card">
-            <div class="metric">0</div>
+            <div class="metric metric-cyan">0</div>
             <div class="metric-label">Referidos indirectos</div>
         </div>
 
         <div class="card">
-            <div class="metric">@Model.Usuario.PuntosAcumulados / 100</div>
+            <div class="metric metric-purple">@Model.Usuario.PuntosAcumulados</div>
             <div class="metric-label">Total red</div>
         </div>
 
@@ -77,7 +77,7 @@
                 <th>Estado</th>
             </tr>
 
-            @foreach (var r in (List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos)
+            @foreach (var r in Model.Referidos)
             {
                 <tr>
                     <td>@r.NombreCompleto</td>

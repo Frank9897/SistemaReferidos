@@ -21,13 +21,14 @@ h1, h2, h3 {
 }
 
 .titulo-principal {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: bold;
+    color: #EAF0FF;
 }
 
 .subtitulo {
     color: #8EA0C8;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 /* ===== TARJETAS ===== */
@@ -50,6 +51,7 @@ h1, h2, h3 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px;
+    margin-top: 15px;
 }
 
 /* ===== METRICAS ===== */
@@ -65,10 +67,12 @@ h1, h2, h3 {
 
 /* ===== BADGES ===== */
 .badge {
-    padding: 5px 12px;
-    border-radius: 20px;
+    padding: 6px 16px;
+    border-radius: 999px;
     font-size: 12px;
     font-weight: bold;
+    background: linear-gradient(90deg, #F97316, #FB923C);
+    box-shadow: 0 0 10px rgba(249,115,22,0.4);
 }
 
 .bronce { background: #F97316; }
@@ -118,15 +122,35 @@ h1, h2, h3 {
 /* ===== TABLA ===== */
 .table {
     width: 100%;
-    border-collapse: collapse; 
+    border-collapse: collapse;
     background: transparent;
     color: #EAF0FF;
 }
 
-.table td, .table th {
-    padding: 10px;
-    border-bottom: 1px solid #24304A;
+/* HEADER */
+.table th {
+    text-align: left;
+    font-size: 13px;
     color: #8EA0C8;
+    padding: 12px;
+    border-bottom: 2px solid #24304A;
+}
+
+/* FILAS */
+.table td {
+    padding: 12px;
+    border-bottom: 1px solid #24304A;
+    color: #EAF0FF;
+}
+
+/* HOVER */
+.table tr:hover {
+    background: #1E293B;
+}
+
+/* ESPACIADO */
+.table tr:last-child td {
+    border-bottom: none;
 }
 
 /* ===== LINKS ===== */
@@ -144,4 +168,219 @@ button {
     background: #3B82F6;
     color: white;
     cursor: pointer;
+}
+
+/* NAVBAR FIX */
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    padding: 0;
+}
+
+nav a {
+    color: #38BDF8;
+    font-weight: bold;
+}
+
+/* FORMULARIOS */
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #24304A;
+    background: #0B1020;
+    color: white;
+    margin-bottom: 10px;
+}
+
+label {
+    font-size: 12px;
+    color: #8EA0C8;
+}
+
+/* BOTONES MEJORADOS */
+.btn {
+    display: inline-block;
+    border-radius: 10px;
+    padding: 10px 18px;
+    background: linear-gradient(90deg, #3B82F6, #38BDF8);
+    color: white;
+    font-weight: bold;
+    border: none;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+/* TABLA MEJORADA */
+.table tr:hover {
+    background: #1E293B;
+}
+
+/* SCROLL HORIZONTAL FIX */
+body {
+    overflow-x: hidden;
+}
+
+/* HEADER */
+header {
+    padding: 15px 25px;
+}
+
+/* CONTENEDOR CENTRAL */
+.container-dashboard {
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ===== NAVBAR ===== */
+.navbar-custom {
+    background: #0B1020;
+    border-bottom: 1px solid #24304A;
+    padding: 15px 20px;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.logo {
+    color: #38BDF8;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.nav-links a {
+    margin-left: 20px;
+    color: #8EA0C8;
+    text-decoration: none;
+}
+
+.nav-links a:hover {
+    color: #38BDF8;
+}
+
+/* ===== FOOTER ===== */
+.footer-custom {
+    text-align: center;
+    padding: 20px;
+    color: #8EA0C8;
+}
+
+/* ===== RANGO BADGE MEJORADO ===== */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.cobre { background: #8B5A2B; }
+.bronce { background: #F97316; }
+.plata { background: #C0C0C0; color: black; }
+.oro { background: #FFD700; color: black; }
+.platino { background: #22D3EE; }
+.diamante { background: #60A5FA; }
+
+/* ===== GRID RESPONSIVE ===== */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+/* TABLET */
+@media (max-width: 900px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* MOBILE */
+@media (max-width: 500px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .titulo-principal {
+        font-size: 22px;
+    }
+}
+
+/* ===== CARDS MÁS PRO ===== */
+.card {
+    background: linear-gradient(145deg, #11182D, #0B1020);
+    border: 1px solid #24304A;
+    border-radius: 16px;
+    padding: 20px;
+}
+.card table {
+    margin-top: 10px;
+}
+/* ===== ANIMACIÓN SUAVE ===== */
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.container-dashboard {
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 20px;
+}
+
+/* ===== COLORES POR METRICA ===== */
+.metric-blue {
+    color: #3B82F6;
+}
+
+.metric-green {
+    color: #22C55E;
+}
+
+.metric-purple {
+    color: #A855F7;
+}
+
+.metric-cyan {
+    color: #38BDF8;
+}
+
+/* EFECTO GLOW */
+.metric-blue,
+.metric-green,
+.metric-purple,
+.metric-cyan {
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255,255,255,0.1);
+}
+
+/* TARJETAS TIPO GLASS */
+.card {
+    background: rgba(17, 24, 45, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+/* EFECTO HOVER PRO */
+.card:hover {
+    border-color: #3B82F6;
+    box-shadow: 0 0 20px rgba(59,130,246,0.2);
 }
