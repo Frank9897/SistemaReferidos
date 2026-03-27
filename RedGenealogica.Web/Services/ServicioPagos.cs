@@ -153,7 +153,7 @@ public class ServicioPagos
                 pending = "https://localhost:5185/Pagos/Pendiente"
             },
             auto_return = "approved",
-            notification_url = "https://TU_NGROK_URL/Pagos/Webhook",
+            notification_url = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Webhook",
             external_reference = referidoId.ToString()
         };
 
