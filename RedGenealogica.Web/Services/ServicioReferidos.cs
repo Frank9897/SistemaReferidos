@@ -1,21 +1,21 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
+using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.ViewModels;
-using RedGenealogica.Web.Enumeraciones;
-using RedGenealogica.Web.Services;
-using Microsoft.AspNetCore.Identity;
+
 namespace RedGenealogica.Web.Services;
 
 public class ServicioReferidos
 {
     private readonly ContextoAplicacion _contexto;
     private readonly UserManager<Usuario> _userManager;
-    public ServicioReferidos(ContextoAplicacion contexto,UserManager<Usuario> userManager)
+
+    public ServicioReferidos(ContextoAplicacion contexto, UserManager<Usuario> userManager)
     {
         _contexto = contexto;
         _userManager = userManager;
-        
     }
 
     public async Task<bool> PuedeReferirAsync(int usuarioId)
@@ -53,18 +53,15 @@ public class ServicioReferidos
             .Include(r => r.Usuario)
             .FirstOrDefaultAsync(r => r.Id == referidoId);
 
-        if (referido == null) return;
+        if (referido == null)
+            return;
 
         referido.Estado = EstadoUsuario.Activo;
         referido.FechaActivacion = DateTime.UtcNow;
 
-        // 🎯 SUMAR PUNTOS
         referido.Usuario!.PuntosAcumulados += 100;
 
-        // 🔥 RECALCULAR RANGO
-        var servicioRangos = new ServicioRangos(_contexto);
-        var nuevoRango = await servicioRangos.ObtenerRangoAsync(referido.Usuario.PuntosAcumulados);
-
+        var nuevoRango = await ObtenerRangoAsync(referido.Usuario.PuntosAcumulados);
         referido.Usuario.TipoRangoActual = nuevoRango;
 
         _contexto.MovimientosPuntos.Add(new MovimientoPuntos
@@ -76,5 +73,69 @@ public class ServicioReferidos
         });
 
         await _contexto.SaveChangesAsync();
+    }
+
+    public async Task ConvertirReferidoAUsuarioAsync(int referidoId)
+    {
+        var referido = await _contexto.Referidos
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+            return;
+
+        if (referido.UsuarioConvertidoId != null)
+            return;
+
+        var usuarioExistente = await _contexto.Users
+            .FirstOrDefaultAsync(u => u.Email == referido.CorreoElectronico);
+
+        if (usuarioExistente != null)
+        {
+            referido.UsuarioConvertidoId = usuarioExistente.Id;
+            referido.Estado = EstadoUsuario.Activo;
+            referido.FechaActivacion = DateTime.UtcNow;
+
+            await _contexto.SaveChangesAsync();
+            return;
+        }
+
+        var nuevoUsuario = new Usuario
+        {
+            UserName = referido.CorreoElectronico,
+            Email = referido.CorreoElectronico,
+            Nombres = referido.NombreCompleto,
+            Apellidos = string.Empty,
+            CodigoReferido = Guid.NewGuid().ToString("N")[..8],
+            EstadoUsuario = EstadoUsuario.Activo,
+            FechaRegistro = DateTime.UtcNow,
+            FechaActivacion = DateTime.UtcNow,
+            IdUsuarioPadre = referido.UsuarioId,
+            PuntosAcumulados = 0,
+            TipoRangoActual = TipoRango.Cobre
+        };
+
+        var resultado = await _userManager.CreateAsync(nuevoUsuario, "Temporal123!");
+
+        if (!resultado.Succeeded)
+        {
+            var errores = string.Join(" | ", resultado.Errors.Select(e => e.Description));
+            throw new InvalidOperationException($"No se pudo convertir el referido a usuario: {errores}");
+        }
+
+        referido.UsuarioConvertidoId = nuevoUsuario.Id;
+        referido.Estado = EstadoUsuario.Activo;
+        referido.FechaActivacion = DateTime.UtcNow;
+
+        await _contexto.SaveChangesAsync();
+    }
+
+    private async Task<TipoRango> ObtenerRangoAsync(int puntos)
+    {
+        var rango = await _contexto.RangosUsuario
+            .Where(r => puntos >= r.PuntosMinimos && puntos <= r.PuntosMaximos)
+            .OrderBy(r => r.Orden)
+            .FirstOrDefaultAsync();
+
+        return rango?.TipoRango ?? TipoRango.Cobre;
     }
 }

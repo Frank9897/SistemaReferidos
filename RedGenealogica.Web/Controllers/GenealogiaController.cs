@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
+using System.Security.Claims;
 
 namespace RedGenealogica.Web.Controllers;
 
@@ -11,57 +11,81 @@ namespace RedGenealogica.Web.Controllers;
 public class GenealogiaController : Controller
 {
     private readonly ContextoAplicacion _contexto;
-    private readonly UserManager<Usuario> _userManager;
 
-    public GenealogiaController(ContextoAplicacion contexto, UserManager<Usuario> userManager)
+    public GenealogiaController(ContextoAplicacion contexto)
     {
         _contexto = contexto;
-        _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var usuario = await _userManager.GetUserAsync(User);
-
-        if (usuario == null)
-            return Unauthorized();
-
-        var referidos = await _contexto.Users
-            .Where(x => x.IdUsuarioPadre == usuario.Id)
-            .ToListAsync();
-
-        return View(referidos);
+        return View();
     }
 
     [HttpGet]
     public async Task<IActionResult> ObtenerArbol()
     {
-        var usuarios = await _contexto.Users
-            .Select(u => new
-            {
-                id = "U_" + u.Id,
-                nombre = u.Nombres,
-                padreId = u.IdUsuarioPadre != null ? "U_" + u.IdUsuarioPadre : null,
-                tipo = "usuario",
-                puntos = u.PuntosAcumulados,
-                rango = u.TipoRangoActual.ToString()
-            })
-            .ToListAsync();
+        var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        var referidos = await _contexto.Referidos
-            .Select(r => new
-            {
-                id = "R_" + r.Id,
-                nombre = r.NombreCompleto,
-                padreId = "U_" + r.UsuarioId,
-                tipo = "referido",
-                puntos = 0,
-                rango = "Pendiente"
-            })
-            .ToListAsync();
+        var nodos = new List<object>();
 
-        var nodos = usuarios.Concat(referidos);
+        // 🧠 AQUÍ creas el control de visitados
+        var visitados = new HashSet<int>();
+
+        await ConstruirArbol(usuarioId, null, nodos, visitados);
 
         return Json(nodos);
+    }
+
+    private async Task ConstruirArbol(int usuarioId, string? padreId, List<object> nodos, HashSet<int> visitados)
+    {
+        // 🛑 EVITA REPETIDOS
+        if (visitados.Contains(usuarioId))
+            return;
+
+        visitados.Add(usuarioId);
+
+        var usuario = await _contexto.Users
+            .FirstOrDefaultAsync(u => u.Id == usuarioId);
+
+        if (usuario == null)
+            return;
+
+        string idActual = "U_" + usuario.Id;
+
+        // 🟢 agregar nodo
+        nodos.Add(new
+        {
+            id = idActual,
+            nombre = usuario.Nombres,
+            padreId = padreId,
+            tipo = "usuario",
+            rango = usuario.TipoRangoActual.ToString()
+        });
+
+        // 🔍 traer referidos
+        var referidos = await _contexto.Referidos
+            .Where(r => r.UsuarioId == usuarioId)
+            .ToListAsync();
+
+        foreach (var r in referidos)
+        {
+            if (r.UsuarioConvertidoId != null)
+            {
+                // 🔁 RECURSIVO
+                await ConstruirArbol(r.UsuarioConvertidoId.Value, idActual, nodos, visitados);
+            }
+            else
+            {
+                nodos.Add(new
+                {
+                    id = "R_" + r.Id,
+                    nombre = r.NombreCompleto,
+                    padreId = idActual,
+                    tipo = "referido",
+                    rango = r.Estado.ToString()
+                });
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 @model RedGenealogica.Web.ViewModels.PanelUsuarioViewModel
-
+@using RedGenealogica.Web.Enumeraciones
 <div class="container-dashboard">
 
     <!-- HEADER -->
@@ -83,7 +83,19 @@
             {
                 <tr>
                     <td>@r.NombreCompleto</td>
-                    <td>@r.Estado</td>
+                    <td>
+                        @if (r.Estado == EstadoUsuario.Pendiente)
+                        {
+                            <form method="post" asp-controller="Referidos" asp-action="Activar">
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <button class="btn btn-primary">Activar</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span>Activo</span>
+                        }
+                    </td>
                 </tr>
             }
         </table>

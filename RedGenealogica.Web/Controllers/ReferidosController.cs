@@ -50,6 +50,10 @@ public class ReferidosController : Controller
     public async Task<IActionResult> Activar(int id)
     {
         await _servicioReferidos.ActivarReferidoAsync(id);
+
+        // 🔥 convertir a usuario automáticamente
+        await _servicioReferidos.ConvertirReferidoAUsuarioAsync(id);
+
         return RedirectToAction("Panel", "Usuario");
     }
 }

@@ -115,6 +115,12 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
                 .HasForeignKey(x => x.UsuarioId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(x => x.UsuarioConvertido)
+            .WithMany()
+            .HasForeignKey(x => x.UsuarioConvertidoId)
+            .OnDelete(DeleteBehavior.SetNull);
+            
+
             entity.HasOne(x => x.Producto)
                 .WithMany(x => x.Referidos)
                 .HasForeignKey(x => x.ProductoId)
