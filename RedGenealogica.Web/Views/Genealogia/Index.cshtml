@@ -1,8 +1,9 @@
 @model List<RedGenealogica.Web.Models.Usuario>
+<h2 style="text-align:center;">Árbol Genealógico</h2>
 
-<h2>Árbol Genealógico</h2>
-
-<div id="arbol" style="width:100%; height:600px; overflow:hidden;"></div>
+<div class="tree-container">
+    <div id="arbol"></div>
+</div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
@@ -11,90 +12,93 @@ fetch('/Genealogia/ObtenerArbol')
 .then(res => res.json())
 .then(data => {
 
-    const width = 1000;
-    const height = 600;
+    const width = 800;
+    const height = 400;
 
     const svg = d3.select("#arbol")
         .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .call(d3.zoom().on("zoom", (event) => {
-            g.attr("transform", event.transform);
-        }));
+        .attr("viewBox", `0 0 ${width} ${height}`)
+        .style("width", "100%")
+        .style("height", "100%");
 
     const g = svg.append("g");
+
+    // 🔥 ZOOM + PAN
+    const zoom = d3.zoom()
+        .scaleExtent([0.5, 2]) // mínimo y máximo zoom
+        .on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+
+    svg.call(zoom).on("wheel.zoom", null); // evita scroll loco
 
     const root = d3.stratify()
         .id(d => d.id)
         .parentId(d => d.padreId)(data);
+    
+    // 🔥 layout BIEN distribuido
+    const treeLayout = d3.tree()
+        .size([width - 100, height - 100]);
 
-    const treeLayout = d3.tree().size([width - 200, height - 200]);
     treeLayout(root);
 
-    // 🔵 Líneas
-    g.selectAll('line')
+    // 🔥 centrar árbol automáticamente
+    const offsetX = (width / 2) - root.x;
+    g.attr("transform", `translate(${offsetX}, 40)`);
+
+    // 🔗 LINKS
+    g.selectAll("path")
         .data(root.links())
         .enter()
-        .append('line')
-        .attr('x1', d => d.source.x + 100)
-        .attr('y1', d => d.source.y + 50)
-        .attr('x2', d => d.target.x + 100)
-        .attr('y2', d => d.target.y + 50)
-        .attr('stroke', '#38BDF8')
-        .attr('stroke-width', 2);
+        .append("path")
+        .attr("fill", "none")
+        .attr("stroke", "#38BDF8")
+        .attr("stroke-width", 1.5)
+        .attr("d", d => `
+            M${d.source.x},${d.source.y + 20}
+            C${d.source.x},${(d.source.y + d.target.y) / 2}
+             ${d.target.x},${(d.source.y + d.target.y) / 2}
+             ${d.target.x},${d.target.y - 20}
+        `);
 
-    // 🔵 Nodos
-    const nodes = g.selectAll('circle')
-    .data(root.descendants())
-    .enter()
-    .append('circle')
-    .attr('cx', d => d.x + 100)
-    .attr('cy', d => d.y + 50)
-    .attr('r', 0)
-    .attr('fill', d => {
-        if (d.data.tipo === "usuario") {
-            return colorPorRango(d.data.rango);
-        }
-        return "#F97316";
-    })
-    .on("mouseover", function (event, d) {
-        d3.select(this).attr("r", 25);
-
-        tooltip
-            .style("display", "block")
-            .html(`
-                <strong>${d.data.nombre}</strong><br/>
-                Tipo: ${d.data.tipo}<br/>
-                Puntos: ${d.data.puntos}<br/>
-                Rango: ${d.data.rango}
-            `);
-    })
-    .on("mousemove", function (event) {
-        tooltip
-            .style("top", (event.pageY + 10) + "px")
-            .style("left", (event.pageX + 10) + "px");
-    })
-    .on("mouseout", function () {
-        d3.select(this).attr("r", 20);
-        tooltip.style("display", "none");
-    })
-    .transition()
-    .duration(500)
-    .attr('r', 20);
-
-    // 🔤 Texto
-    g.selectAll('text')
+    // 🧠 NODOS
+    const node = g.selectAll(".node")
         .data(root.descendants())
         .enter()
-        .append('text')
-        .attr('x', d => d.x + 100)
-        .attr('y', d => d.y + 55)
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .style('font-size', '12px')
+        .append("g")
+        .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+    // 🔳 tarjeta
+    node.append("rect")
+        .attr("x", -50)
+        .attr("y", -20)
+        .attr("width", 100)
+        .attr("height", 40)
+        .attr("rx", 10)
+        .attr("fill", "#0F172A")
+        .attr("stroke", d => colorPorRango(d.data.rango))
+        .attr("stroke-width", 2);
+
+    // 👤 nombre
+    node.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "-2")
+        .attr("fill", "#EAF0FF")
+        .style("font-size", "12px")
+        .style("font-weight", "600")
         .text(d => d.data.nombre);
+
+    // 🏷️ rango
+    node.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "12")
+        .attr("fill", d => colorPorRango(d.data.rango))
+        .style("font-size", "10px")
+        .text(d => d.data.rango);
+
 });
 
+// 🎨 colores
 function colorPorRango(rango) {
     switch (rango) {
         case "Diamante": return "#60A5FA";
@@ -106,15 +110,4 @@ function colorPorRango(rango) {
         default: return "#64748B";
     }
 }
-
-const tooltip = d3.select("body")
-    .append("div")
-    .style("position", "absolute")
-    .style("background", "#11182D")
-    .style("padding", "10px")
-    .style("border-radius", "8px")
-    .style("border", "1px solid #24304A")
-    .style("color", "white")
-    .style("font-size", "12px")
-    .style("display", "none");
 </script>

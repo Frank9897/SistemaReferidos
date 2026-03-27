@@ -278,12 +278,68 @@ input:focus, select:focus {
     margin-top: 18px;
 }
 
-#arbol svg {
-    background: radial-gradient(circle at center, #0B1020, #050914);
-    border-radius: 16px;
-    border: 1px solid #24304A;
+/* ===== TREE UI PRO ===== */
+
+.tree-container {
+    max-width: 600px;
+    max-height: 400px;
+    margin: 40px auto; /* centra horizontal */
+    padding: 20px;
+
+    background: radial-gradient(circle at top, #0F172A, #020617);
+    border: 1px solid #1E293B;
+    border-radius: 20px;
+
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+.tree-container:hover {
+    transform: translateY(-2px);
+    transition: 0.2s;
 }
 
 #arbol {
-    margin-top: 20px;
+    width: 100%;
+    height: 450px;
+}
+
+@media (max-width: 768px) {
+    #arbol {
+        height: 350px;
+    }
+}
+
+#arbol svg {
+    width: 100%;
+    height: 600px;
+}
+
+/* líneas del árbol */
+#arbol line {
+    stroke: rgba(56, 189, 248, 0.4);
+    stroke-width: 2;
+}
+
+/* nodos */
+.node {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/* texto */
+.node text {
+    fill: #EAF0FF;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* efecto glow */
+.node circle {
+    filter: drop-shadow(0 0 6px rgba(59,130,246,0.6));
+}
+
+/* hover */
+.node:hover circle {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 12px rgba(59,130,246,1));
 }
