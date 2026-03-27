@@ -4,8 +4,10 @@ using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
+using Microsoft.AspNetCore.Authorization;
 namespace RedGenealogica.Web.Controllers;
 
+[AllowAnonymous]
 public class AutenticacionController : Controller
 {
     private readonly ServicioUsuarios _servicioUsuarios;
@@ -60,9 +62,9 @@ public class AutenticacionController : Controller
             return View(modelo);
         }
 
-        await _signInManager.SignInAsync(usuario, false);
+        await _signInManager.SignInAsync(usuario, isPersistent: true);
 
-        return RedirectToAction("Index", "Inicio");
+        return RedirectToAction("Panel", "Usuario");
     }
 
     [HttpGet]
@@ -88,8 +90,8 @@ public class AutenticacionController : Controller
         var resultado = await _signInManager.PasswordSignInAsync(
             usuario.UserName!,
             modelo.Password,
-            false,
-            false);
+            isPersistent: true,
+            lockoutOnFailure: false);
 
         if (!resultado.Succeeded)
         {

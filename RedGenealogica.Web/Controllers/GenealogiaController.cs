@@ -23,6 +23,9 @@ public class GenealogiaController : Controller
     {
         var usuario = await _userManager.GetUserAsync(User);
 
+        if (usuario == null)
+            return Unauthorized();
+
         var referidos = await _contexto.Users
             .Where(x => x.IdUsuarioPadre == usuario.Id)
             .ToListAsync();
@@ -33,6 +36,11 @@ public class GenealogiaController : Controller
     [HttpGet]
     public async Task<IActionResult> ObtenerArbol()
     {
+        var usuario = await _userManager.GetUserAsync(User);
+
+        if (usuario == null)
+            return Unauthorized();
+
         var usuarios = await _contexto.Users
             .Select(u => new
             {
@@ -47,7 +55,7 @@ public class GenealogiaController : Controller
             {
                 id = "R_" + r.Id,
                 nombre = r.NombreCompleto,
-                padreId = "U_" + r.UsuarioId
+                padreId = (string?)("U_" + r.UsuarioId) // 🔥 clave
             })
             .ToListAsync();
 

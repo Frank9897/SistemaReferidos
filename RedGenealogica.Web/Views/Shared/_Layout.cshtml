@@ -4,19 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - RedGenealogica</title>
-
     <link rel="stylesheet" href="~/css/sistema-referidos.css" />
 </head>
-
 <body>
-
-    <!-- NAVBAR PRO -->
     <header class="navbar-custom">
         <div class="nav-container">
-
-            <div class="logo">
-                RedGenealogica
-            </div>
+            <div class="logo">RedGenealogica</div>
 
             <div class="nav-links">
 
@@ -26,7 +19,7 @@
 
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    <form asp-controller="Autenticacion" asp-action="Logout" method="post" style="display:inline;">
+                    <form asp-controller="Autenticacion" asp-action="Logout" method="post" class="logout-form">
                         <button type="submit" class="btn btn-secondary">Salir</button>
                     </form>
                 }
@@ -36,33 +29,25 @@
                 }
 
             </div>
-
         </div>
-        
-        <div style="max-width:1200px; margin:auto; padding:10px 20px;">
-            <button onclick="window.history.back()" class="btn-volver">
+    </header>
+
+    <div class="barra-volver">
+        <div class="container-dashboard">
+            <button type="button" class="btn-volver" onclick="history.back();">
                 ← Volver
             </button>
         </div>
-    </header>
-    
-    <!-- CONTENIDO -->
+    </div>
+
     <main class="container-dashboard">
         @RenderBody()
     </main>
 
-    <!-- FOOTER -->
     <footer class="footer-custom">
         <p>© 2026 - RedGenealogica</p>
     </footer>
 
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
-
-<script>
-function volver() {
-    window.history.back();
-    setTimeout(() => location.reload(), 100);
-}
-</script>
-

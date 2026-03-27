@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
-
+using Microsoft.AspNetCore.Authorization;
 namespace RedGenealogica.Web.Controllers;
-
+[Authorize]
 public class RankingController : Controller
 {
     private readonly ContextoAplicacion _contexto;

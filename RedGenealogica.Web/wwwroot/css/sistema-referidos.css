@@ -1,18 +1,19 @@
+/* ===== BASE ===== */
 html, body {
-    background: #0B1020 !important;
-    color: #EAF0FF !important;
-}
-/* ===== RESET ===== */
-body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
     background: #0B1020;
     color: #EAF0FF;
+    overflow-x: hidden;
 }
-
+main.container-dashboard {
+    padding-top: 30px;
+}
 /* ===== CONTENEDOR ===== */
 .container-dashboard {
-    padding: 25px;
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 20px;
 }
 
 /* ===== TITULOS ===== */
@@ -21,226 +22,13 @@ h1, h2, h3 {
 }
 
 .titulo-principal {
-    font-size: 30px;
+    font-size: 28px;
     font-weight: bold;
-    color: #EAF0FF;
 }
 
 .subtitulo {
     color: #8EA0C8;
-    font-size: 15px;
-}
-
-/* ===== TARJETAS ===== */
-.card {
-    background: #11182D;
-    border: 1px solid #24304A;
-    border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 15px;
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-3px);
-    border-color: #3B82F6;
-}
-
-/* ===== GRID ===== */
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
-
-/* ===== METRICAS ===== */
-.metric {
-    font-size: 26px;
-    font-weight: bold;
-}
-
-.metric-label {
-    font-size: 12px;
-    color: #8EA0C8;
-}
-
-/* ===== BADGES ===== */
-.badge {
-    padding: 6px 16px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: bold;
-    background: linear-gradient(90deg, #F97316, #FB923C);
-    box-shadow: 0 0 10px rgba(249,115,22,0.4);
-}
-
-.bronce { background: #F97316; }
-.plata { background: #A3A3A3; }
-.oro { background: #FACC15; }
-.platino { background: #22D3EE; }
-.diamante { background: #60A5FA; }
-
-/* ===== BOTONES ===== */
-.btn {
-    border: none;
-    padding: 10px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-primary {
-    background: #3B82F6;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #2563EB;
-}
-
-.btn-secondary {
-    background: #1E293B;
-    color: white;
-}
-
-/* ===== PROGRESO ===== */
-.progress-bar {
-    background: #1E293B;
-    border-radius: 10px;
-    overflow: hidden;
-    height: 10px;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #3B82F6, #38BDF8);
-    width: 0%;
-    transition: width 0.5s ease;
-}
-
-/* ===== TABLA ===== */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    background: transparent;
-    color: #EAF0FF;
-}
-
-/* HEADER */
-.table th {
-    text-align: left;
-    font-size: 13px;
-    color: #8EA0C8;
-    padding: 12px;
-    border-bottom: 2px solid #24304A;
-}
-
-/* FILAS */
-.table td {
-    padding: 12px;
-    border-bottom: 1px solid #24304A;
-    color: #EAF0FF;
-}
-
-/* HOVER */
-.table tr:hover {
-    background: #1E293B;
-}
-
-/* ESPACIADO */
-.table tr:last-child td {
-    border-bottom: none;
-}
-
-/* ===== LINKS ===== */
-a {
-    color: #38BDF8;
-    text-decoration: none;
-}
-button {
-    all: unset;
-}
-
-button {
-    padding: 10px 15px;
-    border-radius: 10px;
-    background: #3B82F6;
-    color: white;
-    cursor: pointer;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-/* NAVBAR FIX */
-nav ul {
-    list-style: none;
-    display: flex;
-    gap: 20px;
-    padding: 0;
-}
-
-nav a {
-    color: #38BDF8;
-    font-weight: bold;
-}
-
-/* FORMULARIOS */
-input {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #24304A;
-    background: #0B1020;
-    color: white;
-    margin-bottom: 10px;
-}
-
-label {
-    font-size: 12px;
-    color: #8EA0C8;
-}
-
-/* BOTONES MEJORADOS */
-.btn {
-    display: inline-block;
-    border-radius: 10px;
-    padding: 10px 18px;
-    background: linear-gradient(90deg, #3B82F6, #38BDF8);
-    color: white;
-    font-weight: bold;
-    border: none;
-    transition: 0.3s;
-}
-
-.btn:hover {
-    transform: scale(1.05);
-    opacity: 0.9;
-}
-
-/* TABLA MEJORADA */
-.table tr:hover {
-    background: #1E293B;
-}
-
-/* SCROLL HORIZONTAL FIX */
-body {
-    overflow-x: hidden;
-}
-
-/* HEADER */
-header {
-    padding: 15px 25px;
-}
-
-/* CONTENEDOR CENTRAL */
-.container-dashboard {
-    max-width: 1200px;
-    margin: auto;
+    font-size: 14px;
 }
 
 /* ===== NAVBAR ===== */
@@ -261,147 +49,231 @@ header {
 .logo {
     color: #38BDF8;
     font-weight: bold;
-    font-size: 18px;
+}
+
+/* LINKS */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .nav-links a {
-    margin-left: 20px;
     color: #8EA0C8;
     text-decoration: none;
+    font-weight: 600;
 }
 
 .nav-links a:hover {
     color: #38BDF8;
 }
 
+.logout-form {
+    display: inline;
+}
+
+/* ===== BOTONES (IMPORTANTE) ===== */
+button {
+    all: unset;
+}
+
+.btn,
+button {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s;
+}
+
+/* PRINCIPAL */
+.btn-primary {
+    background: linear-gradient(90deg, #3B82F6, #38BDF8);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+/* SECUNDARIO */
+.btn-secondary {
+    background: #1E293B;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #334155;
+}
+
+/* VOLVER */
 .btn-volver {
     background: #1E293B;
-    color: #8EA0C8;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    border: none;
-    transition: 0.2s;
+    color: #EAF0FF;
+    border: 1px solid #24304A;
 }
 
 .btn-volver:hover {
     background: #3B82F6;
-    color: white;
 }
 
-/* ===== FOOTER ===== */
-.footer-custom {
-    text-align: center;
+/* ===== CARDS ===== */
+.card {
+    background: rgba(17, 24, 45, 0.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid #24304A;
+    border-radius: 16px;
     padding: 20px;
-    color: #8EA0C8;
+    margin-bottom: 20px;
+    transition: 0.3s;
 }
 
-/* ===== RANGO BADGE MEJORADO ===== */
-.badge {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-    margin-top: 10px;
+.card:hover {
+    transform: translateY(-3px);
+    border-color: #3B82F6;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
-.cobre { background: #8B5A2B; }
-.bronce { background: #F97316; }
-.plata { background: #C0C0C0; color: black; }
-.oro { background: #FFD700; color: black; }
-.platino { background: #22D3EE; }
-.diamante { background: #60A5FA; }
-
-/* ===== GRID RESPONSIVE ===== */
+/* ===== GRID ===== */
 .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
-/* TABLET */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
     .grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* MOBILE */
-@media (max-width: 500px) {
+@media (max-width: 600px) {
     .grid {
         grid-template-columns: 1fr;
     }
 
-    .nav-links {
-        display: none;
-    }
-
-    .titulo-principal {
-        font-size: 22px;
+    .nav-container {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
 
-/* ===== CARDS MÁS PRO ===== */
-.card {
-    background: linear-gradient(145deg, #11182D, #0B1020);
-    border: 1px solid #24304A;
-    border-radius: 16px;
-    padding: 20px;
-}
-.card table {
-    margin-top: 10px;
-}
-/* ===== ANIMACIÓN SUAVE ===== */
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-}
-
-.container-dashboard {
-    max-width: 1200px;
-    margin: auto;
-    padding: 40px 20px;
-}
-
-/* ===== COLORES POR METRICA ===== */
-.metric-blue {
-    color: #3B82F6;
-}
-
-.metric-green {
-    color: #22C55E;
-}
-
-.metric-purple {
-    color: #A855F7;
-}
-
-.metric-cyan {
-    color: #38BDF8;
-}
-
-/* EFECTO GLOW */
-.metric-blue,
-.metric-green,
-.metric-purple,
-.metric-cyan {
+/* ===== METRICAS ===== */
+.metric {
     font-size: 28px;
     font-weight: bold;
-    text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
-/* TARJETAS TIPO GLASS */
-.card {
-    background: rgba(17, 24, 45, 0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(59, 130, 246, 0.15);
-    border-radius: 16px;
-    margin-bottom: 20px;
+.metric-label {
+    font-size: 12px;
+    color: #8EA0C8;
 }
 
-/* EFECTO HOVER PRO */
-.card:hover {
+/* COLORES */
+.metric-blue { color: #3B82F6; }
+.metric-green { color: #22C55E; }
+.metric-cyan { color: #38BDF8; }
+.metric-purple { color: #A855F7; }
+
+/* ===== BADGES ===== */
+.badge {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.cobre { background: #8B5A2B; }
+.bronce { background: #F97316; }
+.plata { background: #C0C0C0; color: #111; }
+.oro { background: #FFD700; color: #111; }
+.platino { background: #22D3EE; color: #0B1020; }
+.diamante { background: #60A5FA; }
+
+/* ===== PROGRESO ===== */
+.progress-bar {
+    background: #1E293B;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3B82F6, #38BDF8);
+    transition: width 0.5s;
+}
+
+/* ===== TABLA ===== */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th {
+    text-align: left;
+    font-size: 13px;
+    color: #8EA0C8;
+    padding: 12px;
+    border-bottom: 2px solid #24304A;
+}
+
+.table td {
+    padding: 12px;
+    border-bottom: 1px solid #24304A;
+}
+
+.table tr:hover {
+    background: #1E293B;
+}
+
+/* ===== FORMULARIOS ===== */
+form {
+    max-width: 600px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #24304A;
+    background: #0B1020;
+    color: white;
+    margin-bottom: 10px;
+}
+
+label {
+    font-size: 12px;
+    color: #8EA0C8;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #24304A;
+    background: #0B1020;
+    color: #EAF0FF;
+    margin-bottom: 15px;
+    transition: 0.2s;
+}
+
+input:focus, select:focus {
+    outline: none;
     border-color: #3B82F6;
-    box-shadow: 0 0 20px rgba(59,130,246,0.2);
+    box-shadow: 0 0 8px rgba(59,130,246,0.3);
+}
+
+
+
+/* ===== ACCIONES ===== */
+.acciones-inline {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
 }

@@ -6,7 +6,6 @@ using RedGenealogica.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.ViewModels;
-using Microsoft.EntityFrameworkCore;
 namespace RedGenealogica.Web.Controllers;
 
 [Authorize]
