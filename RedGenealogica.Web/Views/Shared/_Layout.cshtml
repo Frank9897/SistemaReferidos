@@ -38,8 +38,14 @@
             </div>
 
         </div>
+        
+        <div style="max-width:1200px; margin:auto; padding:10px 20px;">
+            <button onclick="window.history.back()" class="btn-volver">
+                ← Volver
+            </button>
+        </div>
     </header>
-
+    
     <!-- CONTENIDO -->
     <main class="container-dashboard">
         @RenderBody()
@@ -52,3 +58,11 @@
 
 </body>
 </html>
+
+<script>
+function volver() {
+    window.history.back();
+    setTimeout(() => location.reload(), 100);
+}
+</script>
+

@@ -274,6 +274,21 @@ header {
     color: #38BDF8;
 }
 
+.btn-volver {
+    background: #1E293B;
+    color: #8EA0C8;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+
+.btn-volver:hover {
+    background: #3B82F6;
+    color: white;
+}
+
 /* ===== FOOTER ===== */
 .footer-custom {
     text-align: center;
