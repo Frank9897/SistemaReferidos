@@ -148,9 +148,9 @@ public class ServicioPagos
             },
             back_urls = new
             {
-                success = "https://localhost:5185/Pagos/Exito",
-                failure = "https://localhost:5185/Pagos/Error",
-                pending = "https://localhost:5185/Pagos/Pendiente"
+                success = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Exito",
+                failure = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Error",
+                pending = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Pendiente"
             },
             auto_return = "approved",
             notification_url = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Webhook",
@@ -166,8 +166,18 @@ public class ServicioPagos
 
         var content = await response.Content.ReadAsStringAsync();
 
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new Exception("Error MercadoPago: " + content);
+        }
+
         var result = JsonDocument.Parse(content);
 
-        return result.RootElement.GetProperty("init_point").GetString()!;
+        if (!result.RootElement.TryGetProperty("init_point", out var initPoint))
+        {
+            throw new Exception("Respuesta inválida MP: " + content);
+        }
+
+        return initPoint.GetString()!;
     }
 }

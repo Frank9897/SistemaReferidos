@@ -54,8 +54,8 @@ public class ServicioReferidos
             .FirstOrDefaultAsync(r => r.Id == referidoId);
 
         if (referido == null)
-            return;
-
+            throw new Exception("Referido no encontrado");
+        
         referido.Estado = EstadoUsuario.Activo;
         referido.FechaActivacion = DateTime.UtcNow;
 
