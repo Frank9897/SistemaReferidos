@@ -26,6 +26,37 @@ else
 
 <hr />
 
+    <h3>Mis Referidos</h3>
+
+    <table>
+        <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Acción</th>
+        </tr>
+
+        @foreach (var r in (List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos)
+        {
+            <tr>
+                <td>@r.NombreCompleto</td>
+                <td>@r.Estado</td>
+                <td>
+                    @if (r.Estado.ToString() != "Activo")
+                    {
+                        <form asp-controller="Referidos" asp-action="Activar" method="post">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button type="submit">Activar (Pago)</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span>✔ Activo</span>
+                    }
+                </td>
+            </tr>
+        }
+    </table>
+
 <form asp-controller="Autenticacion" asp-action="Logout" method="post">
     <button type="submit">Cerrar sesión</button>
 </form>

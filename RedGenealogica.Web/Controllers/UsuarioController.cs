@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
-
+using Microsoft.EntityFrameworkCore;
+using RedGenealogica.Web.Data;
 namespace RedGenealogica.Web.Controllers;
 
 [Authorize]
@@ -11,21 +12,26 @@ public class UsuarioController : Controller
 {
     private readonly UserManager<Usuario> _userManager;
     private readonly ServicioPagos _servicioPagos;
+    private readonly ContextoAplicacion _contexto;
 
-    public UsuarioController(
-        UserManager<Usuario> userManager,
-        ServicioPagos servicioPagos)
+    public UsuarioController(UserManager<Usuario> userManager,
+                            ServicioPagos servicioPagos,
+                            ContextoAplicacion contexto)
     {
         _userManager = userManager;
         _servicioPagos = servicioPagos;
+        _contexto = contexto;
     }
 
     public async Task<IActionResult> Panel()
     {
         var usuario = await _userManager.GetUserAsync(User);
 
-        if (usuario == null)
-            return RedirectToAction("Login", "Autenticacion");
+        var referidos = await _contexto.Referidos
+            .Where(r => r.UsuarioId == usuario.Id)
+            .ToListAsync();
+
+        ViewBag.Referidos = referidos;
 
         return View(usuario);
     }
@@ -46,4 +52,5 @@ public class UsuarioController : Controller
 
         return RedirectToAction("Panel");
     }
+    
 }
