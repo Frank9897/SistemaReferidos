@@ -1,62 +1,90 @@
 @model RedGenealogica.Web.Models.Usuario
 
-<h2>Panel de Usuario</h2>
+<div class="container-dashboard">
 
-<p><strong>Nombre:</strong> @Model.Nombres @Model.Apellidos</p>
-<p><strong>Email:</strong> @Model.Email</p>
-<p><strong>Puntos:</strong> @Model.PuntosAcumulados</p>
-<p><strong>Estado:</strong> @Model.EstadoUsuario</p>
-<p><strong>Rango:</strong> @Model.TipoRangoActual</p>
+    <!-- HEADER -->
+    <div class="card">
+        <h1 class="titulo-principal">Hola, @Model.Nombres 👋</h1>
+        <p class="subtitulo">Sigue construyendo tu red y sube de nivel</p>
 
-<hr />
-<a href="/Referidos/Crear">Registrar Referido</a>
+        <br />
 
-@if (Model.EstadoUsuario.ToString() != "Activo")
-{
-    <h3>Activar cuenta</h3>
+        <span class="badge @Model.TipoRangoActual.ToString().ToLower()">
+            @Model.TipoRangoActual
+        </span>
+    </div>
 
-    <form asp-action="ActivarCuenta" method="post">
-        <button type="submit">Activar (Simulación de pago)</button>
-    </form>
-}
-else
-{
-    <p style="color: green;">✔ Cuenta activa</p>
-}
+    <!-- METRICAS -->
+    <div class="grid">
 
-<hr />
+        <div class="card">
+            <div class="metric">@Model.PuntosAcumulados</div>
+            <div class="metric-label">Puntos totales</div>
+        </div>
 
-    <h3>Mis Referidos</h3>
+        <div class="card">
+            <div class="metric">@((List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos).Count</div>
+            <div class="metric-label">Referidos directos</div>
+        </div>
 
-    <table>
-        <tr>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>Acción</th>
-        </tr>
+        <div class="card">
+            <div class="metric">0</div>
+            <div class="metric-label">Referidos indirectos</div>
+        </div>
 
-        @foreach (var r in (List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos)
-        {
-            <tr>
-                <td>@r.NombreCompleto</td>
-                <td>@r.Estado</td>
-                <td>
-                    @if (r.Estado.ToString() != "Activo")
-                    {
-                        <form asp-controller="Referidos" asp-action="Activar" method="post">
-                            <input type="hidden" name="id" value="@r.Id" />
-                            <button type="submit">Activar (Pago)</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <span>✔ Activo</span>
-                    }
-                </td>
-            </tr>
+        <div class="card">
+            <div class="metric">@Model.PuntosAcumulados / 100</div>
+            <div class="metric-label">Total red</div>
+        </div>
+
+    </div>
+
+    <!-- PROGRESO -->
+    <div class="card">
+        <h3>Progreso al siguiente rango</h3>
+
+        @{
+            int puntos = Model.PuntosAcumulados;
+            int siguiente = 1000;
+            int progreso = (puntos * 100) / siguiente;
         }
-    </table>
 
-<form asp-controller="Autenticacion" asp-action="Logout" method="post">
-    <button type="submit">Cerrar sesión</button>
-</form>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width:@progreso%"></div>
+        </div>
+
+        <p class="subtitulo">@((siguiente - puntos)) puntos restantes</p>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="card">
+        <h3>Acciones rápidas</h3>
+
+        <br />
+
+        <a href="/Referidos/Crear" class="btn btn-primary">Registrar Referido</a>
+        <a href="/Genealogia" class="btn btn-secondary">Ver Árbol</a>
+        <a href="/Ranking" class="btn btn-secondary">Ver Ranking</a>
+    </div>
+
+    <!-- REFERIDOS -->
+    <div class="card">
+        <h3>Mis Referidos</h3>
+
+        <table class="table">
+            <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+            </tr>
+
+            @foreach (var r in (List<RedGenealogica.Web.Models.Referido>)ViewBag.Referidos)
+            {
+                <tr>
+                    <td>@r.NombreCompleto</td>
+                    <td>@r.Estado</td>
+                </tr>
+            }
+        </table>
+    </div>
+
+</div>
