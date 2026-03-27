@@ -2,7 +2,7 @@
 
 <h2>Árbol Genealógico</h2>
 
-<div id="arbol" style="height:500px;"></div>
+<div id="arbol" style="width:100%; height:600px; overflow:hidden;"></div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
@@ -11,51 +11,61 @@ fetch('/Genealogia/ObtenerArbol')
 .then(res => res.json())
 .then(data => {
 
-    const width = 800;
-    const height = 500;
+    const width = 1000;
+    const height = 600;
 
     const svg = d3.select("#arbol")
         .append("svg")
         .attr("width", width)
-        .attr("height", height);
+        .attr("height", height)
+        .call(d3.zoom().on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        }));
+
+    const g = svg.append("g");
 
     const root = d3.stratify()
         .id(d => d.id)
         .parentId(d => d.padreId)(data);
 
-    const treeLayout = d3.tree().size([width - 100, height - 100]);
+    const treeLayout = d3.tree().size([width - 200, height - 200]);
     treeLayout(root);
 
-    // líneas
-    svg.selectAll('line')
+    // 🔵 Líneas
+    g.selectAll('line')
         .data(root.links())
         .enter()
         .append('line')
-        .attr('x1', d => d.source.x + 50)
+        .attr('x1', d => d.source.x + 100)
         .attr('y1', d => d.source.y + 50)
-        .attr('x2', d => d.target.x + 50)
+        .attr('x2', d => d.target.x + 100)
         .attr('y2', d => d.target.y + 50)
-        .attr('stroke', '#38BDF8');
+        .attr('stroke', '#38BDF8')
+        .attr('stroke-width', 2);
 
-    // nodos
-    const nodes = svg.selectAll('circle')
+    // 🔵 Nodos
+    const nodes = g.selectAll('circle')
         .data(root.descendants())
         .enter()
         .append('circle')
-        .attr('cx', d => d.x + 50)
+        .attr('cx', d => d.x + 100)
         .attr('cy', d => d.y + 50)
-        .attr('r', 20)
-        .attr('fill', d => d.id.startsWith("U_") ? '#3B82F6' : '#F97316');
+        .attr('r', 0)
+        .attr('fill', d => d.id.startsWith("U_") ? '#3B82F6' : '#F97316')
+        .transition()
+        .duration(500)
+        .attr('r', 20);
 
-    // texto
-    svg.selectAll('text')
+    // 🔤 Texto
+    g.selectAll('text')
         .data(root.descendants())
         .enter()
         .append('text')
-        .attr('x', d => d.x + 50)
+        .attr('x', d => d.x + 100)
         .attr('y', d => d.y + 55)
         .attr('text-anchor', 'middle')
         .attr('fill', 'white')
+        .style('font-size', '12px')
         .text(d => d.data.nombre);
 });
 </script>

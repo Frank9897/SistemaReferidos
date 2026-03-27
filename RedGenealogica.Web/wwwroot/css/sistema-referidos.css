@@ -277,3 +277,13 @@ input:focus, select:focus {
     flex-wrap: wrap;
     margin-top: 18px;
 }
+
+#arbol svg {
+    background: radial-gradient(circle at center, #0B1020, #050914);
+    border-radius: 16px;
+    border: 1px solid #24304A;
+}
+
+#arbol {
+    margin-top: 20px;
+}
