@@ -170,6 +170,9 @@ public class ServicioPagos
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
+        var baseUrl = _configuration["App:BaseUrl"];
+        if (string.IsNullOrEmpty(baseUrl))
+            throw new Exception("BaseUrl no configurado en appsettings");
         var body = new
         {
             items = new[]
@@ -180,16 +183,21 @@ public class ServicioPagos
                     unit_price = referido.Producto.Precio
                 }
             },
+
             back_urls = new
             {
-                success = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Exito",
-                failure = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Error",
-                pending = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Pendiente"
+                success = $"{baseUrl}/Pagos/Exito",
+                failure = $"{baseUrl}/Pagos/Error",
+                pending = $"{baseUrl}/Pagos/Pendiente"
             },
+
             auto_return = "approved",
-            notification_url = "https://carpometacarpal-tabitha-timocratical.ngrok-free.dev/Pagos/Webhook",
+
+            notification_url = $"{baseUrl}/Pagos/Webhook",
+
             external_reference = referidoId.ToString()
         };
+        
 
         var json = JsonSerializer.Serialize(body);
 
@@ -253,7 +261,10 @@ public class ServicioPagos
             return false;
 
         int referidoId = int.Parse(externalReference);
+        var referido = await _contexto.Referidos.FindAsync(referidoId);
 
+        if (referido == null)
+            return false;
         // 🔹 Confirmar pago
         await ConfirmarPago(referidoId);
         // 🔥 convertir referido a usuario
