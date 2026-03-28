@@ -184,6 +184,13 @@ public class ServicioPagos
                 }
             },
 
+            
+            payer = new
+            {
+                email = "test_user_123@testuser.com"
+            },
+
+
             back_urls = new
             {
                 success = $"{baseUrl}/Pagos/Exito",
@@ -191,11 +198,18 @@ public class ServicioPagos
                 pending = $"{baseUrl}/Pagos/Pendiente"
             },
 
+
             auto_return = "approved",
 
             notification_url = $"{baseUrl}/Pagos/Webhook",
 
-            external_reference = referidoId.ToString()
+            external_reference = referidoId.ToString(),
+            
+            metadata = new
+            {
+                referido_id = referidoId
+            }
+            
         };
         
 
