@@ -9,12 +9,27 @@ html, body {
 main.container-dashboard {
     padding-top: 30px;
 }
-/* ===== CONTENEDOR ===== */
-.container-dashboard {
-    max-width: 1200px;
-    margin: auto;
-    padding: 40px 20px;
+
+a {
+    text-decoration: none !important;
+    color: inherit;
 }
+
+a:hover {
+    text-decoration: none !important;
+}
+
+
+/* ===== CONTENEDOR ===== */
+
+.container {
+    padding-top: 20px;
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
 
 /* ===== TITULOS ===== */
 h1, h2, h3 {
@@ -90,13 +105,16 @@ button {
 
 /* PRINCIPAL */
 .btn-primary {
-    background: linear-gradient(90deg, #3B82F6, #38BDF8);
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
     color: white;
+    transition: 0.2s;
 }
 
 .btn-primary:hover {
     transform: scale(1.05);
-    opacity: 0.9;
 }
 
 /* SECUNDARIO */
@@ -111,13 +129,17 @@ button {
 
 /* VOLVER */
 .btn-volver {
-    background: #1E293B;
-    color: #EAF0FF;
-    border: 1px solid #24304A;
+    display: inline-block;
+    margin: 20px 0;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #1e293b;
+    color: #e2e8f0;
+    transition: 0.2s;
 }
 
 .btn-volver:hover {
-    background: #3B82F6;
+    background: #334155;
 }
 
 /* ===== CARDS ===== */
@@ -136,6 +158,22 @@ button {
     transform: translateY(-3px);
     border-color: #3B82F6;
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.card-main {
+    padding: 25px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #0f172a, #020617);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+.card-main h2 {
+    margin-bottom: 10px;
+}
+
+.card-main p {
+    color: #94a3b8;
 }
 
 /* ===== GRID ===== */
@@ -281,6 +319,26 @@ input:focus, select:focus {
     box-shadow: 0 0 8px rgba(59,130,246,0.3);
 }
 
+.form-container {
+    max-width: 500px;
+    margin-top: 30px;
+}
+
+.form-container input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background: #020617;
+    border: 1px solid #1e293b;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.form-container input:focus {
+    outline: none;
+    border-color: #38bdf8;
+}
+
 
 
 /* ===== ACCIONES ===== */
@@ -420,7 +478,7 @@ input:focus, select:focus {
 /* 🔥 TOP 1 */
 .top1 {
     background: linear-gradient(145deg, #0ea5e9, #1e3a8a);
-    box-shadow: 0 0 25px rgba(56,189,248,0.5);
+    box-shadow: 0 0 30px rgba(56,189,248,0.6);
 }
 
 /* 🥈 */

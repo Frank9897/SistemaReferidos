@@ -5,7 +5,7 @@
 <h2>Registrar Referido</h2>
 
 <div asp-validation-summary="All"></div>
-
+<div class="form-container">
 <form method="post">
     <div>
         <label>Nombre</label>
@@ -29,4 +29,5 @@
 
     <button type="submit">Registrar</button>
 </form>
+</div>
 @await Html.PartialAsync("_BotonVolver")
