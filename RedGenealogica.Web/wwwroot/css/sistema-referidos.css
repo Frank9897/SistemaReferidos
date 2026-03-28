@@ -50,17 +50,19 @@ h1, h2, h3 {
 
 /* ===== NAVBAR ===== */
 .navbar-custom {
-    background: #0B1020;
-    border-bottom: 1px solid #24304A;
-    padding: 15px 20px;
+    width: 100%;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: #020617;
 }
 
 .nav-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 15px 20px;
+
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
-    margin: auto;
+    justify-content: space-between;
 }
 
 .logo {
@@ -72,13 +74,13 @@ h1, h2, h3 {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
 }
 
 .nav-links a {
-    color: #8EA0C8;
+    color: #cbd5f5;
+    font-size: 14px;
     text-decoration: none;
-    font-weight: 600;
 }
 
 .nav-links a:hover {
@@ -87,6 +89,7 @@ h1, h2, h3 {
 
 .logout-form {
     display: inline;
+    margin: 0;
 }
 
 /* ===== BOTONES (IMPORTANTE) ===== */
@@ -573,4 +576,73 @@ input:focus, select:focus {
     stroke: #38BDF8;
     stroke-width: 1.5;
     opacity: 0.8;
+}
+
+/* MODAL DEL ARBOL */
+.modal-nodo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-contenido {
+    background: #020617;
+    border: 1px solid #38BDF8;
+    padding: 20px;
+    border-radius: 12px;
+    width: 280px;
+    animation: fadeIn 0.3s ease;
+    text-align: center;
+}
+
+#cerrarModal {
+    float: right;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+@keyframes fadeIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* 🔥 TOOLTIP PRO */
+.tooltip-pro {
+    position: absolute;
+    background: linear-gradient(135deg, #020617, #0F172A);
+    color: #EAF0FF;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+    transition: all 0.15s ease-out;
+    z-index: 9999;
+    border: 1px solid #1E293B;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    min-width: 160px;
+}
+
+/* visible */
+.tooltip-pro.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* título */
+.tooltip-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #38BDF8;
+}
+
+/* texto */
+.tooltip-line {
+    font-size: 12px;
+    color: #94A3B8;
 }

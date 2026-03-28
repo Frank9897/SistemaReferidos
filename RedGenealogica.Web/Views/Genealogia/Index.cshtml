@@ -3,12 +3,10 @@
 }
 
 <h2 style="text-align:center;">Árbol Genealógico</h2>
-
+<div id="tooltip" class="tooltip-pro"></div>
 <div class="tree-container">
     <div id="arbol"></div>
 </div>
-
-@await Html.PartialAsync("_BotonVolver")
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
@@ -29,7 +27,7 @@ fetch('/Genealogia/ObtenerArbol')
     const g = svg.append("g");
 
     const zoom = d3.zoom()
-        .scaleExtent([0.5, 2])
+        .scaleExtent([0.5, 1.5])
         .on("zoom", (event) => {
             g.attr("transform", event.transform);
         });
@@ -43,18 +41,17 @@ fetch('/Genealogia/ObtenerArbol')
     root.x0 = width / 2;
     root.y0 = 0;
 
-    const treeLayout = d3.tree()
-        .size([width - 100, height - 150]);
+    const treeLayout = d3.tree().nodeSize([120, 90]);
 
-    // 🔥 colapsar todo menos raíz
-    root.children.forEach(collapse);
+    // 🔥 colapsar inicial
+    if (root.children) root.children.forEach(colapsar);
 
     update(root);
 
-    function collapse(d) {
+    function colapsar(d) {
         if (d.children) {
             d._children = d.children;
-            d._children.forEach(collapse);
+            d._children.forEach(colapsar);
             d.children = null;
         }
     }
@@ -62,47 +59,103 @@ fetch('/Genealogia/ObtenerArbol')
     function update(source) {
 
         treeLayout(root);
+        root.each(d => d.y = d.depth * 110);
 
         const nodes = root.descendants();
         const links = root.links();
 
-        // 🔗 LINKS
-        g.selectAll("path.link")
-        .data(links, d => d.target.id)
-        .join("path")
-        .attr("class", "link")
-        .attr("fill", "none")
-        .attr("stroke", "#38BDF8")
-        .attr("stroke-width", 1.5)
-        .attr("d", d => {
+        // 🔥 centrar
+        const transform = d3.zoomIdentity.translate(width / 2 - root.x, 80);
+        svg.transition().duration(400).call(zoom.transform, transform);
 
-            const offset = 18; // 🔥 mitad del alto del nodo
+        // 🔗 LINKS (ATRÁS)
+        const link = g.selectAll("path.link")
+            .data(links, d => d.target.id);
 
-            const sourceX = d.source.x;
-            const sourceY = d.source.y + offset;
+        link.enter()
+            .append("path")
+            .attr("class", "link")
+            .attr("fill", "none")
+            .attr("stroke", "#38BDF8")
+            .attr("stroke-width", 1.5)
+            .merge(link)
+            .transition()
+            .attr("d", d => `
+                M${d.source.x},${d.source.y + 25}
+                C${d.source.x},${(d.source.y + d.target.y) / 2}
+                 ${d.target.x},${(d.source.y + d.target.y) / 2}
+                 ${d.target.x},${d.target.y - 25}
+            `);
 
-            const targetX = d.target.x;
-            const targetY = d.target.y - offset;
+        link.exit().remove();
 
-            const midY = sourceY + (targetY - sourceY) * 0.1;
-
-            return `
-                M${sourceX},${sourceY}
-                C${sourceX},${midY}
-                ${targetX},${midY}
-                ${targetX},${targetY}
-            `;
-        });
-
-        // 🧠 NODOS
+        // 🧠 NODOS (DELANTE)
         const node = g.selectAll("g.node")
             .data(nodes, d => d.id);
 
         const nodeEnter = node.enter()
             .append("g")
             .attr("class", "node")
-            .attr("transform", d => `translate(${source.x0},${source.y0})`)
+            .attr("transform", d => `translate(${source.x0},${source.y0})`);
+
+        // 🔳 TARJETA
+        nodeEnter.append("rect")
+            .attr("x", -50)
+            .attr("y", -20)
+            .attr("width", 100)
+            .attr("height", 40)
+            .attr("rx", 10)
+            .attr("fill", "#0F172A")
+            .attr("stroke", d => colorPorRango(d.data.rango))
+            .attr("stroke-width", 2);
+
+        // 👤 NOMBRE
+        nodeEnter.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "-2")
+            .attr("fill", "#EAF0FF")
+            .style("font-size", "12px")
+            .text(d => d.data.nombre);
+
+        // 🏷️ ESTADO
+        nodeEnter.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "12")
+            .attr("fill", "#94A3B8")
+            .style("font-size", "10px")
+            .text(d => d.data.estado ?? "");
+
+        // 🟦 TOOLTIP NATIVO (hover)
+        const tooltip = d3.select("#tooltip");
+
+        // 🧠 hover
+        nodeEnter
+            .on("mousemove", (event, d) => {
+
+                tooltip
+                    .html(`
+                        <div class="tooltip-title">${d.data.nombre}</div>
+                        <div class="tooltip-line">Estado: ${d.data.estado ?? "-"}</div>
+                        <div class="tooltip-line">Rango: ${d.data.rango}</div>
+                        <div class="tooltip-line">Puntos: ${d.data.comision ?? 0}</div>
+                    `)
+                    .style("left", (event.pageX + 12) + "px")
+                    .style("top", (event.pageY + 12) + "px")
+                    .classed("show", true);
+            })
+            .on("mouseleave", () => {
+                tooltip.classed("show", false);
+    });
+
+        // 🔥 BOTÓN COLLAPSE (debajo)
+        const toggle = nodeEnter.append("g")
+            .attr("transform", "translate(0, 35)")
+            .style("display", d => (d.children || d._children) ? "block" : "none")
+            .style("cursor", "pointer")
             .on("click", (event, d) => {
+
+                event.stopPropagation();
+
                 if (d.children) {
                     d._children = d.children;
                     d.children = null;
@@ -110,77 +163,47 @@ fetch('/Genealogia/ObtenerArbol')
                     d.children = d._children;
                     d._children = null;
                 }
+
                 update(d);
             });
 
-        // 🔳 caja
-        nodeEnter.append("rect")
-            .attr("x", -45)
-            .attr("y", -18)
-            .attr("width", 90)
-            .attr("height", 36)
-            .attr("rx", 10)
-            .attr("fill", "#0F172A")
-            .attr("stroke", d => colorPorRango(d.data.rango))
-            .attr("stroke-width", 2);
+        toggle.append("circle")
+            .attr("r", 6)
+            .attr("fill", "#020617")
+            .attr("stroke", "#38BDF8")
+            .attr("stroke-width", 1.5)
+            .attr("filter", "drop-shadow(0 0 4px #38BDF8)");
 
-        // 👤 nombre
-        nodeEnter.append("text")
+        toggle.append("text")
             .attr("text-anchor", "middle")
-            .attr("dy", "-2")
-            .attr("fill", "#EAF0FF")
-            .style("font-size", "11px")
-            .style("font-weight", "600")
-            .text(d => d.data.nombre);
-
-        // 🏷️ estado
-        nodeEnter.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "12")
-            .attr("fill", "#94a3b8")
+            .attr("dy", "3")
+            .attr("fill", "#38BDF8")
             .style("font-size", "10px")
-            .text(d => d.data.estado ?? d.data.rango);
+            .style("pointer-events", "none")
+            .text(d => d._children ? "+" : (d.children ? "−" : ""));
 
-        // 🔥 TOOLTIP
-        const tooltip = d3.select("body")
-            .append("div")
-            .style("position", "absolute")
-            .style("background", "#020617")
-            .style("padding", "8px 12px")
-            .style("border-radius", "8px")
-            .style("font-size", "12px")
-            .style("color", "#EAF0FF")
-            .style("border", "1px solid #38BDF8")
-            .style("display", "none");
+        // 🔄 UPDATE
+        const nodeUpdate = nodeEnter.merge(node);
 
-        nodeEnter.on("mouseover", (event, d) => {
-            tooltip
-                .style("display", "block")
-                .html(`
-                    <strong>${d.data.nombre}</strong><br/>
-                    Estado: ${d.data.estado}<br/>
-                    Rango: ${d.data.rango}<br/>
-                    Puntos: ${d.data.comision ?? 0}
-                `);
-        })
-        .on("mousemove", event => {
-            tooltip
-                .style("top", (event.pageY + 10) + "px")
-                .style("left", (event.pageX + 10) + "px");
-        })
-        .on("mouseout", () => {
-            tooltip.style("display", "none");
-        });
-
-        // animación
-        nodeEnter.merge(node)
-            .transition()
-            .duration(300)
+        nodeUpdate.transition()
             .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        nodeUpdate.select("title")
+            .text(d => 
+                `${d.data.nombre}
+Estado: ${d.data.estado ?? "-"}
+Rango: ${d.data.rango}
+Puntos: ${d.data.comision ?? 0}`
+            );
+
+        nodeUpdate.select("text:last-child")
+            .text(d => d._children ? "+" : (d.children ? "−" : ""));
+
+        nodeUpdate.select("g")
+            .style("display", d => (d.children || d._children) ? "block" : "none");
 
         node.exit().remove();
 
-        // guardar posiciones
         nodes.forEach(d => {
             d.x0 = d.x;
             d.y0 = d.y;
@@ -189,7 +212,7 @@ fetch('/Genealogia/ObtenerArbol')
 
 });
 
-// 🎨 colores
+// 🎨 COLORES
 function colorPorRango(rango) {
     switch (rango) {
         case "Diamante": return "#60A5FA";
