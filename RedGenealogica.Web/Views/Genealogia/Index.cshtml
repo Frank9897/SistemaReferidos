@@ -67,26 +67,32 @@ fetch('/Genealogia/ObtenerArbol')
         const links = root.links();
 
         // 🔗 LINKS
-        const link = g.selectAll("path.link")
-            .data(links, d => d.target.id);
+        g.selectAll("path.link")
+        .data(links, d => d.target.id)
+        .join("path")
+        .attr("class", "link")
+        .attr("fill", "none")
+        .attr("stroke", "#38BDF8")
+        .attr("stroke-width", 1.5)
+        .attr("d", d => {
 
-        link.enter()
-            .append("path")
-            .attr("class", "link")
-            .attr("fill", "none")
-            .attr("stroke", "#38BDF8")
-            .attr("stroke-width", 1.5)
-            .merge(link)
-            .transition()
-            .duration(300)
-            .attr("d", d => `
-                M${d.source.x},${d.source.y}
-                C${d.source.x},${(d.source.y + d.target.y) / 2}
-                 ${d.target.x},${(d.source.y + d.target.y) / 2}
-                 ${d.target.x},${d.target.y}
-            `);
+            const offset = 18; // 🔥 mitad del alto del nodo
 
-        link.exit().remove();
+            const sourceX = d.source.x;
+            const sourceY = d.source.y + offset;
+
+            const targetX = d.target.x;
+            const targetY = d.target.y - offset;
+
+            const midY = sourceY + (targetY - sourceY) * 0.4;
+
+            return `
+                M${sourceX},${sourceY}
+                C${sourceX},${midY}
+                ${targetX},${midY}
+                ${targetX},${targetY}
+            `;
+        });
 
         // 🧠 NODOS
         const node = g.selectAll("g.node")

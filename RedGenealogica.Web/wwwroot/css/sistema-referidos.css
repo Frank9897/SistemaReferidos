@@ -568,3 +568,9 @@ input:focus, select:focus {
     width: 100%;
     max-width: 500px;
 }
+
+.link {
+    stroke: #38BDF8;
+    stroke-width: 1.5;
+    opacity: 0.8;
+}
