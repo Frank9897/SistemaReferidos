@@ -10,24 +10,26 @@
     <header class="navbar-custom">
         <div class="nav-container">
             <div class="logo">RedGenealogica</div>
-            <div class="nav-links">
+                <div class="nav-links">
 
-                <a href="/">Inicio</a>
-                <a href="/Usuario/Panel">Panel</a>
-                <a href="/Ranking">Ranking</a>
+                    <a href="/">Inicio</a>
 
-                @if (User.Identity != null && User.Identity.IsAuthenticated)
-                {
-                    <form asp-controller="Autenticacion" asp-action="Logout" method="post" class="logout-form">
-                        <button type="submit" class="btn btn-secondary">Salir</button>
-                    </form>
-                }
-                else
-                {
-                    <a href="/Autenticacion/Login">Login</a>
-                }
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        <a href="/Usuario/Panel">Panel</a>
+                        <a href="/Ranking">Ranking</a>
+                        <a href="/Genealogia">Árbol</a>
 
-            </div>
+                        <form asp-controller="Autenticacion" asp-action="Logout" method="post" class="logout-form">
+                            <button type="submit" class="btn btn-secondary">Salir</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a href="/Autenticacion/Login">Login</a>
+                    }
+
+                </div>
         </div>
     </header>
 

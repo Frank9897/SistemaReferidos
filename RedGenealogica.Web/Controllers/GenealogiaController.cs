@@ -60,7 +60,9 @@ public class GenealogiaController : Controller
             nombre = usuario.Nombres,
             padreId = padreId,
             tipo = "usuario",
-            rango = usuario.TipoRangoActual.ToString()
+            rango = usuario.TipoRangoActual.ToString(),
+            estado = usuario.EstadoUsuario.ToString(), // 🔥 FIX
+            comision = usuario.PuntosAcumulados        // 🔥 EXTRA
         });
 
         // 🔍 traer referidos
@@ -83,7 +85,9 @@ public class GenealogiaController : Controller
                     nombre = r.NombreCompleto,
                     padreId = idActual,
                     tipo = "referido",
-                    rango = r.Estado.ToString()
+                    rango = "Referido",
+                    estado = r.Estado.ToString(),   // 🔥 FIX REAL
+                    comision = 0                    // opcional
                 });
             }
         }
