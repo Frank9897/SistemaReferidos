@@ -126,6 +126,7 @@ button {
     backdrop-filter: blur(10px);
     border: 1px solid #24304A;
     border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     padding: 20px;
     margin-bottom: 20px;
     transition: 0.3s;
@@ -185,6 +186,18 @@ button {
     border-radius: 999px;
     font-size: 12px;
     font-weight: bold;
+}
+
+.badge-success {
+    background: #16a34a;
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.badge-warning {
+    background: #f59e0b;
+    padding: 5px 10px;
+    border-radius: 8px;
 }
 
 .cobre { background: #8B5A2B; }

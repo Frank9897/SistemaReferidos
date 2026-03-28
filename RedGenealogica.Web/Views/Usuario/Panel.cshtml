@@ -87,17 +87,23 @@
             {
                 <tr>
                     <td>@r.NombreCompleto</td>
-                    <td>@r.Estado</td>
+
                     <td>
-                        @if (r.Estado.ToString() == "Pendiente")
+                        <span class="badge @(r.Estado == EstadoUsuario.Activo ? "badge-success" : "badge-warning")">
+                            @r.Estado
+                        </span>
+                    </td>
+
+                    <td>
+                        @if (r.Estado != EstadoUsuario.Activo)
                         {
-                            <a href="/Pagos/Pagar?referidoId=@r.Id" class="btn btn-primary">
+                            <a href="/Pagos/Pagar?referidoId=@r.Id" class="btn btn-primary btn-sm">
                                 💳 Pagar
                             </a>
                         }
                         else
                         {
-                            <span class="badge">Pago Realizado</span>
+                            <span class="text-success">✔ Activo</span>
                         }
                     </td>
                 </tr>
