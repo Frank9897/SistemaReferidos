@@ -1,22 +1,62 @@
 @model List<RedGenealogica.Web.Models.Usuario>
+@using System.Security.Claims;
+
 @{
     ViewBag.MostrarVolver = true;
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
-<h2>Ranking</h2>
 
-<table class="table">
-    <tr>
-        <th>#</th>
-        <th>Usuario</th>
-        <th>Puntos</th>
-    </tr>
+<h2 class="ranking-title">🏆 Ranking Global</h2>
 
-@for (int i = 0; i < Model.Count; i++)
-{
-    <tr>
-        <td>@(i + 1)</td>
-        <td>@Model[i].Nombres</td>
-        <td>@Model[i].PuntosAcumulados</td>
-    </tr>
-}
-</table>
+<div class="ranking-lux">
+
+    @for (int i = 0; i < Model.Count; i++)
+    {
+        var user = Model[i];
+        var esTop1 = i == 0;
+        var esTop2 = i == 1;
+        var esTop3 = i == 2;
+        var esActual = user.Id.ToString() == userId;
+
+        <div class="ranking-card-lux 
+                    @(esTop1 ? "top1" : "") 
+                    @(esTop2 ? "top2" : "") 
+                    @(esTop3 ? "top3" : "") 
+                    @(esActual ? "yo" : "")">
+
+            <div class="ranking-left">
+                <div class="ranking-pos">#@(i + 1)</div>
+
+                <div class="ranking-user">
+                    <div class="ranking-name">@user.Nombres</div>
+                    <div class="ranking-points">@user.PuntosAcumulados pts</div>
+                </div>
+            </div>
+
+            <div class="ranking-right">
+
+                @if (esTop1)
+                {
+                    <span class="ranking-icon">💎👑</span>
+                }
+                else if (esTop2)
+                {
+                    <span class="ranking-icon">🥈</span>
+                }
+                else if (esTop3)
+                {
+                    <span class="ranking-icon">🥉</span>
+                }
+
+            </div>
+
+        </div>
+
+        @if (i < Model.Count - 1)
+        {
+            <div class="ranking-link"></div>
+        }
+    }
+
+</div>
+@await Html.PartialAsync("_BotonVolver")

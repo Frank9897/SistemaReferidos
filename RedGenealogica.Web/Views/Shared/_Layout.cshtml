@@ -4,14 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - RedGenealogica</title>
-    <link rel="stylesheet" href="~/css/sistema-referidos.css" />
+    <link rel="stylesheet" href="~/css/sistema-referidos.css" asp-append-version="true" />
 </head>
-@if (ViewBag.MostrarVolver == true)
-{
-    <div style="margin-bottom:20px;">
-        <a href="javascript:history.back()" class="btn btn-secondary">← Volver</a>
-    </div>
-}
 <body>
     <header class="navbar-custom">
         <div class="nav-container">

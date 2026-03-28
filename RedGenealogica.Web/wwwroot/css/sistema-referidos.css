@@ -126,7 +126,7 @@ button {
     backdrop-filter: blur(10px);
     border: 1px solid #24304A;
     border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);    
     padding: 20px;
     margin-bottom: 20px;
     transition: 0.3s;
@@ -355,4 +355,93 @@ input:focus, select:focus {
 .node:hover circle {
     transform: scale(1.1);
     filter: drop-shadow(0 0 12px rgba(59,130,246,1));
+}
+
+/* ===== RANKING LUJOSO ===== */
+
+.ranking-title {
+    margin-bottom: 20px;
+}
+
+.ranking-lux {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ranking-card-lux {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #0f172a, #020617);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: 0.3s;
+    position: relative;
+}
+
+.ranking-card-lux:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(56,189,248,0.2);
+}
+
+.ranking-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.ranking-pos {
+    font-size: 18px;
+    font-weight: bold;
+    color: #38bdf8;
+}
+
+.ranking-user {
+    display: flex;
+    flex-direction: column;
+}
+
+.ranking-name {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.ranking-points {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.ranking-icon {
+    font-size: 24px;
+}
+
+/* 🔥 TOP 1 */
+.top1 {
+    background: linear-gradient(145deg, #0ea5e9, #1e3a8a);
+    box-shadow: 0 0 25px rgba(56,189,248,0.5);
+}
+
+/* 🥈 */
+.top2 {
+    border: 1px solid #94a3b8;
+}
+
+/* 🥉 */
+.top3 {
+    border: 1px solid #b45309;
+}
+
+/* 👤 usuario actual */
+.yo {
+    border: 2px solid #22c55e;
+}
+
+/* 🔗 conexión tipo lista */
+.ranking-link {
+    width: 2px;
+    height: 15px;
+    background: linear-gradient(to bottom, #38bdf8, transparent);
+    margin-left: 30px;
 }
