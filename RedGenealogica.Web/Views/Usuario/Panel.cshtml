@@ -3,7 +3,7 @@
 <div class="main-container">
 
     <!-- HEADER -->
-    <div class="card-main">
+    <div class="card">
         <h1 class="titulo-principal">Hola, @Model.Usuario.Nombres 👋</h1>
         <p class="subtitulo">Sigue construyendo tu red y sube de nivel</p>
 
@@ -60,7 +60,7 @@
 
     
     <!-- ACCIONES -->
-    <div class="card-main">
+    <div class="card">
         <h3>Acciones rápidas</h3>
 
         <br />
@@ -125,7 +125,7 @@
             @foreach (var m in Model.UltimosMovimientos)
             {
                 <tr>
-                    <td>@m.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@m.FechaMovimiento.ToString("dd/MM/yyyy")</td>
                     <td>@m.Motivo</td>
                     <td>@m.CantidadPuntos</td>
                     <td>@m.Monto</td>
