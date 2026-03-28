@@ -5,7 +5,7 @@
     ViewBag.MostrarVolver = true;
     var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
-
+<div class="main-container">
 <h2 class="ranking-title">🏆 Ranking Global</h2>
 
 <div class="ranking-lux">
@@ -60,3 +60,4 @@
 
 </div>
 @await Html.PartialAsync("_BotonVolver")
+</div>

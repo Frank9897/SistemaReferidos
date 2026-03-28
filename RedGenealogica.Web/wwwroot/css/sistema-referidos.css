@@ -20,6 +20,8 @@ a:hover {
 }
 
 
+
+
 /* ===== CONTENEDOR ===== */
 
 .container {
@@ -285,6 +287,7 @@ button {
 /* ===== FORMULARIOS ===== */
 form {
     max-width: 600px;
+    margin-top: 20px;
 }
 
 input {
@@ -537,4 +540,26 @@ input:focus, select:focus {
 .redirect {
     margin-top: 20px;
     font-size: 14px;
+}
+
+/* CONTENEDOR GENERAL DE TODAS LAS VISTAS */
+.main-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    width: 100%;
+}
+
+/* CENTRADO VERTICAL SOLO CUANDO HAY POCO CONTENIDO */
+.centered-page {
+    min-height: calc(100vh - 120px); /* ajusta según navbar/footer */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* CONTENIDO INTERNO CENTRADO */
+.center-box {
+    width: 100%;
+    max-width: 500px;
 }
