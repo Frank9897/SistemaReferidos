@@ -445,3 +445,38 @@ input:focus, select:focus {
     background: linear-gradient(to bottom, #38bdf8, transparent);
     margin-left: 30px;
 }
+
+.pago-resultado {
+    max-width: 500px;
+    margin: 80px auto;
+    padding: 30px;
+    text-align: center;
+    border-radius: 16px;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.pago-resultado h2 {
+    margin-bottom: 15px;
+}
+
+.pago-resultado p {
+    color: #94a3b8;
+}
+
+.pago-resultado.success {
+    border: 1px solid #22c55e;
+}
+
+.pago-resultado.error {
+    border: 1px solid #ef4444;
+}
+
+.pago-resultado.pending {
+    border: 1px solid #f59e0b;
+}
+
+.redirect {
+    margin-top: 20px;
+    font-size: 14px;
+}

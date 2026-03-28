@@ -1,2 +1,31 @@
-<h2>⏳ Pago pendiente</h2>
-<a href="/Usuario/Panel" class="btn btn-primary">Volver</a>
+@{
+    Layout = "_Layout";
+}
+
+<div class="pago-resultado pending">
+    <h2>⏳ Pago pendiente</h2>
+
+    <p>
+        Tu pago está siendo procesado. 
+        Esto puede tardar unos minutos dependiendo del medio de pago.
+    </p>
+
+    <p class="redirect">
+        Serás redirigido al panel en <span id="contador">3</span> segundos...
+    </p>
+</div>
+
+<script>
+    let segundos = 3;
+    const contador = document.getElementById("contador");
+
+    const intervalo = setInterval(() => {
+        segundos--;
+        contador.innerText = segundos;
+
+        if (segundos <= 0) {
+            clearInterval(intervalo);
+            window.location.href = "/Usuario/Panel";
+        }
+    }, 1000);
+</script>

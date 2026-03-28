@@ -1,2 +1,31 @@
-<h2>✅ Pago exitoso</h2>
-<a href="/Usuario/Panel" class="btn btn-primary">Volver</a>
+@{
+    Layout = "_Layout";
+}
+
+<div class="pago-resultado success">
+    <h2>✅ ¡Pago exitoso!</h2>
+
+    <p>
+        Gracias por realizar tu pago. Tu cuenta ha sido activada correctamente
+        y ya puedes comenzar a construir tu red de referidos 🚀
+    </p>
+
+    <p class="redirect">
+        Serás redirigido al panel en <span id="contador">3</span> segundos...
+    </p>
+</div>
+
+<script>
+    let segundos = 3;
+    const contador = document.getElementById("contador");
+
+    const intervalo = setInterval(() => {
+        segundos--;
+        contador.innerText = segundos;
+
+        if (segundos <= 0) {
+            clearInterval(intervalo);
+            window.location.href = "/Usuario/Panel";
+        }
+    }, 1000);
+</script>
