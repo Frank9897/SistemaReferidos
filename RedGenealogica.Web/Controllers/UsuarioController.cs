@@ -6,6 +6,8 @@ using RedGenealogica.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.ViewModels;
+using RedGenealogica.Web.Enumeraciones;
+using System.Security.Claims;
 namespace RedGenealogica.Web.Controllers;
 
 [Authorize]
@@ -35,13 +37,81 @@ public class UsuarioController : Controller
             .Where(r => r.UsuarioId == usuario.Id)
             .ToListAsync();
 
+        var totalReferidosActivos = await _contexto.Referidos
+            .CountAsync(r => r.UsuarioId == usuario.Id && r.Estado == EstadoUsuario.Activo);
+
+        var totalComisiones = await _contexto.MovimientosPuntos
+            .Where(m => m.UsuarioId == usuario.Id)
+            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
+
+        var ultimosMovimientos = await _contexto.MovimientosPuntos
+            .Where(m => m.UsuarioId == usuario.Id)
+            .OrderByDescending(m => m.FechaMovimiento)
+            .Take(5)
+            .ToListAsync();
+
+        var todosLosUsuarios = await _contexto.Users
+            .AsNoTracking()
+            .ToListAsync();
+
+        int referidosIndirectos = ContarReferidosIndirectos(usuario.Id, todosLosUsuarios);
+
+        var rangoActual = await _contexto.RangosUsuario
+            .FirstOrDefaultAsync(r => r.TipoRango == usuario.TipoRangoActual);
+
+        var siguienteRango = await _contexto.RangosUsuario
+            .Where(r => r.Orden > (rangoActual != null ? rangoActual.Orden : 0))
+            .OrderBy(r => r.Orden)
+            .FirstOrDefaultAsync();
+
+        int puntosFaltantes = siguienteRango != null
+            ? Math.Max(siguienteRango.PuntosMinimos - usuario.PuntosAcumulados, 0)
+            : 0;
+
+        int progreso = 100;
+        if (rangoActual != null && siguienteRango != null)
+        {
+            var baseRango = siguienteRango.PuntosMinimos - rangoActual.PuntosMinimos;
+            var avanzados = usuario.PuntosAcumulados - rangoActual.PuntosMinimos;
+
+            if (baseRango > 0)
+            {
+                progreso = (int)Math.Clamp((avanzados * 100m) / baseRango, 0, 100);
+            }
+        }
+
         var modelo = new PanelUsuarioViewModel
         {
             Usuario = usuario,
-            Referidos = referidos
+            Referidos = referidos,
+            TotalReferidosDirectos = referidos.Count,
+            TotalReferidosIndirectos = referidosIndirectos,
+            TotalReferidosActivos = totalReferidosActivos,
+            TotalComisiones = totalComisiones,
+            SiguienteRango = siguienteRango?.NombreVisible,
+            PuntosFaltantesParaSiguienteRango = puntosFaltantes,
+            ProgresoRangoPorcentaje = progreso,
+            UltimosMovimientos = ultimosMovimientos
         };
 
         return View(modelo);
+    }
+
+    private static int ContarReferidosIndirectos(int usuarioId, List<Usuario> usuarios)
+    {
+        var hijos = usuarios.Where(u => u.IdUsuarioPadre == usuarioId).ToList();
+        if (hijos.Count == 0)
+            return 0;
+
+        int total = 0;
+
+        foreach (var hijo in hijos)
+        {
+            total += 1;
+            total += ContarReferidosIndirectos(hijo.Id, usuarios);
+        }
+
+        return total - hijos.Count;
     }
 
     [HttpPost]
@@ -52,13 +122,29 @@ public class UsuarioController : Controller
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
 
-        // ⚠️ producto fijo por ahora (luego lo haremos dinámico)
-        int productoId = 1;
-        decimal monto = 100;
+        // 🔍 Buscar referido pendiente del usuario
+        var referido = await _contexto.Referidos
+            .Include(r => r.Producto)
+            .FirstOrDefaultAsync(r =>
+                r.UsuarioId == usuario.Id &&
+                r.Estado != EstadoUsuario.Activo);
 
-        await _servicioPagos.CrearPagoYActivarUsuarioAsync(usuario.Id, productoId, monto);
+        if (referido == null)
+        {
+            TempData["Error"] = "No tienes referidos pendientes para activar.";
+            return RedirectToAction("Panel");
+        }
 
-        return RedirectToAction("Panel");
+        if (referido.Producto == null)
+        {
+            TempData["Error"] = "El referido no tiene producto asignado.";
+            return RedirectToAction("Panel");
+        }
+
+        // 💳 REDIRIGIR A MERCADOPAGO (flujo real)
+        var urlPago = await _servicioPagos.CrearPreferencia(referido.Id);
+
+        return Redirect(urlPago);
     }
     
 }

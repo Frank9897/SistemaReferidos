@@ -21,7 +21,7 @@ public class ServicioPagos
         _http = new HttpClient();
     }
 
-    public async Task<Pago> CrearPagoYActivarUsuarioAsync(int usuarioId, int productoId, decimal monto)
+    public async Task<Pago> CrearPagoSimuladoAsync(int usuarioId, int productoId, decimal monto)
     {
         var usuario = await _contexto.Users.FirstOrDefaultAsync(x => x.Id == usuarioId);
 

@@ -23,17 +23,17 @@
         </div>
 
         <div class="card">
-            <div class="metric metric-green">@Model.Referidos.Count</div>
+            <div class="metric metric-green">@Model.TotalReferidosDirectos</div>
             <div class="metric-label">Referidos directos</div>
         </div>
 
         <div class="card">
-            <div class="metric metric-cyan">0</div>
+            <div class="metric metric-cyan">@Model.TotalReferidosIndirectos</div>
             <div class="metric-label">Referidos indirectos</div>
         </div>
 
         <div class="card">
-            <div class="metric metric-purple">@Model.Usuario.PuntosAcumulados</div>
+            <div class="metric metric-purple">@Model.TotalReferidosDirectos + @Model.TotalReferidosIndirectos</div>
             <div class="metric-label">Total red</div>
         </div>
 
@@ -44,18 +44,21 @@
         <h3>Progreso al siguiente rango</h3>
 
         @{
-            int puntos = Model.Usuario.PuntosAcumulados;
-            int siguiente = 1000;
-            int progreso = (puntos * 100) / siguiente;
+            int progreso = Model.ProgresoRangoPorcentaje;
         }
 
         <div class="progress-bar">
             <div class="progress-fill" style="width:@progreso%"></div>
         </div>
 
-        <p class="subtitulo">@((siguiente - puntos)) puntos restantes</p>
-    </div>
+        <p class="subtitulo">@Model.PuntosFaltantesParaSiguienteRango puntos restantes</p>
+            @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
+            {
+                <p class="subtitulo">Siguiente rango: @Model.SiguienteRango</p>
+            }
+            </div>
 
+    
     <!-- ACCIONES -->
     <div class="card">
         <h3>Acciones rápidas</h3>
@@ -101,5 +104,27 @@
             }
         </table>
     </div>
+    <!-- ULTIMO MOVIMIENTO -->
+    <div class="card">
+        <h3>Últimos movimientos</h3>
 
+        <table class="table">
+            <tr>
+                <th>Fecha</th>
+                <th>Motivo</th>
+                <th>Puntos</th>
+                <th>Monto</th>
+            </tr>
+
+            @foreach (var m in Model.UltimosMovimientos)
+            {
+                <tr>
+                    <td>@m.FechaMovimiento.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@m.Motivo</td>
+                    <td>@m.CantidadPuntos</td>
+                    <td>@m.Monto</td>
+                </tr>
+            }
+        </table>
+    </div>
 </div>
