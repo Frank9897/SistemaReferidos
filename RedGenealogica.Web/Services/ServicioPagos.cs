@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Net.Http;
+using RedGenealogica.Web.Services;
 namespace RedGenealogica.Web.Services;
 
 public class ServicioPagos
@@ -13,11 +14,16 @@ public class ServicioPagos
     private readonly ContextoAplicacion _contexto;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _http;
+    private readonly ServicioReferidos _servicioReferidos;
 
-    public ServicioPagos(ContextoAplicacion contexto, IConfiguration configuration)
+    public ServicioPagos(
+    ContextoAplicacion contexto,
+    IConfiguration configuration,
+    ServicioReferidos servicioReferidos)
     {
         _contexto = contexto;
         _configuration = configuration;
+        _servicioReferidos = servicioReferidos;
         _http = new HttpClient();
     }
 
@@ -250,7 +256,8 @@ public class ServicioPagos
 
         // 🔹 Confirmar pago
         await ConfirmarPago(referidoId);
-
+        // 🔥 convertir referido a usuario
+        await _servicioReferidos.ConvertirReferidoAUsuarioAsync(referidoId);
         // 🔹 Guardar log (idempotencia)
         _contexto.RegistrosWebhook.Add(new RegistroWebhook
         {
