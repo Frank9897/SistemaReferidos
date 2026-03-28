@@ -44,4 +44,5 @@ public class Referido
 
     public int? UsuarioConvertidoId { get; set; }
     public Usuario? UsuarioConvertido { get; set; }
+    public bool PagoConfirmado { get; set; } = false;
 }

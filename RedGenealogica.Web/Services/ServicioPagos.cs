@@ -5,6 +5,7 @@ using RedGenealogica.Web.Enumeraciones;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http;
 namespace RedGenealogica.Web.Services;
 
 public class ServicioPagos
@@ -79,6 +80,17 @@ public class ServicioPagos
             var porcentaje = niveles[nivelActual];
             var comision = montoBase * porcentaje;
 
+            var existe = await _contexto.MovimientosPuntos
+                .AnyAsync(x => x.UsuarioId == padre.Id
+                            && x.Nivel == nivelActual
+                            && x.Motivo.Contains("Comisión"));
+
+            if (existe)
+            {
+                usuarioActualId = padre.Id;
+                nivelActual++;
+                continue;
+            }
             // 💰 guardar comisión
             _contexto.MovimientosPuntos.Add(new MovimientoPuntos
             {
@@ -99,27 +111,43 @@ public class ServicioPagos
 
     public async Task ConfirmarPago(int referidoId)
     {
-        var referido = await _contexto.Referidos
-            .Include(r => r.Usuario)
-            .FirstOrDefaultAsync(r => r.Id == referidoId);
+        using var transaccion = await _contexto.Database.BeginTransactionAsync();
 
-        if (referido == null)
-            return;
+        try
+        {
+            var referido = await _contexto.Referidos
+                .Include(r => r.Usuario)
+                .FirstOrDefaultAsync(r => r.Id == referidoId);
 
-        if (referido.Estado == EstadoUsuario.Activo)
-            return;
+            if (referido == null)
+                return;
 
-        // 🟢 activar referido
-        referido.Estado = EstadoUsuario.Activo;
-        referido.FechaActivacion = DateTime.UtcNow;
+            // 🔒 VALIDACIÓN FUERTE
+            if (referido.Estado == EstadoUsuario.Activo)
+            {
+                await transaccion.RollbackAsync();
+                return;
+            }
+            referido.PagoConfirmado = true;
+            // 🟢 activar referido
+            referido.Estado = EstadoUsuario.Activo;
+            referido.FechaActivacion = DateTime.UtcNow;
 
-        // 🎯 sumar puntos
-        referido.Usuario!.PuntosAcumulados += 100;
+            // 🎯 puntos (solo una vez)
+            referido.Usuario!.PuntosAcumulados += 100;
 
-        // 💰 generar comisiones
-        await GenerarComisiones(referido.UsuarioId, 100);
+            await _contexto.SaveChangesAsync();
 
-        await _contexto.SaveChangesAsync();
+            // 💰 comisiones (solo después de guardar)
+            await GenerarComisiones(referido.UsuarioId, 100);
+
+            await transaccion.CommitAsync();
+        }
+        catch
+        {
+            await transaccion.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<string> CrearPreferencia(int referidoId)
@@ -179,5 +207,60 @@ public class ServicioPagos
         }
 
         return initPoint.GetString()!;
+    }
+
+    public async Task<bool> ProcesarWebhookPagoAsync(string idPago)
+    {
+        // 🔹 Evitar duplicados
+        var yaProcesado = await _contexto.RegistrosWebhook
+            .AnyAsync(x => x.IdPago == idPago);
+
+        if (yaProcesado)
+            return false;
+
+        var accessToken = _configuration["MercadoPago:AccessToken"];
+
+        var cliente = new HttpClient();
+        cliente.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await cliente.GetAsync($"https://api.mercadopago.com/v1/payments/{idPago}");
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception("Error al consultar MercadoPago");
+
+        var content = await response.Content.ReadAsStringAsync();
+        var paymentJson = JsonDocument.Parse(content);
+
+        var status = paymentJson.RootElement
+            .GetProperty("status")
+            .GetString();
+
+        if (status != "approved")
+            return false;
+
+        var externalReference = paymentJson.RootElement
+            .GetProperty("external_reference")
+            .GetString();
+
+        if (string.IsNullOrEmpty(externalReference))
+            return false;
+
+        int referidoId = int.Parse(externalReference);
+
+        // 🔹 Confirmar pago
+        await ConfirmarPago(referidoId);
+
+        // 🔹 Guardar log (idempotencia)
+        _contexto.RegistrosWebhook.Add(new RegistroWebhook
+        {
+            IdPago = idPago,
+            Estado = status!,
+            FechaRegistro = DateTime.UtcNow
+        });
+
+        await _contexto.SaveChangesAsync();
+
+        return true;
     }
 }

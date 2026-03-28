@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RedGenealogica.Web.Data;
@@ -11,9 +12,11 @@ using RedGenealogica.Web.Data;
 namespace RedGenealogica.Web.Migrations
 {
     [DbContext(typeof(ContextoAplicacion))]
-    partial class ContextoAplicacionModelSnapshot : ModelSnapshot
+    [Migration("20260327234942_AddRegistroWebhook")]
+    partial class AddRegistroWebhook
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -422,9 +425,6 @@ namespace RedGenealogica.Web.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<bool>("PagoConfirmado")
-                        .HasColumnType("boolean");
-
                     b.Property<int?>("PagoReferidoId")
                         .HasColumnType("integer");
 
@@ -457,30 +457,6 @@ namespace RedGenealogica.Web.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Referidos", (string)null);
-                });
-
-            modelBuilder.Entity("RedGenealogica.Web.Models.RegistroWebhook", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Estado")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("FechaRegistro")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("IdPago")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RegistrosWebhook");
                 });
 
             modelBuilder.Entity("RedGenealogica.Web.Models.Usuario", b =>
@@ -596,6 +572,30 @@ namespace RedGenealogica.Web.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("RedGenealogicaReferidos.Models.RegistroWebhook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IdPago")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RegistrosWebhook");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

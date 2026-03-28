@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
-
 namespace RedGenealogica.Web.Data;
 
 public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, int>
@@ -18,6 +17,7 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
     public DbSet<Referido> Referidos => Set<Referido>();
     public DbSet<MovimientoPuntos> MovimientosPuntos => Set<MovimientoPuntos>();
     public DbSet<RangoUsuario> RangosUsuario => Set<RangoUsuario>();
+    public DbSet<RegistroWebhook> RegistrosWebhook { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
