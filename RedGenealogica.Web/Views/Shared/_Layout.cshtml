@@ -6,6 +6,12 @@
     <title>@ViewData["Title"] - RedGenealogica</title>
     <link rel="stylesheet" href="~/css/sistema-referidos.css" />
 </head>
+@if (ViewBag.MostrarVolver == true)
+{
+    <div style="margin-bottom:20px;">
+        <a href="javascript:history.back()" class="btn btn-secondary">← Volver</a>
+    </div>
+}
 <body>
     <header class="navbar-custom">
         <div class="nav-container">
@@ -30,14 +36,6 @@
             </div>
         </div>
     </header>
-
-    <div class="barra-volver">
-        <div class="container-dashboard">
-            <button type="button" class="btn-volver" onclick="history.back();">
-                ← Volver
-            </button>
-        </div>
-    </div>
 
     <main class="container-dashboard">
         @RenderBody()
