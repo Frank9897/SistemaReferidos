@@ -1,10 +1,16 @@
+// ============================================================
+// AutenticacionController.cs
+// Ubicación: Controllers/AutenticacionController.cs
+// ============================================================
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
-using RedGenealogica.Web.Enumeraciones;
-using Microsoft.AspNetCore.Authorization;
+
 namespace RedGenealogica.Web.Controllers;
 
 [AllowAnonymous]
@@ -24,55 +30,61 @@ public class AutenticacionController : Controller
         _userManager = userManager;
     }
 
-    
-
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/Registro
+    // Muestra el formulario de registro.
+    // Si la URL trae ?codigo=XXXX, pre-rellena el campo de código padre.
+    // ----------------------------------------------------------------
     [HttpGet]
-    public IActionResult Registro()
+    public IActionResult Registro(string? codigo = null)
     {
-        return View();
+        var modelo = new RegistroUsuarioViewModel
+        {
+            CodigoReferidoPadre = codigo
+        };
+        return View(modelo);
     }
 
+    // ----------------------------------------------------------------
+    // POST /Autenticacion/Registro
+    // [BUG-6 + BUG-7 CORREGIDOS] Delega toda la creación al servicio.
+    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> Registro(RegistroUsuarioViewModel modelo)
     {
         if (!ModelState.IsValid)
             return View(modelo);
 
-        var codigo = Guid.NewGuid().ToString("N").Substring(0, 8);
+        var (usuario, errores) = await _servicioUsuarios.RegistrarAsync(modelo);
 
-        var usuario = new Usuario
+        if (usuario == null)
         {
-            UserName = modelo.Email,
-            Email = modelo.Email,
-            Nombres = modelo.Nombres,
-            Apellidos = modelo.Apellidos,
-            CodigoReferido = codigo,
-            EstadoUsuario = EstadoUsuario.Pendiente
-        };
-
-        var resultado = await _userManager.CreateAsync(usuario, modelo.Password);
-
-        if (!resultado.Succeeded)
-        {
-            foreach (var error in resultado.Errors)
-            {
-                ModelState.AddModelError("", error.Description);
-            }
+            foreach (var error in errores)
+                ModelState.AddModelError("", error);
 
             return View(modelo);
         }
 
+        // Loguear automáticamente después del registro
         await _signInManager.SignInAsync(usuario, isPersistent: true);
 
         return RedirectToAction("Panel", "Usuario");
     }
 
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/Login
+    // ----------------------------------------------------------------
     [HttpGet]
     public IActionResult Login()
     {
         return View();
     }
 
+    // ----------------------------------------------------------------
+    // POST /Autenticacion/Login
+    // [MEJORA] Verifica que el usuario no esté suspendido antes de
+    // permitir el acceso, sin importar que las credenciales sean correctas.
+    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> Login(LoginViewModel modelo)
     {
@@ -87,6 +99,15 @@ public class AutenticacionController : Controller
             return View(modelo);
         }
 
+        // [MEJORA] Bloquear acceso a usuarios suspendidos o baneados
+        // Esto es independiente de la contraseña
+        if (usuario.EstadoUsuario == EstadoUsuario.Suspendido ||
+            usuario.EstadoUsuario == EstadoUsuario.Inactivo)
+        {
+            ModelState.AddModelError("", "Tu cuenta está suspendida. Contactá con soporte.");
+            return View(modelo);
+        }
+
         var resultado = await _signInManager.PasswordSignInAsync(
             usuario.UserName!,
             modelo.Password,
@@ -95,14 +116,18 @@ public class AutenticacionController : Controller
 
         if (!resultado.Succeeded)
         {
-            ModelState.AddModelError("", "Credenciales incorrectas");
+            ModelState.AddModelError("", "Contraseña incorrecta");
             return View(modelo);
         }
 
         return RedirectToAction("Panel", "Usuario");
     }
 
+    // ----------------------------------------------------------------
+    // POST /Autenticacion/Logout
+    // ----------------------------------------------------------------
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> Logout()
     {
         await _signInManager.SignOutAsync();

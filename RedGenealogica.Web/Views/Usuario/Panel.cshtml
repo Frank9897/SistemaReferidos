@@ -1,5 +1,6 @@
 @model RedGenealogica.Web.ViewModels.PanelUsuarioViewModel
 @using RedGenealogica.Web.Enumeraciones
+
 <div class="main-container">
 
     <!-- HEADER -->
@@ -33,7 +34,7 @@
         </div>
 
         <div class="card">
-            <div class="metric metric-purple">@Model.TotalReferidosDirectos + @Model.TotalReferidosIndirectos</div>
+            <div class="metric metric-purple">@(Model.TotalReferidosDirectos + Model.TotalReferidosIndirectos)</div>
             <div class="metric-label">Total red</div>
         </div>
 
@@ -52,13 +53,12 @@
         </div>
 
         <p class="subtitulo">@Model.PuntosFaltantesParaSiguienteRango puntos restantes</p>
-            @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
-            {
-                <p class="subtitulo">Siguiente rango: @Model.SiguienteRango</p>
-            }
-            </div>
+        @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
+        {
+            <p class="subtitulo">Siguiente rango: @Model.SiguienteRango</p>
+        }
+    </div>
 
-    
     <!-- ACCIONES -->
     <div class="card">
         <h3>Acciones rápidas</h3>
@@ -89,13 +89,15 @@
                     <td>@r.NombreCompleto</td>
 
                     <td>
-                        <span class="badge @(r.Estado == EstadoUsuario.Activo ? "badge-success" : "badge-warning")">
+                        @* [CORREGIDO] Era EstadoUsuario.Activo → EstadoReferido.Convertido *@
+                        <span class="badge @(r.Estado == EstadoReferido.Convertido ? "badge-success" : "badge-warning")">
                             @r.Estado
                         </span>
                     </td>
 
                     <td>
-                        @if (r.Estado != EstadoUsuario.Activo)
+                        @* Muestra botón de pago solo si el referido aún no fue convertido *@
+                        @if (r.Estado != EstadoReferido.Convertido)
                         {
                             <a href="/Pagos/Pagar?referidoId=@r.Id" class="btn btn-primary btn-sm">
                                 💳 Pagar
@@ -103,14 +105,15 @@
                         }
                         else
                         {
-                            <span class="text-success">✔ Activo</span>
+                            <span class="text-success">✔ Convertido</span>
                         }
                     </td>
                 </tr>
             }
         </table>
     </div>
-    <!-- ULTIMO MOVIMIENTO -->
+
+    <!-- ULTIMOS MOVIMIENTOS -->
     <div class="card">
         <h3>Últimos movimientos</h3>
 
