@@ -2,19 +2,11 @@
 // AdministradorController.cs
 // Ubicación: Controllers/AdministradorController.cs
 //
-// NUEVO ARCHIVO - estaba vacío en el proyecto original.
-//
-// Implementa las funciones básicas de administración:
-//   - Listar todos los usuarios con su estado
-//   - Suspender / reactivar usuarios
-//   - Ver el detalle de un usuario (referidos, pagos, comisiones)
-//
-// SEGURIDAD: este controller solo es accesible para usuarios con
-// el rol "Admin". Ese rol debe asignarse manualmente en la BD o
-// mediante una seed inicial en Program.cs.
-//
-// TODO: agregar seed de rol Admin en Program.cs
-// TODO: agregar vistas para cada acción
+// NUEVO CONTENIDO — panel admin completo con:
+//   - Gestión de usuarios (listar, suspender, reactivar, detalle)
+//   - Gestión de productos (listar, crear, editar, activar/desactivar)
+//   - Gestión de retiros (listar pendientes, aprobar, rechazar)
+//   - Conversión de referido a usuario (acción manual del admin)
 // ============================================================
 
 using Microsoft.AspNetCore.Authorization;
@@ -24,29 +16,35 @@ using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
+using RedGenealogica.Web.Services;
+using System.Security.Claims;
 
 namespace RedGenealogica.Web.Controllers;
 
-// Solo usuarios con rol "Admin" pueden acceder a este controller
 [Authorize(Roles = "Admin")]
 public class AdministradorController : Controller
 {
     private readonly ContextoAplicacion _contexto;
     private readonly UserManager<Usuario> _userManager;
+    private readonly ServicioReferidos _servicioReferidos;
+    private readonly ServicioRetiros _servicioRetiros;
 
     public AdministradorController(
         ContextoAplicacion contexto,
-        UserManager<Usuario> userManager)
+        UserManager<Usuario> userManager,
+        ServicioReferidos servicioReferidos,
+        ServicioRetiros servicioRetiros)
     {
         _contexto = contexto;
         _userManager = userManager;
+        _servicioReferidos = servicioReferidos;
+        _servicioRetiros = servicioRetiros;
     }
 
-    // ----------------------------------------------------------------
-    // GET /Administrador/Usuarios
-    // Lista todos los usuarios del sistema con su estado y estadísticas.
-    // Permite buscar por nombre o email.
-    // ----------------------------------------------------------------
+    // ================================================================
+    // USUARIOS
+    // ================================================================
+
     [HttpGet]
     public async Task<IActionResult> Usuarios(string? busqueda)
     {
@@ -69,19 +67,11 @@ public class AdministradorController : Controller
         return View(usuarios);
     }
 
-    // ----------------------------------------------------------------
-    // GET /Administrador/DetalleUsuario/{id}
-    // Muestra el detalle completo de un usuario: referidos, pagos,
-    // movimientos de puntos y su posición en el árbol.
-    // ----------------------------------------------------------------
     [HttpGet]
     public async Task<IActionResult> DetalleUsuario(int id)
     {
-        var usuario = await _contexto.Users
-            .FirstOrDefaultAsync(u => u.Id == id);
-
-        if (usuario == null)
-            return NotFound();
+        var usuario = await _contexto.Users.FirstOrDefaultAsync(u => u.Id == id);
+        if (usuario == null) return NotFound();
 
         var referidos = await _contexto.Referidos
             .Where(r => r.UsuarioId == id)
@@ -107,56 +97,183 @@ public class AdministradorController : Controller
         return View(usuario);
     }
 
-    // ----------------------------------------------------------------
-    // POST /Administrador/Suspender/{id}
-    // Suspende un usuario. No puede loguearse mientras esté suspendido.
-    // El admin debe proveer un motivo (para auditoría futura).
-    // ----------------------------------------------------------------
     [HttpPost]
-    public async Task<IActionResult> Suspender(int id, string motivo = "Sin motivo especificado")
+    public async Task<IActionResult> Suspender(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
+        if (usuario == null) return NotFound();
 
-        if (usuario == null)
-            return NotFound();
-
-        // No permitir auto-suspensión ni suspender a otro admin
-        var esAdmin = await _userManager.IsInRoleAsync(usuario, "Admin");
-        if (esAdmin)
+        if (await _userManager.IsInRoleAsync(usuario, "Admin"))
         {
             TempData["Error"] = "No podés suspender a otro administrador.";
             return RedirectToAction("Usuarios");
         }
 
         usuario.EstadoUsuario = EstadoUsuario.Suspendido;
-
         await _contexto.SaveChangesAsync();
 
-        // TODO: registrar en tabla de auditoría: quién suspendió, cuándo, por qué
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} suspendido.";
-
         return RedirectToAction("DetalleUsuario", new { id });
     }
 
-    // ----------------------------------------------------------------
-    // POST /Administrador/Reactivar/{id}
-    // Reactiva un usuario suspendido. Vuelve a estado Activo.
-    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> Reactivar(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
-
-        if (usuario == null)
-            return NotFound();
+        if (usuario == null) return NotFound();
 
         usuario.EstadoUsuario = EstadoUsuario.Activo;
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} reactivado.";
+        return RedirectToAction("DetalleUsuario", new { id });
+    }
+
+    // ================================================================
+    // CONVERSIÓN DE REFERIDO A USUARIO
+    // El admin decide manualmente si un referido (Pagado) quiere
+    // convertirse en usuario para poder tener sus propios referidos.
+    // ================================================================
+
+    [HttpPost]
+    public async Task<IActionResult> ConvertirReferido(int referidoId)
+    {
+        var (exito, mensaje) = await _servicioReferidos.ConvertirReferidoAUsuarioAsync(referidoId);
+
+        if (exito)
+            TempData["Exito"] = mensaje;
+        else
+            TempData["Error"] = mensaje;
+
+        // Volver al detalle del usuario que registró el referido
+        var referido = await _contexto.Referidos.FindAsync(referidoId);
+        return RedirectToAction("DetalleUsuario", new { id = referido?.UsuarioId });
+    }
+
+    // ================================================================
+    // PRODUCTOS
+    // ================================================================
+
+    [HttpGet]
+    public async Task<IActionResult> Productos()
+    {
+        var productos = await _contexto.Productos
+            .OrderByDescending(p => p.FechaCreacion)
+            .ToListAsync();
+
+        return View(productos);
+    }
+
+    [HttpGet]
+    public IActionResult CrearProducto()
+    {
+        return View(new Producto());
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CrearProducto(Producto modelo)
+    {
+        if (!ModelState.IsValid)
+            return View(modelo);
+
+        modelo.FechaCreacion = DateTime.UtcNow;
+        modelo.Activo = true;
+
+        _contexto.Productos.Add(modelo);
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Producto '{modelo.Nombre}' creado correctamente.";
+        return RedirectToAction("Productos");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditarProducto(int id)
+    {
+        var producto = await _contexto.Productos.FindAsync(id);
+        if (producto == null) return NotFound();
+
+        return View(producto);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EditarProducto(Producto modelo)
+    {
+        if (!ModelState.IsValid)
+            return View(modelo);
+
+        var producto = await _contexto.Productos.FindAsync(modelo.Id);
+        if (producto == null) return NotFound();
+
+        producto.Nombre = modelo.Nombre;
+        producto.Descripcion = modelo.Descripcion;
+        producto.Precio = modelo.Precio;
+        producto.ComisionNivel1Porcentaje = modelo.ComisionNivel1Porcentaje;
+        producto.ComisionNivel2Porcentaje = modelo.ComisionNivel2Porcentaje;
+        producto.ComisionNivel3Porcentaje = modelo.ComisionNivel3Porcentaje;
+        producto.StockDisponible = modelo.StockDisponible;
+        producto.ImagenUrl = modelo.ImagenUrl;
 
         await _contexto.SaveChangesAsync();
 
-        // TODO: registrar en tabla de auditoría
-        TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} reactivado.";
+        TempData["Exito"] = $"Producto '{producto.Nombre}' actualizado.";
+        return RedirectToAction("Productos");
+    }
 
-        return RedirectToAction("DetalleUsuario", new { id });
+    [HttpPost]
+    public async Task<IActionResult> ToggleProducto(int id)
+    {
+        var producto = await _contexto.Productos.FindAsync(id);
+        if (producto == null) return NotFound();
+
+        producto.Activo = !producto.Activo;
+        await _contexto.SaveChangesAsync();
+
+        var estado = producto.Activo ? "activado" : "desactivado";
+        TempData["Exito"] = $"Producto '{producto.Nombre}' {estado}.";
+        return RedirectToAction("Productos");
+    }
+
+    // ================================================================
+    // RETIROS
+    // ================================================================
+
+    [HttpGet]
+    public async Task<IActionResult> Retiros()
+    {
+        var pendientes = await _servicioRetiros.ObtenerPendientesAsync();
+        return View(pendientes);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AprobarRetiro(
+        int id, string referenciaTransferencia, string? nota)
+    {
+        var adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var (exito, mensaje) = await _servicioRetiros.AprobarRetiroAsync(
+            id, adminId, referenciaTransferencia, nota);
+
+        if (exito)
+            TempData["Exito"] = mensaje;
+        else
+            TempData["Error"] = mensaje;
+
+        return RedirectToAction("Retiros");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RechazarRetiro(int id, string motivo)
+    {
+        var adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var (exito, mensaje) = await _servicioRetiros.RechazarRetiroAsync(
+            id, adminId, motivo);
+
+        if (exito)
+            TempData["Exito"] = mensaje;
+        else
+            TempData["Error"] = mensaje;
+
+        return RedirectToAction("Retiros");
     }
 }

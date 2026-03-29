@@ -1,3 +1,15 @@
+// ============================================================
+// RangoUsuario.cs
+// Ubicación: Models/RangoUsuario.cs
+//
+// CAMBIO:
+//   - BonusComisionPorcentaje: bonus adicional que se aplica sobre
+//     la comisión base del producto según el rango del receptor.
+//     Ejemplo: Cobre = 0% bonus, Oro = 40% bonus.
+//     Si el producto da 10% de comisión y el receptor es Oro (40% bonus):
+//     comisión final = 10% * (1 + 0.40) = 14%
+// ============================================================
+
 using System.ComponentModel.DataAnnotations;
 using RedGenealogica.Web.Enumeraciones;
 
@@ -25,6 +37,11 @@ public class RangoUsuario
     [Required]
     [StringLength(50)]
     public string NombreVisible { get; set; } = string.Empty;
+
+    // Bonus porcentual sobre la comisión base del producto.
+    // 0 = sin bonus, 20 = 20% más sobre la comisión base.
+    [Range(0, 200)]
+    public decimal BonusComisionPorcentaje { get; set; } = 0m;
 
     [StringLength(30)]
     public string? ColorPrincipal { get; set; }
