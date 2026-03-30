@@ -145,9 +145,8 @@ public class AdministradorController : Controller
         else
             TempData["Error"] = mensaje;
 
-        // Volver al detalle del usuario que registró el referido
         var referido = await _contexto.Referidos.FindAsync(referidoId);
-        return RedirectToAction("DetalleUsuario", new { id = referido?.UsuarioId });
+        return RedirectToAction("DetalleUsuario", "Administrador", new { id = referido?.UsuarioId });
     }
 
     // ================================================================
