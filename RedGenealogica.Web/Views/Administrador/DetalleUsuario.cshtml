@@ -43,6 +43,7 @@
         @if (Model.EstadoUsuario != EstadoUsuario.Suspendido)
         {
             <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-danger">Suspender</button>
             </form>
         }
@@ -54,8 +55,32 @@
             </form>
         }
         <a href="/Administrador/Usuarios" class="btn btn-secondary">← Volver</a>
-    </div>
-</div>
+            </div>
+        </div>
+
+        <!-- RESET CONTRASEÑA -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🔑 Resetear contraseña</span>
+            </div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+                Usá esto cuando el usuario no pueda acceder a su cuenta. La nueva contraseña debe tener al menos 8 caracteres, una mayúscula y un número.
+            </div>
+            <form asp-controller="Administrador" asp-action="ResetearPassword" 
+                asp-route-id="@Model.Id" method="post" 
+                style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                @Html.AntiForgeryToken()
+                <div style="flex:1; min-width:200px;">
+                    <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                        Nueva contraseña
+                    </label>
+                    <input name="nuevaPassword" type="text" required 
+                        placeholder="Ej: NuevaClave123!" 
+                        style="margin:0; width:100%;" />
+                </div>
+                <button type="submit" class="btn btn-secondary">Resetear contraseña</button>
+            </form>
+        </div>
 
 <!-- REFERIDOS -->
 <div class="card">
@@ -89,7 +114,7 @@
                         <td>
                             @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
                             {
-                                <form asp-controller="Administrador" asp-action="ConvertirReferido" asp-route-id="@Model.Id" method="post">
+                                <form asp-controller="Administrador" asp-action="ConvertirReferido" asp-route-referidoId="@r.Id" method="post">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-success btn-sm">Convertir a usuario</button>
                                 </form>

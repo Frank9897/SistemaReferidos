@@ -275,4 +275,24 @@ public class AdministradorController : Controller
 
         return RedirectToAction("Retiros");
     }
+
+    // ================================================================
+    // RESET CONTRASEÑA
+    // ================================================================
+    [HttpPost]
+    public async Task<IActionResult> ResetearPassword(int id, string nuevaPassword)
+    {
+        var usuario = await _userManager.FindByIdAsync(id.ToString());
+        if (usuario == null) return NotFound();
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(usuario);
+        var resultado = await _userManager.ResetPasswordAsync(usuario, token, nuevaPassword);
+
+        if (resultado.Succeeded)
+            TempData["Exito"] = $"Contraseña reseteada para {usuario.Email}";
+        else
+            TempData["Error"] = string.Join(", ", resultado.Errors.Select(e => e.Description));
+
+        return RedirectToAction("DetalleUsuario", "Administrador", new { id });
+    }
 }
