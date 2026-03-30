@@ -3,45 +3,60 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - RedGenealogica</title>
+    <title>@ViewData["Title"] — RedGenealogica</title>
     <link rel="stylesheet" href="~/css/sistema-referidos.css" asp-append-version="true" />
 </head>
 <body>
+
     <header class="navbar-custom">
         <nav class="nav-container">
 
-            <div class="logo">RedGenealogica</div>
+            <div class="logo">◆ RedGenealogica</div>
 
             <div class="nav-links">
-
-                <a href="/">Inicio</a>
-
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
                     <a href="/Usuario/Panel">Panel</a>
-                    <a href="/Ranking">Ranking</a>
                     <a href="/Genealogia">Árbol</a>
+                    <a href="/Ranking">Ranking</a>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a href="/Administrador/Usuarios" style="color: var(--sky);">Admin</a>
+                    }
 
                     <form asp-controller="Autenticacion" asp-action="Logout" method="post" class="logout-form">
-                        <button type="submit" class="btn btn-secondary">Salir</button>
+                        <button type="submit" class="btn btn-secondary btn-sm">Salir</button>
                     </form>
                 }
                 else
                 {
-                    <a href="/Autenticacion/Login">Login</a>
+                    <a href="/Autenticacion/Login">Iniciar sesión</a>
+                    <a href="/Autenticacion/Registro" class="btn btn-primary btn-sm">Registrarse</a>
                 }
-
             </div>
 
         </nav>
     </header>
 
-    <div class="main-container">
-        @RenderBody()
-    </div>
+    <main>
+        <div class="main-container">
+
+            @if (TempData["Exito"] != null)
+            {
+                <div class="alert alert-success">✓ @TempData["Exito"]</div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-error">✕ @TempData["Error"]</div>
+            }
+
+            @RenderBody()
+        </div>
+    </main>
 
     <footer class="footer-custom">
-        <p>© 2026 - RedGenealogica</p>
+        <p>© 2026 RedGenealogica · Todos los derechos reservados</p>
     </footer>
 
     @await RenderSectionAsync("Scripts", required: false)
