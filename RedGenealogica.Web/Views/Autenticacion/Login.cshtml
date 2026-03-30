@@ -1,18 +1,41 @@
+@* Login.cshtml — Views/Autenticacion/Login.cshtml *@
 @model RedGenealogica.Web.ViewModels.LoginViewModel
-<div asp-validation-summary="All"></div>
-<h2>Login</h2>
-<div class="form-container">
-<form method="post">
-    <div>
-        <label>Email</label>
-        <input asp-for="Email" />
-    </div>
+@{ ViewData["Title"] = "Iniciar sesión"; }
 
-    <div>
-        <label>Password</label>
-        <input asp-for="Password" type="password" />
-    </div>
+<div class="centered-page">
+    <div class="center-box">
 
-    <button type="submit" class="btn btn-primary">Ingresar</button>
-</form>
+        <div style="text-align:center; margin-bottom:28px;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700; background:linear-gradient(90deg,var(--sky),var(--indigo)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">◆ RedGenealogica</div>
+            <div style="color:var(--text-muted); font-size:14px; margin-top:6px;">Ingresá a tu cuenta</div>
+        </div>
+
+        <div class="card">
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+            <form method="post">
+                <div class="form-group">
+                    <label asp-for="Email">Correo electrónico</label>
+                    <input asp-for="Email" type="email" placeholder="tu@email.com" />
+                    <span asp-validation-for="Email" class="field-validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Password">Contraseña</label>
+                    <input asp-for="Password" type="password" placeholder="••••••••" />
+                    <span asp-validation-for="Password" class="field-validation-error"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+                    Iniciar sesión
+                </button>
+            </form>
+
+            <div style="text-align:center; margin-top:18px; font-size:13px; color:var(--text-muted);">
+                ¿No tenés cuenta?
+                <a href="/Autenticacion/Registro" style="color:var(--sky); margin-left:4px;">Registrate</a>
+            </div>
+        </div>
+
+    </div>
 </div>
