@@ -1,27 +1,52 @@
-@{
-    ViewData["Title"] = "Inicio";
-}
+@* Index.cshtml — Views/Inicio/Index.cshtml *@
+@{ ViewData["Title"] = "Inicio"; }
 
-<div class="container-dashboard">
-    <div class="card hero-card">
-        <h1 class="titulo-principal">Sistema de Referidos</h1>
-        <p class="subtitulo">Bienvenido al sistema</p>
+<div style="min-height:calc(100vh - 200px); display:flex; align-items:center; justify-content:center;">
+    <div style="text-align:center; max-width:540px;">
+
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:48px; font-weight:700; background:linear-gradient(135deg, var(--sky), var(--indigo)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1.1; margin-bottom:16px;">
+            ◆ RedGenealogica
+        </div>
+
+        <div style="color:var(--text-muted); font-size:16px; line-height:1.7; margin-bottom:32px;">
+            Construí tu red de referidos, ganá comisiones reales<br>y subí de rango junto a tu equipo.
+        </div>
 
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <p class="subtitulo">Sesión iniciada como @User.Identity.Name</p>
-
-            <div class="acciones-inline">
-                <a href="/Usuario/Panel" class="btn btn-primary">Ir al panel</a>
-                <a href="/Ranking" class="btn btn-secondary">Ver ranking</a>
+            <div style="color:var(--text-muted); font-size:14px; margin-bottom:20px;">
+                Bienvenido de vuelta, <strong style="color:var(--text);">@User.Identity.Name</strong>
+            </div>
+            <div class="acciones-inline" style="justify-content:center;">
+                <a href="/Usuario/Panel" class="btn btn-primary" style="padding:12px 28px;">Ir al panel</a>
+                <a href="/Ranking" class="btn btn-secondary" style="padding:12px 28px;">Ver ranking</a>
             </div>
         }
         else
         {
-            <div class="acciones-inline">
-                <a href="/Autenticacion/Registro" class="btn btn-primary">Registrarse</a>
-                <a href="/Autenticacion/Login" class="btn btn-secondary">Iniciar sesión</a>
+            <div class="acciones-inline" style="justify-content:center;">
+                <a href="/Autenticacion/Registro" class="btn btn-primary" style="padding:12px 28px;">Empezar gratis</a>
+                <a href="/Autenticacion/Login" class="btn btn-secondary" style="padding:12px 28px;">Iniciar sesión</a>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:48px; text-align:left;">
+                <div class="card" style="padding:18px;">
+                    <div style="font-size:22px; margin-bottom:8px;">👤</div>
+                    <div style="font-weight:600; font-size:14px; margin-bottom:4px;">Registrate</div>
+                    <div style="font-size:12.5px; color:var(--text-muted);">Creá tu cuenta y empezá a referir</div>
+                </div>
+                <div class="card" style="padding:18px;">
+                    <div style="font-size:22px; margin-bottom:8px;">💸</div>
+                    <div style="font-weight:600; font-size:14px; margin-bottom:4px;">Ganá comisiones</div>
+                    <div style="font-size:12.5px; color:var(--text-muted);">Comisiones reales por cada referido</div>
+                </div>
+                <div class="card" style="padding:18px;">
+                    <div style="font-size:22px; margin-bottom:8px;">📈</div>
+                    <div style="font-weight:600; font-size:14px; margin-bottom:4px;">Subí de rango</div>
+                    <div style="font-size:12.5px; color:var(--text-muted);">De Cobre hasta Diamante</div>
+                </div>
             </div>
         }
+
     </div>
 </div>
