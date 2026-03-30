@@ -1,139 +1,206 @@
 @model RedGenealogica.Web.ViewModels.PanelUsuarioViewModel
 @using RedGenealogica.Web.Enumeraciones
+@{ ViewData["Title"] = "Panel"; }
 
-<div class="main-container">
+@{
+    var rangoClass = "rango-" + Model.Usuario.TipoRangoActual.ToString().ToLower();
+    var rangoIcono = Model.Usuario.TipoRangoActual switch {
+        TipoRango.Cobre    => "🟤",
+        TipoRango.Bronce   => "🟠",
+        TipoRango.Plata    => "⚪",
+        TipoRango.Oro      => "🟡",
+        TipoRango.Platino  => "🔵",
+        TipoRango.Diamante => "💎",
+        _ => "⬜"
+    };
+}
 
-    <!-- HEADER -->
-    <div class="card">
-        <h1 class="titulo-principal">Hola, @Model.Usuario.Nombres 👋</h1>
-        <p class="subtitulo">Sigue construyendo tu red y sube de nivel</p>
+<!-- HEADER -->
+<div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+    <div>
+        <div class="titulo-principal">Hola, @Model.Usuario.Nombres 👋</div>
+        <div class="subtitulo" style="margin-top:4px;">Seguí construyendo tu red y subí de nivel</div>
+        <div style="margin-top:10px;">
+            <span class="badge-rango @rangoClass">@rangoIcono @Model.Usuario.TipoRangoActual</span>
+            @if (Model.Usuario.EstadoUsuario == EstadoUsuario.Pendiente)
+            {
+                <span class="badge badge-warning" style="margin-left:8px;">Pendiente de activación</span>
+            }
+        </div>
+    </div>
+    <div class="acciones-inline">
+        <a href="/Referidos/Crear" class="btn btn-primary">+ Registrar referido</a>
+        <a href="/Genealogia" class="btn btn-secondary">Ver árbol</a>
+    </div>
+</div>
 
-        <br />
+<!-- MÉTRICAS -->
+<div class="grid">
+    <div class="metric-card blue">
+        <div class="metric-icon">⭐</div>
+        <div class="metric-value">@Model.Usuario.PuntosAcumulados</div>
+        <div class="metric-label">Puntos acumulados</div>
+    </div>
+    <div class="metric-card green">
+        <div class="metric-icon">💰</div>
+        <div class="metric-value">$@Model.TotalComisiones.ToString("N0")</div>
+        <div class="metric-label">Comisiones totales</div>
+    </div>
+    <div class="metric-card cyan">
+        <div class="metric-icon">👥</div>
+        <div class="metric-value">@Model.TotalReferidosDirectos</div>
+        <div class="metric-label">Referidos directos</div>
+    </div>
+    <div class="metric-card purple">
+        <div class="metric-icon">🌐</div>
+        <div class="metric-value">@(Model.TotalReferidosDirectos + Model.TotalReferidosIndirectos)</div>
+        <div class="metric-label">Total de red</div>
+    </div>
+</div>
 
-        <span class="badge @(Model.Usuario.TipoRangoActual.ToString().ToLower())">
-            @Model.Usuario.TipoRangoActual
-        </span>
+<!-- SALDO + PROGRESO -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
+
+    <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+            <span class="card-title">💵 Saldo disponible</span>
+            <a href="/Usuario/SolicitarRetiro" class="btn btn-success btn-sm">Retirar</a>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:32px; font-weight:700; color:var(--green);">
+            $@Model.Usuario.SaldoDisponible.ToString("N2")
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">
+            Pendiente de retiro: $@Model.Usuario.SaldoPendienteRetiro.ToString("N2")
+        </div>
     </div>
 
-    <!-- METRICAS -->
-    <div class="grid">
-
-        <div class="card">
-            <div class="metric metric-blue">@Model.Usuario.PuntosAcumulados</div>
-            <div class="metric-label">Puntos totales</div>
+    <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+            <span class="card-title">📈 Progreso de rango</span>
+            @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
+            {
+                <span style="font-size:12px; color:var(--text-muted);">→ @Model.SiguienteRango</span>
+            }
         </div>
-
-        <div class="card">
-            <div class="metric metric-green">@Model.TotalReferidosDirectos</div>
-            <div class="metric-label">Referidos directos</div>
-        </div>
-
-        <div class="card">
-            <div class="metric metric-cyan">@Model.TotalReferidosIndirectos</div>
-            <div class="metric-label">Referidos indirectos</div>
-        </div>
-
-        <div class="card">
-            <div class="metric metric-purple">@(Model.TotalReferidosDirectos + Model.TotalReferidosIndirectos)</div>
-            <div class="metric-label">Total red</div>
-        </div>
-
-    </div>
-
-    <!-- PROGRESO -->
-    <div class="card">
-        <h3>Progreso al siguiente rango</h3>
-
-        @{
-            int progreso = Model.ProgresoRangoPorcentaje;
-        }
-
         <div class="progress-bar">
-            <div class="progress-fill" style="width:@progreso%"></div>
+            <div class="progress-fill" style="width:@Model.ProgresoRangoPorcentaje%"></div>
         </div>
-
-        <p class="subtitulo">@Model.PuntosFaltantesParaSiguienteRango puntos restantes</p>
-        @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
-        {
-            <p class="subtitulo">Siguiente rango: @Model.SiguienteRango</p>
-        }
-    </div>
-
-    <!-- ACCIONES -->
-    <div class="card">
-        <h3>Acciones rápidas</h3>
-
-        <br />
-
-        <div class="acciones-inline">
-            <a href="/Referidos/Crear" class="btn btn-primary">Registrar Referido</a>
-            <a href="/Genealogia" class="btn btn-secondary">Ver Árbol</a>
-            <a href="/Ranking" class="btn btn-secondary">Ver Ranking</a>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
+            <span>@Model.Usuario.PuntosAcumulados pts</span>
+            @if (Model.PuntosFaltantesParaSiguienteRango > 0)
+            {
+                <span>Faltan @Model.PuntosFaltantesParaSiguienteRango pts</span>
+            }
+            else
+            {
+                <span style="color:var(--green);">¡Rango máximo!</span>
+            }
         </div>
     </div>
 
-    <!-- REFERIDOS -->
-    <div class="card">
-        <h3>Mis Referidos</h3>
+</div>
 
-        <table class="table">
-            <tr>
-                <th>Nombre</th>
-                <th>Estado</th>
-                <th>Acción</th>
-            </tr>
-
-            @foreach (var r in Model.Referidos)
-            {
-                <tr>
-                    <td>@r.NombreCompleto</td>
-
-                    <td>
-                        @* [CORREGIDO] Era EstadoUsuario.Activo → EstadoReferido.Convertido *@
-                        <span class="badge @(r.Estado == EstadoReferido.Convertido ? "badge-success" : "badge-warning")">
-                            @r.Estado
-                        </span>
-                    </td>
-
-                    <td>
-                        @* Muestra botón de pago solo si el referido aún no fue convertido *@
-                        @if (r.Estado != EstadoReferido.Convertido)
-                        {
-                            <a href="/Pagos/Pagar?referidoId=@r.Id" class="btn btn-primary btn-sm">
-                                💳 Pagar
-                            </a>
-                        }
-                        else
-                        {
-                            <span class="text-success">✔ Convertido</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </table>
+<!-- REFERIDOS -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">👤 Mis referidos</span>
+        <a href="/Referidos/MisReferidos" style="font-size:12.5px; color:var(--sky);">Ver todos →</a>
     </div>
 
-    <!-- ULTIMOS MOVIMIENTOS -->
-    <div class="card">
-        <h3>Últimos movimientos</h3>
-
+    @if (!Model.Referidos.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <p>Aún no registraste ningún referido.<br>
+            <a href="/Referidos/Crear" style="color:var(--sky);">Registrá tu primer referido</a></p>
+        </div>
+    }
+    else
+    {
         <table class="table">
-            <tr>
-                <th>Fecha</th>
-                <th>Motivo</th>
-                <th>Puntos</th>
-                <th>Monto</th>
-            </tr>
-
-            @foreach (var m in Model.UltimosMovimientos)
-            {
+            <thead>
                 <tr>
-                    <td>@m.FechaMovimiento.ToString("dd/MM/yyyy")</td>
-                    <td>@m.Motivo</td>
-                    <td>@m.CantidadPuntos</td>
-                    <td>@m.Monto</td>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acción</th>
                 </tr>
-            }
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Referidos.Take(5))
+                {
+                    <tr>
+                        <td><strong>@r.NombreCompleto</strong></td>
+                        <td>
+                            @{
+                                var badgeClass = r.Estado switch {
+                                    EstadoReferido.Convertido => "badge-success",
+                                    EstadoReferido.Pagado     => "badge-info",
+                                    EstadoReferido.Cancelado  => "badge-danger",
+                                    _ => "badge-warning"
+                                };
+                                var estadoLabel = r.Estado switch {
+                                    EstadoReferido.Convertido => "Convertido",
+                                    EstadoReferido.Pagado     => "Pagado",
+                                    EstadoReferido.Cancelado  => "Cancelado",
+                                    _ => "Pendiente"
+                                };
+                            }
+                            <span class="badge @badgeClass">@estadoLabel</span>
+                        </td>
+                        <td>@r.FechaRegistro.ToString("dd/MM/yy")</td>
+                        <td>
+                            @if (r.Estado == EstadoReferido.Pendiente)
+                            {
+                                <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">💳 Link pago</a>
+                            }
+                            else if (r.Estado == EstadoReferido.Convertido)
+                            {
+                                <span style="font-size:12px; color:var(--green);">✓ Activo</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
         </table>
+    }
+</div>
+
+<!-- ÚLTIMOS MOVIMIENTOS -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">📊 Últimos movimientos</span>
     </div>
+
+    @if (!Model.UltimosMovimientos.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p>Sin movimientos aún</p>
+        </div>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                    <th>Puntos</th>
+                    <th>Comisión</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model.UltimosMovimientos)
+                {
+                    <tr>
+                        <td>@m.FechaMovimiento.ToString("dd/MM/yy")</td>
+                        <td><strong>@m.Motivo</strong></td>
+                        <td style="color:var(--sky);">+@m.CantidadPuntos</td>
+                        <td style="color:var(--green);">@(m.Monto > 0 ? "$" + m.Monto.ToString("N2") : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>
