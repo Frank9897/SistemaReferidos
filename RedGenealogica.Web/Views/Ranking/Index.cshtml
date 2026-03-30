@@ -1,63 +1,41 @@
+@* Index.cshtml — Views/Ranking/Index.cshtml *@
 @model List<RedGenealogica.Web.Models.Usuario>
-@using System.Security.Claims;
+@using System.Security.Claims
+@{ ViewData["Title"] = "Ranking"; var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); }
 
-@{
-    ViewBag.MostrarVolver = true;
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-}
-<div class="main-container">
-<h2 class="ranking-title">🏆 Ranking Global</h2>
+<div style="margin-bottom:22px;">
+    <div class="section-title">🏆 Ranking global</div>
+    <div class="section-subtitle">Los usuarios con más puntos acumulados</div>
+</div>
 
-<div class="ranking-lux">
-
+<div class="ranking-list">
     @for (int i = 0; i < Model.Count; i++)
     {
-        var user = Model[i];
-        var esTop1 = i == 0;
-        var esTop2 = i == 1;
-        var esTop3 = i == 2;
-        var esActual = user.Id.ToString() == userId;
+        var u = Model[i];
+        var esYo = u.Id.ToString() == userId;
+        var rangoClass = "rango-" + u.TipoRangoActual.ToString().ToLower();
+        var itemClass = i == 0 ? "top1" : i == 1 ? "top2" : i == 2 ? "top3" : "";
+        if (esYo) itemClass += " yo";
 
-        <div class="ranking-card-lux 
-                    @(esTop1 ? "top1" : "") 
-                    @(esTop2 ? "top2" : "") 
-                    @(esTop3 ? "top3" : "") 
-                    @(esActual ? "yo" : "")">
-
-            <div class="ranking-left">
-                <div class="ranking-pos">#@(i + 1)</div>
-
-                <div class="ranking-user">
-                    <div class="ranking-name">@user.Nombres</div>
-                    <div class="ranking-points">@user.PuntosAcumulados pts</div>
+        <div class="ranking-item @itemClass">
+            <div class="ranking-pos">#@(i+1)</div>
+            <div style="flex:1;">
+                <div class="ranking-name">
+                    @u.Nombres @u.Apellidos
+                    @if (esYo) { <span class="badge badge-success" style="margin-left:6px; font-size:10px;">Vos</span> }
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:3px;">
+                    <span class="badge-rango @rangoClass" style="font-size:11px; padding:2px 8px;">@u.TipoRangoActual</span>
+                    <span class="ranking-pts">@u.PuntosAcumulados pts</span>
                 </div>
             </div>
-
-            <div class="ranking-right">
-
-                @if (esTop1)
-                {
-                    <span class="ranking-icon">💎👑</span>
-                }
-                else if (esTop2)
-                {
-                    <span class="ranking-icon">🥈</span>
-                }
-                else if (esTop3)
-                {
-                    <span class="ranking-icon">🥉</span>
-                }
-
+            <div class="ranking-icon">
+                @if (i == 0) { <text>👑</text> }
+                else if (i == 1) { <text>🥈</text> }
+                else if (i == 2) { <text>🥉</text> }
             </div>
-
         </div>
-
-        @if (i < Model.Count - 1)
-        {
-            <div class="ranking-link"></div>
-        }
     }
+</div>
 
-</div>
 @await Html.PartialAsync("_BotonVolver")
-</div>
