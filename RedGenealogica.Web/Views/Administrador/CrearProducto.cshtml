@@ -1,0 +1,74 @@
+@* CrearProducto.cshtml — Views/Administrador/CrearProducto.cshtml *@
+@model RedGenealogica.Web.Models.Producto
+@{ ViewData["Title"] = "Nuevo producto"; }
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab active">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+</div>
+
+<div style="max-width:620px;">
+    <div class="section-title">📦 Nuevo producto</div>
+    <div class="section-subtitle">Completá los datos del producto y las comisiones por nivel</div>
+
+    <div class="card">
+        <form method="post">
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+            <div class="form-group">
+                <label asp-for="Nombre">Nombre del producto *</label>
+                <input asp-for="Nombre" placeholder="Ej: Switch TP-Link 8 puertos" />
+                <span asp-validation-for="Nombre" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Descripcion">Descripción</label>
+                <textarea asp-for="Descripcion" rows="3" placeholder="Descripción breve del producto..." style="resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label asp-for="Precio">Precio ($) *</label>
+                    <input asp-for="Precio" type="number" step="0.01" placeholder="50000" />
+                    <span asp-validation-for="Precio" class="field-validation-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="StockDisponible">Stock (vacío = ilimitado)</label>
+                    <input asp-for="StockDisponible" type="number" placeholder="∞" />
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+                💡 Comisiones por nivel — porcentaje sobre el precio del producto que recibe cada ancestro del árbol
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label asp-for="ComisionNivel1Porcentaje">Nivel 1 (%) *</label>
+                    <input asp-for="ComisionNivel1Porcentaje" type="number" step="0.01" placeholder="10" />
+                    <span asp-validation-for="ComisionNivel1Porcentaje" class="field-validation-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="ComisionNivel2Porcentaje">Nivel 2 (%)</label>
+                    <input asp-for="ComisionNivel2Porcentaje" type="number" step="0.01" placeholder="5" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="ComisionNivel3Porcentaje">Nivel 3 (%)</label>
+                    <input asp-for="ComisionNivel3Porcentaje" type="number" step="0.01" placeholder="2" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ImagenUrl">URL de imagen (opcional)</label>
+                <input asp-for="ImagenUrl" placeholder="https://..." />
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn btn-primary">Crear producto</button>
+                <a href="/Administrador/Productos" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

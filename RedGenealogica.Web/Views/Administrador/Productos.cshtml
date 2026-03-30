@@ -1,0 +1,77 @@
+@* Productos.cshtml — Views/Administrador/Productos.cshtml *@
+@model List<RedGenealogica.Web.Models.Producto>
+@{ ViewData["Title"] = "Admin — Productos"; }
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab active">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">📦 Productos (@Model.Count)</span>
+        <a href="/Administrador/CrearProducto" class="btn btn-primary btn-sm">+ Nuevo producto</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <p>No hay productos aún. <a href="/Administrador/CrearProducto" style="color:var(--sky);">Creá el primero</a></p>
+        </div>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Precio</th>
+                    <th>Comisión N1</th>
+                    <th>Comisión N2</th>
+                    <th>Comisión N3</th>
+                    <th>Stock</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@p.Nombre</strong>
+                            @if (!string.IsNullOrWhiteSpace(p.Descripcion))
+                            {
+                                <div style="font-size:12px; color:var(--text-muted);">@p.Descripcion.Substring(0, Math.Min(60, p.Descripcion.Length))…</div>
+                            }
+                        </td>
+                        <td style="color:var(--sky); font-weight:600;">$@p.Precio.ToString("N0")</td>
+                        <td><span class="badge badge-info">@p.ComisionNivel1Porcentaje%</span></td>
+                        <td><span class="badge badge-muted">@p.ComisionNivel2Porcentaje%</span></td>
+                        <td><span class="badge badge-muted">@p.ComisionNivel3Porcentaje%</span></td>
+                        <td>@(p.StockDisponible?.ToString() ?? "∞")</td>
+                        <td>
+                            @if (p.Activo)
+                            { <span class="badge badge-success">Activo</span> }
+                            else
+                            { <span class="badge badge-danger">Inactivo</span> }
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                <a href="/Administrador/EditarProducto/@p.Id" class="btn btn-secondary btn-sm">Editar</a>
+                                <form method="post" action="/Administrador/ToggleProducto/@p.Id">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(p.Activo ? "btn-danger" : "btn-success")">
+                                        @(p.Activo ? "Desactivar" : "Activar")
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

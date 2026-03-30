@@ -1,0 +1,134 @@
+@* DetalleUsuario.cshtml — Views/Administrador/DetalleUsuario.cshtml *@
+@model RedGenealogica.Web.Models.Usuario
+@using RedGenealogica.Web.Enumeraciones
+@{
+    ViewData["Title"] = "Detalle de usuario";
+    var referidos  = ViewBag.Referidos  as List<RedGenealogica.Web.Models.Referido>  ?? new();
+    var movimientos= ViewBag.Movimientos as List<RedGenealogica.Web.Models.MovimientoPuntos> ?? new();
+    var pagos      = ViewBag.Pagos      as List<RedGenealogica.Web.Models.Pago>      ?? new();
+    var rangoClass = "rango-" + Model.TipoRangoActual.ToString().ToLower();
+}
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+</div>
+
+<!-- HEADER USUARIO -->
+<div class="card" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+    <div>
+        <div class="titulo-principal">@Model.Nombres @Model.Apellidos</div>
+        <div style="color:var(--text-muted); font-size:14px; margin-top:2px;">@Model.Email</div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="badge-rango @rangoClass">@Model.TipoRangoActual</span>
+            @{
+                var estadoBadge = Model.EstadoUsuario switch {
+                    EstadoUsuario.Activo     => "badge-success",
+                    EstadoUsuario.Pendiente  => "badge-warning",
+                    EstadoUsuario.Suspendido => "badge-danger",
+                    _ => "badge-muted"
+                };
+            }
+            <span class="badge @estadoBadge">@Model.EstadoUsuario</span>
+            <span class="badge badge-info">@Model.PuntosAcumulados pts</span>
+        </div>
+    </div>
+    <div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Saldo disponible</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:26px; font-weight:700; color:var(--green);">$@Model.SaldoDisponible.ToString("N2")</div>
+        <div style="font-size:12px; color:var(--text-muted);">Pendiente: $@Model.SaldoPendienteRetiro.ToString("N2")</div>
+    </div>
+    <div class="acciones-inline">
+        @if (Model.EstadoUsuario != EstadoUsuario.Suspendido)
+        {
+            <form method="post" action="/Administrador/Suspender/@Model.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger">Suspender</button>
+            </form>
+        }
+        else
+        {
+            <form method="post" action="/Administrador/Reactivar/@Model.Id">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success">Reactivar</button>
+            </form>
+        }
+        <a href="/Administrador/Usuarios" class="btn btn-secondary">← Volver</a>
+    </div>
+</div>
+
+<!-- REFERIDOS -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">👤 Referidos (@referidos.Count)</span>
+    </div>
+
+    @if (!referidos.Any())
+    {
+        <div class="empty-state"><div class="empty-icon">📭</div><p>Sin referidos registrados</p></div>
+    }
+    else
+    {
+        <table class="table">
+            <thead><tr><th>Nombre</th><th>Email</th><th>Producto</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr></thead>
+            <tbody>
+                @foreach (var r in referidos)
+                {
+                    var badgeClass = r.Estado switch {
+                        EstadoReferido.Convertido => "badge-success",
+                        EstadoReferido.Pagado     => "badge-info",
+                        EstadoReferido.Cancelado  => "badge-danger",
+                        _ => "badge-warning"
+                    };
+                    <tr>
+                        <td><strong>@r.NombreCompleto</strong></td>
+                        <td>@(r.CorreoElectronico ?? "—")</td>
+                        <td>@(r.Producto?.Nombre ?? "—")</td>
+                        <td><span class="badge @badgeClass">@r.Estado</span></td>
+                        <td>@r.FechaRegistro.ToString("dd/MM/yy")</td>
+                        <td>
+                            @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
+                            {
+                                <form method="post" action="/Administrador/ConvertirReferido/@r.Id">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success btn-sm">Convertir a usuario</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- MOVIMIENTOS -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">📊 Últimos movimientos</span>
+    </div>
+
+    @if (!movimientos.Any())
+    {
+        <div class="empty-state"><div class="empty-icon">📭</div><p>Sin movimientos</p></div>
+    }
+    else
+    {
+        <table class="table">
+            <thead><tr><th>Fecha</th><th>Motivo</th><th>Nivel</th><th>Puntos</th><th>Monto</th></tr></thead>
+            <tbody>
+                @foreach (var m in movimientos)
+                {
+                    <tr>
+                        <td>@m.FechaMovimiento.ToString("dd/MM/yy HH:mm")</td>
+                        <td><strong>@m.Motivo</strong></td>
+                        <td>@(m.Nivel > 0 ? "Nivel " + m.Nivel : "—")</td>
+                        <td style="color:var(--sky);">+@m.CantidadPuntos</td>
+                        <td style="color:var(--green);">@(m.Monto > 0 ? "$" + m.Monto.ToString("N2") : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

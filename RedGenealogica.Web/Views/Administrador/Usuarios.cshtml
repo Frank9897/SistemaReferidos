@@ -1,0 +1,90 @@
+@* Usuarios.cshtml — Views/Administrador/Usuarios.cshtml *@
+@model List<RedGenealogica.Web.Models.Usuario>
+@using RedGenealogica.Web.Enumeraciones
+@{ ViewData["Title"] = "Admin — Usuarios"; }
+
+<div class="section-title">⚙️ Panel de administración</div>
+<div class="section-subtitle">Gestión de usuarios, productos y retiros</div>
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab active">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Usuarios registrados (@Model.Count)</span>
+        <form method="get" style="display:flex; gap:8px;">
+            <input name="busqueda" value="@ViewBag.Busqueda" placeholder="Buscar por nombre o email..."
+                   style="width:220px; margin:0; padding:8px 12px; font-size:13px;" />
+            <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+        </form>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <p>No se encontraron usuarios</p>
+        </div>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rango</th>
+                    <th>Estado</th>
+                    <th>Puntos</th>
+                    <th>Saldo</th>
+                    <th>Registro</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    var rangoClass = "rango-" + u.TipoRangoActual.ToString().ToLower();
+                    var estadoBadge = u.EstadoUsuario switch {
+                        EstadoUsuario.Activo     => "badge-success",
+                        EstadoUsuario.Pendiente  => "badge-warning",
+                        EstadoUsuario.Suspendido => "badge-danger",
+                        _ => "badge-muted"
+                    };
+                    <tr>
+                        <td>
+                            <strong>@u.Nombres @u.Apellidos</strong>
+                            <div style="font-size:12px; color:var(--text-muted);">@u.Email</div>
+                        </td>
+                        <td><span class="badge-rango @rangoClass">@u.TipoRangoActual</span></td>
+                        <td><span class="badge @estadoBadge">@u.EstadoUsuario</span></td>
+                        <td style="color:var(--sky);">@u.PuntosAcumulados</td>
+                        <td style="color:var(--green);">$@u.SaldoDisponible.ToString("N0")</td>
+                        <td>@u.FechaRegistro.ToString("dd/MM/yy")</td>
+                        <td>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <a href="/Administrador/DetalleUsuario/@u.Id" class="btn btn-secondary btn-sm">Ver</a>
+                                @if (u.EstadoUsuario != EstadoUsuario.Suspendido)
+                                {
+                                    <form method="post" action="/Administrador/Suspender/@u.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm">Suspender</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" action="/Administrador/Reactivar/@u.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm">Reactivar</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -1,0 +1,72 @@
+@* EditarProducto.cshtml — Views/Administrador/EditarProducto.cshtml *@
+@model RedGenealogica.Web.Models.Producto
+@{ ViewData["Title"] = "Editar producto"; }
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab active">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+</div>
+
+<div style="max-width:620px;">
+    <div class="section-title">✏️ Editar producto</div>
+    <div class="section-subtitle">@Model.Nombre</div>
+
+    <div class="card">
+        <form method="post">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+            <div class="form-group">
+                <label asp-for="Nombre">Nombre *</label>
+                <input asp-for="Nombre" />
+                <span asp-validation-for="Nombre" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Descripcion">Descripción</label>
+                <textarea asp-for="Descripcion" rows="3" style="resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label asp-for="Precio">Precio ($) *</label>
+                    <input asp-for="Precio" type="number" step="0.01" />
+                    <span asp-validation-for="Precio" class="field-validation-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="StockDisponible">Stock (vacío = ilimitado)</label>
+                    <input asp-for="StockDisponible" type="number" />
+                </div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">Comisiones por nivel</div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label asp-for="ComisionNivel1Porcentaje">Nivel 1 (%)</label>
+                    <input asp-for="ComisionNivel1Porcentaje" type="number" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="ComisionNivel2Porcentaje">Nivel 2 (%)</label>
+                    <input asp-for="ComisionNivel2Porcentaje" type="number" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="ComisionNivel3Porcentaje">Nivel 3 (%)</label>
+                    <input asp-for="ComisionNivel3Porcentaje" type="number" step="0.01" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ImagenUrl">URL de imagen</label>
+                <input asp-for="ImagenUrl" />
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                <a href="/Administrador/Productos" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
