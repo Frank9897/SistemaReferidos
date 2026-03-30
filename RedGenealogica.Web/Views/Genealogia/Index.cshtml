@@ -1,227 +1,488 @@
-@{
-    ViewBag.MostrarVolver = true;
-}
+@* Index.cshtml — Views/Genealogia/Index.cshtml *@
+@{ ViewData["Title"] = "Árbol genealógico"; }
 
-<h2 style="text-align:center;">Árbol Genealógico</h2>
-<div id="tooltip" class="tooltip-pro"></div>
-<div class="tree-container">
-    <div id="arbol"></div>
+<div class="arbol-wrap">
+
+  <div class="arbol-toolbar">
+    <span class="arbol-titulo">🌳 Árbol genealógico</span>
+
+    <div class="arbol-search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input id="arbol-buscar" type="text" placeholder="Buscar usuario..." autocomplete="off" />
+    </div>
+
+    <button class="arbol-btn" id="btn-expandir" title="Expandir todo">⊕ Expandir</button>
+    <button class="arbol-btn" id="btn-colapsar" title="Colapsar todo">⊖ Colapsar</button>
+    <button class="arbol-btn" id="btn-centrar"  title="Centrar vista">⌖ Centrar</button>
+    <button class="arbol-btn" id="btn-fullscreen" title="Pantalla completa">⛶ Fullscreen</button>
+  </div>
+
+  <div id="arbol-svg-wrap">
+    <div class="arbol-loading" id="arbol-loading">
+      <div class="arbol-spinner"></div>
+      <span>Cargando árbol...</span>
+    </div>
+  </div>
+
+  <div class="arbol-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#A0522D"></div>Cobre</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Bronce</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#C0C0C0"></div>Plata</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>Oro</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22D3EE"></div>Platino</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#60A5FA"></div>Diamante</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#475569"></div>Referido</div>
+    <span style="margin-left:auto; font-size:11px; color:var(--text-dim);">
+      Click → expandir/colapsar · Arrastrar → mover · Rueda → zoom
+    </span>
+  </div>
+
 </div>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<div id="arbol-tooltip"></div>
 
+@await Html.PartialAsync("_BotonVolver")
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-fetch('/Genealogia/ObtenerArbol')
-.then(res => res.json())
-.then(data => {
+(function () {
 
-    const width = 1000;
-    const height = 600;
+  // ── Configuración ─────────────────────────────────────────────────
+  const R  = 28;   // radio del círculo principal
+  const VG = 90;   // separación vertical entre niveles
+  const HG = 70;   // separación horizontal entre nodos (nodeSize)
 
-    const svg = d3.select("#arbol")
-        .append("svg")
-        .attr("viewBox", `0 0 ${width} ${height}`)
-        .style("width", "100%")
-        .style("height", "100%");
+  const RANGO_COLOR = {
+    Diamante: '#60A5FA', Platino: '#22D3EE', Oro: '#FFD700',
+    Plata: '#C0C0C0', Bronce: '#F97316', Cobre: '#A0522D',
+    Referido: '#475569'
+  };
 
-    const g = svg.append("g");
+  const RANGO_ICON = {
+    Diamante: '💎', Platino: '🔷', Oro: '🏆',
+    Plata: '⚡', Bronce: '🔶', Cobre: '🔸', Referido: '👤'
+  };
 
-    const zoom = d3.zoom()
-        .scaleExtent([0.5, 1.5])
-        .on("zoom", (event) => {
-            g.attr("transform", event.transform);
-        });
+  const DUR = 280; // duración animaciones ms
 
-    svg.call(zoom);
+  // ── Estado ────────────────────────────────────────────────────────
+  let root, svgEl, gEl, zoomBeh;
+  const wrap    = document.getElementById('arbol-svg-wrap');
+  const tooltip = document.getElementById('arbol-tooltip');
 
-    const root = d3.stratify()
-        .id(d => d.id)
-        .parentId(d => d.padreId)(data);
-
-    root.x0 = width / 2;
-    root.y0 = 0;
-
-    const treeLayout = d3.tree().nodeSize([120, 90]);
-
-    // 🔥 colapsar inicial
-    if (root.children) root.children.forEach(colapsar);
-
-    update(root);
-
-    function colapsar(d) {
-        if (d.children) {
-            d._children = d.children;
-            d._children.forEach(colapsar);
-            d.children = null;
-        }
-    }
-
-    function update(source) {
-
-        treeLayout(root);
-        root.each(d => d.y = d.depth * 110);
-
-        const nodes = root.descendants();
-        const links = root.links();
-
-        // 🔥 centrar
-        const transform = d3.zoomIdentity.translate(width / 2 - root.x, 80);
-        svg.transition().duration(400).call(zoom.transform, transform);
-
-        // 🔗 LINKS (ATRÁS)
-        const link = g.selectAll("path.link")
-            .data(links, d => d.target.id);
-
-        link.enter()
-            .append("path")
-            .attr("class", "link")
-            .attr("fill", "none")
-            .attr("stroke", "#38BDF8")
-            .attr("stroke-width", 1.5)
-            .merge(link)
-            .transition()
-            .attr("d", d => `
-                M${d.source.x},${d.source.y + 25}
-                C${d.source.x},${(d.source.y + d.target.y) / 2}
-                 ${d.target.x},${(d.source.y + d.target.y) / 2}
-                 ${d.target.x},${d.target.y - 25}
-            `);
-
-        link.exit().remove();
-
-        // 🧠 NODOS (DELANTE)
-        const node = g.selectAll("g.node")
-            .data(nodes, d => d.id);
-
-        const nodeEnter = node.enter()
-            .append("g")
-            .attr("class", "node")
-            .attr("transform", d => `translate(${source.x0},${source.y0})`);
-
-        // 🔳 TARJETA
-        nodeEnter.append("rect")
-            .attr("x", -50)
-            .attr("y", -20)
-            .attr("width", 100)
-            .attr("height", 40)
-            .attr("rx", 10)
-            .attr("fill", "#0F172A")
-            .attr("stroke", d => colorPorRango(d.data.rango))
-            .attr("stroke-width", 2);
-
-        // 👤 NOMBRE
-        nodeEnter.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "-2")
-            .attr("fill", "#EAF0FF")
-            .style("font-size", "12px")
-            .text(d => d.data.nombre);
-
-        // 🏷️ ESTADO
-        nodeEnter.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "12")
-            .attr("fill", "#94A3B8")
-            .style("font-size", "10px")
-            .text(d => d.data.estado ?? "");
-
-        // 🟦 TOOLTIP NATIVO (hover)
-        const tooltip = d3.select("#tooltip");
-
-        // 🧠 hover
-        nodeEnter
-            .on("mousemove", (event, d) => {
-
-                tooltip
-                    .html(`
-                        <div class="tooltip-title">${d.data.nombre}</div>
-                        <div class="tooltip-line">Estado: ${d.data.estado ?? "-"}</div>
-                        <div class="tooltip-line">Rango: ${d.data.rango}</div>
-                        <div class="tooltip-line">Puntos: ${d.data.comision ?? 0}</div>
-                    `)
-                    .style("left", (event.pageX + 12) + "px")
-                    .style("top", (event.pageY + 12) + "px")
-                    .classed("show", true);
-            })
-            .on("mouseleave", () => {
-                tooltip.classed("show", false);
+  // ── Fetch ─────────────────────────────────────────────────────────
+  fetch('/Genealogia/ObtenerArbol')
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('arbol-loading').remove();
+      init(data);
+    })
+    .catch(() => {
+      document.getElementById('arbol-loading').innerHTML =
+        '<span style="color:var(--red)">Error al cargar el árbol</span>';
     });
 
-        // 🔥 BOTÓN COLLAPSE (debajo)
-        const toggle = nodeEnter.append("g")
-            .attr("transform", "translate(0, 35)")
-            .style("display", d => (d.children || d._children) ? "block" : "none")
-            .style("cursor", "pointer")
-            .on("click", (event, d) => {
+  // ── Inicializar SVG ───────────────────────────────────────────────
+  function init(data) {
+    svgEl = d3.select(wrap).append('svg')
+      .attr('width', '100%').attr('height', '100%');
 
-                event.stopPropagation();
+    // Defs: gradiente para los links
+    const defs = svgEl.append('defs');
+    defs.append('linearGradient').attr('id', 'lg')
+      .attr('gradientUnits', 'userSpaceOnUse')
+      .call(g => {
+        g.append('stop').attr('offset','0%').attr('stop-color','rgba(56,189,248,0.5)');
+        g.append('stop').attr('offset','100%').attr('stop-color','rgba(56,189,248,0.08)');
+      });
 
-                if (d.children) {
-                    d._children = d.children;
-                    d.children = null;
-                } else {
-                    d.children = d._children;
-                    d._children = null;
-                }
+    // Grupo principal (receptor del zoom/pan)
+    gEl = svgEl.append('g');
 
-                update(d);
-            });
+    zoomBeh = d3.zoom()
+      .scaleExtent([0.1, 3])
+      .on('zoom', e => gEl.attr('transform', e.transform));
 
-        toggle.append("circle")
-            .attr("r", 6)
-            .attr("fill", "#020617")
-            .attr("stroke", "#38BDF8")
-            .attr("stroke-width", 1.5)
-            .attr("filter", "drop-shadow(0 0 4px #38BDF8)");
+    svgEl.call(zoomBeh).on('dblclick.zoom', null);
 
-        toggle.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "3")
-            .attr("fill", "#38BDF8")
-            .style("font-size", "10px")
-            .style("pointer-events", "none")
-            .text(d => d._children ? "+" : (d.children ? "−" : ""));
+    // Jerarquía D3
+    root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
+    root.x0 = 0; root.y0 = 0;
 
-        // 🔄 UPDATE
-        const nodeUpdate = nodeEnter.merge(node);
+    // Colapsar hijos del nivel 1 hacia abajo (dejar solo root + hijos directos)
+    if (root.children)
+      root.children.forEach(c => { if (c.children) colapsar(c); });
 
-        nodeUpdate.transition()
-            .attr("transform", d => `translate(${d.x},${d.y})`);
+    update(root);
+    centrar();
+  }
 
-        nodeUpdate.select("title")
-            .text(d => 
-                `${d.data.nombre}
-Estado: ${d.data.estado ?? "-"}
-Rango: ${d.data.rango}
-Puntos: ${d.data.comision ?? 0}`
-            );
+  // ── Layout ────────────────────────────────────────────────────────
+  function layout() {
+    return d3.tree().nodeSize([HG + R * 2, VG]);
+  }
 
-        nodeUpdate.select("text:last-child")
-            .text(d => d._children ? "+" : (d.children ? "−" : ""));
+  // ── Update principal ──────────────────────────────────────────────
+  function update(src) {
+    layout()(root);
 
-        nodeUpdate.select("g")
-            .style("display", d => (d.children || d._children) ? "block" : "none");
+    const nodes = root.descendants();
+    const links = root.links();
 
-        node.exit().remove();
+    // ── LINKS (se dibujan PRIMERO = quedan detrás de los nodos) ──
+    const link = gEl.selectAll('path.arbol-link')
+      .data(links, d => d.target.id);
 
-        nodes.forEach(d => {
-            d.x0 = d.x;
-            d.y0 = d.y;
+    const linkEnter = link.enter().insert('path', 'g') // insert antes de cualquier <g>
+      .attr('class', 'arbol-link')
+      .attr('fill', 'none')
+      .attr('stroke', 'url(#lg)')
+      .attr('stroke-width', 1.8)
+      .attr('d', () => bezier(
+        { x: src.x0 ?? 0, y: src.y0 ?? 0 },
+        { x: src.x0 ?? 0, y: src.y0 ?? 0 }
+      ));
+
+    linkEnter.merge(link)
+      .transition().duration(DUR)
+      .attr('d', d => bezier(d.source, d.target));
+
+    link.exit().transition().duration(DUR)
+      .attr('d', () => bezier({ x: src.x, y: src.y }, { x: src.x, y: src.y }))
+      .remove();
+
+    // ── NODOS (se dibujan DESPUÉS = quedan encima de los links) ──
+    const node = gEl.selectAll('g.nodo-g')
+      .data(nodes, d => d.id);
+
+    const enter = node.enter().append('g')
+      .attr('class', 'nodo-g')
+      .attr('transform', () => `translate(${src.x0 ?? 0},${src.y0 ?? 0})`)
+      .style('opacity', 0)
+      .on('click',      (e, d) => { e.stopPropagation(); toggleNodo(d); })
+      .on('mouseenter', (e, d) => showTooltip(e, d))
+      .on('mouseleave', ()     => hideTooltip());
+
+    // Círculo exterior (borde con color de rango)
+    enter.append('circle')
+      .attr('class', 'nodo-border')
+      .attr('r', R + 3)
+      .attr('fill', 'none')
+      .attr('stroke', d => RANGO_COLOR[d.data.rango] || '#475569')
+      .attr('stroke-width', 2)
+      .attr('opacity', 0.6);
+
+    // Círculo interior (fondo)
+    enter.append('circle')
+      .attr('class', 'nodo-circle')
+      .attr('r', R)
+      .attr('fill', '#0F172A')
+      .attr('stroke', d => RANGO_COLOR[d.data.rango] || '#475569')
+      .attr('stroke-width', 1.5);
+
+    // Icono de rango (dentro del círculo, arriba)
+    enter.append('text')
+      .attr('class', 'nodo-icon')
+      .attr('text-anchor', 'middle')
+      .attr('y', -6)
+      .attr('dominant-baseline', 'central')
+      .style('font-size', '13px')
+      .style('pointer-events', 'none')
+      .text(d => RANGO_ICON[d.data.rango] || '👤');
+
+    // Nombre abajo del círculo
+    enter.append('text')
+      .attr('class', 'nodo-nombre')
+      .attr('text-anchor', 'middle')
+      .attr('y', R + 13)
+      .attr('fill', '#EAF0FF')
+      .style('font-size', '10.5px')
+      .style('font-weight', '600')
+      .style('font-family', "'DM Sans', sans-serif")
+      .style('pointer-events', 'none')
+      .text(d => truncar(d.data.nombre, 12));
+
+    // Rango label abajo del nombre
+    enter.append('text')
+      .attr('class', 'nodo-rango-label')
+      .attr('text-anchor', 'middle')
+      .attr('y', R + 25)
+      .attr('fill', d => RANGO_COLOR[d.data.rango] || '#475569')
+      .style('font-size', '9px')
+      .style('pointer-events', 'none')
+      .text(d => d.data.rango);
+
+    // Botón +/− DEBAJO del texto (bien separado de los links)
+    // Se agrega como último elemento → queda encima de todo
+    const toggleG = enter.append('g')
+      .attr('class', 'nodo-toggle')
+      .attr('transform', `translate(0, ${R + 34})`)
+      .on('click', (e, d) => { e.stopPropagation(); toggleNodo(d); });
+
+    toggleG.append('circle')
+      .attr('r', 7)
+      .attr('fill', '#0F172A')
+      .attr('stroke', '#38BDF8')
+      .attr('stroke-width', 1.5);
+
+    toggleG.append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('fill', '#38BDF8')
+      .style('font-size', '12px')
+      .style('pointer-events', 'none');
+
+    // Hover: glow suave con color del rango
+    enter
+      .on('mouseenter.glow', function(e, d) {
+        const color = RANGO_COLOR[d.data.rango] || '#475569';
+        d3.select(this).select('.nodo-circle')
+          .transition().duration(150)
+          .attr('fill', '#1A2540')
+          .style('filter', `drop-shadow(0 0 5px ${color}55)`);
+        d3.select(this).select('.nodo-border')
+          .transition().duration(150)
+          .attr('opacity', 1)
+          .attr('stroke-width', 2.5);
+      })
+      .on('mouseleave.glow', function() {
+        d3.select(this).select('.nodo-circle')
+          .transition().duration(150)
+          .attr('fill', '#0F172A')
+          .style('filter', null);
+        d3.select(this).select('.nodo-border')
+          .transition().duration(150)
+          .attr('opacity', 0.6)
+          .attr('stroke-width', 2);
+      });
+
+    // Merge enter + update existente
+    const merged = enter.merge(node);
+
+    merged.transition().duration(DUR)
+      .attr('transform', d => `translate(${d.x},${d.y})`)
+      .style('opacity', 1);
+
+    // Actualizar texto +/−
+    merged.select('.nodo-toggle text')
+      .text(d => d.children ? '−' : d._children ? '+' : '');
+
+    // Ocultar toggle si no tiene hijos en ningún estado
+    merged.select('.nodo-toggle')
+      .style('display', d => (d.children || d._children) ? null : 'none');
+
+    // Exit con animación
+    node.exit().transition().duration(DUR)
+      .attr('transform', () => `translate(${src.x},${src.y})`)
+      .style('opacity', 0)
+      .remove();
+
+    // Guardar posición para próxima animación
+    nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+  }
+
+  // ── Bezier link (fuente y target en centros de círculos) ──────────
+  function bezier(s, t) {
+    // Los links salen desde abajo del círculo origen y entran arriba del destino
+    const sy = s.y + R;
+    const ty = t.y - R;
+    const my = (sy + ty) / 2;
+    return `M${s.x},${sy} C${s.x},${my} ${t.x},${my} ${t.x},${ty}`;
+  }
+
+  // ── Colapsar / Expandir ───────────────────────────────────────────
+  function colapsar(d) {
+    if (d.children) {
+      d._children = d.children;
+      d._children.forEach(colapsar);
+      d.children = null;
+    }
+  }
+
+  function expandirTodo(d) {
+    if (d._children) {
+      d.children = d._children;
+      d._children = null;
+    }
+    if (d.children) d.children.forEach(expandirTodo);
+  }
+
+  function toggleNodo(d) {
+    if (d.children) {
+      // Colapsar hijos
+      d._children = d.children;
+      d.children = null;
+    } else if (d._children) {
+      // Expandir hijos (solo el nivel directo, no recursivo)
+      d.children = d._children;
+      d._children = null;
+    }
+    update(d);
+  }
+
+  // ── Centrar ───────────────────────────────────────────────────────
+  function centrar() {
+    if (!svgEl || !root) return;
+    const W = wrap.clientWidth || 800;
+    const H = wrap.clientHeight || 460;
+    svgEl.transition().duration(400)
+      .call(zoomBeh.transform,
+        d3.zoomIdentity.translate(W / 2 - root.x, 60));
+  }
+
+  // ── Tooltip ───────────────────────────────────────────────────────
+  function showTooltip(e, d) {
+    const color = RANGO_COLOR[d.data.rango] || '#475569';
+    const hijosCnt = (d.children ? d.children.length : 0) +
+                     (d._children ? d._children.length : 0);
+    tooltip.innerHTML = `
+      <div class="tt-name">${d.data.nombre}</div>
+      <div class="tt-row"><span>Rango</span>
+        <span class="tt-val" style="color:${color}">${d.data.rango}</span></div>
+      <div class="tt-row"><span>Estado</span>
+        <span class="tt-val">${d.data.estado || '—'}</span></div>
+      <div class="tt-row"><span>Puntos</span>
+        <span class="tt-val" style="color:#38BDF8">${d.data.comision || 0}</span></div>
+      ${hijosCnt > 0
+        ? `<div class="tt-row"><span>Referidos</span>
+           <span class="tt-val">${hijosCnt}</span></div>`
+        : ''}
+    `;
+
+    // Posicionar sin salirse de la pantalla
+    const tx = e.clientX + 14;
+    const ty = e.clientY + 14;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top  = ty + 'px';
+    tooltip.classList.add('show');
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove('show');
+  }
+
+  // ── Búsqueda con highlight de múltiples coincidencias ─────────────
+  let searchTimer;
+  document.getElementById('arbol-buscar').addEventListener('input', function () {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => buscar(this.value.trim()), 300);
+  });
+
+  function buscar(q) {
+    if (!root) return;
+
+    // Limpiar highlights anteriores
+    gEl.selectAll('.nodo-circle').attr('fill', '#0F172A').style('filter', null);
+    gEl.selectAll('.nodo-border').attr('opacity', 0.6).attr('stroke-width', 2);
+
+    if (!q) return;
+
+    const ql = q.toLowerCase();
+    const encontrados = [];
+
+    root.each(d => {
+      if (d.data.nombre && d.data.nombre.toLowerCase().includes(ql)) {
+        // Expandir el camino completo desde root hasta este nodo
+        let anc = d.parent;
+        while (anc) {
+          if (anc._children) { anc.children = anc._children; anc._children = null; }
+          anc = anc.parent;
+        }
+        encontrados.push(d);
+      }
+    });
+
+    if (encontrados.length === 0) return;
+
+    // Re-renderizar con los nodos expandidos
+    update(root);
+
+    // Centrar en el primero encontrado
+    const primero = encontrados[0];
+    const W = wrap.clientWidth || 800;
+    const H = wrap.clientHeight || 460;
+    svgEl.transition().duration(500)
+      .call(zoomBeh.transform,
+        d3.zoomIdentity
+          .translate(W / 2 - primero.x, H / 2 - primero.y)
+          .scale(1));
+
+    // Highlight de TODOS los coincidentes
+    setTimeout(() => {
+      gEl.selectAll('g.nodo-g')
+        .filter(d => d.data.nombre && d.data.nombre.toLowerCase().includes(ql))
+        .each(function(d) {
+          const color = RANGO_COLOR[d.data.rango] || '#38BDF8';
+          d3.select(this).select('.nodo-circle')
+            .attr('fill', '#1A3A5C')
+            .style('filter', `drop-shadow(0 0 8px ${color}88)`);
+          d3.select(this).select('.nodo-border')
+            .attr('opacity', 1)
+            .attr('stroke-width', 3);
         });
-    }
+    }, 560);
+  }
 
-});
+  // ── Botones toolbar ───────────────────────────────────────────────
+  document.getElementById('btn-expandir').addEventListener('click', () => {
+    if (!root) return;
+    expandirTodo(root);
+    update(root);
+  });
 
-// 🎨 COLORES
-function colorPorRango(rango) {
-    switch (rango) {
-        case "Diamante": return "#60A5FA";
-        case "Platino": return "#22D3EE";
-        case "Oro": return "#FFD700";
-        case "Plata": return "#C0C0C0";
-        case "Bronce": return "#F97316";
-        case "Cobre": return "#8B5A2B";
-        default: return "#64748B";
+  document.getElementById('btn-colapsar').addEventListener('click', () => {
+    if (!root) return;
+    if (root.children) root.children.forEach(colapsar);
+    update(root);
+    setTimeout(centrar, DUR + 50);
+  });
+
+  document.getElementById('btn-centrar').addEventListener('click', centrar);
+
+  document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    const el = document.querySelector('.arbol-wrap');
+    const btn = document.getElementById('btn-fullscreen');
+    if (!document.fullscreenElement) {
+      el.requestFullscreen().then(() => {
+        btn.textContent = '✕ Salir';
+        btn.classList.add('active');
+        document.getElementById('arbol-svg-wrap').style.height =
+          (window.screen.height - 90) + 'px';
+        setTimeout(centrar, 200);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        btn.textContent = '⛶ Fullscreen';
+        btn.classList.remove('active');
+        document.getElementById('arbol-svg-wrap').style.height = '460px';
+        setTimeout(centrar, 200);
+      });
     }
-}
+  });
+
+  // ── Resize responsive ─────────────────────────────────────────────
+  new ResizeObserver(() => { if (root) centrar(); }).observe(wrap);
+
+  // ── Pinch to zoom (mobile) ────────────────────────────────────────
+  let pinchDist = 0;
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    if (pinchDist > 0) svgEl.call(zoomBeh.scaleBy, d / pinchDist);
+    pinchDist = d;
+  }, { passive: false });
+  wrap.addEventListener('touchend', () => { pinchDist = 0; });
+
+  // ── Helpers ───────────────────────────────────────────────────────
+  function truncar(s, max) {
+    return s && s.length > max ? s.slice(0, max) + '…' : (s || '');
+  }
+
+})();
 </script>

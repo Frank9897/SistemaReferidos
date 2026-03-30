@@ -498,35 +498,145 @@ label {
 .ranking-pts  { font-size: 12px; color: var(--text-muted); }
 .ranking-icon { font-size: 20px; margin-left: auto; }
 
-/* ── Árbol ── */
-.tree-container { width: 100%; height: 620px; }
-#arbol { width: 100%; height: 100%; }
-#arbol svg { width: 100%; height: 100%; }
-#arbol line { stroke: rgba(56,189,248,0.3); stroke-width: 1.5; }
-.node { cursor: pointer; }
-.node text { fill: var(--text); font-size: 11px; }
-.node rect { fill: var(--bg3); }
-.node:hover rect { stroke-width: 2.5; }
-
-.tooltip-pro {
-  position: absolute;
+/* ── Árbol genealógico ── */
+.arbol-wrap {
+  position: relative;
+  width: 100%;
   background: var(--bg2);
-  border: 1px solid var(--border-hover);
-  color: var(--text);
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  font-size: 12.5px;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: all 0.15s;
-  z-index: 9999;
-  box-shadow: var(--shadow);
-  min-width: 160px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
 }
-.tooltip-pro.show { opacity: 1; transform: translateY(0); }
-.tooltip-title { font-weight: 600; color: var(--sky); margin-bottom: 4px; }
-.tooltip-line  { color: var(--text-muted); font-size: 12px; }
+.arbol-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.arbol-titulo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 120px;
+  color: var(--text);
+}
+.arbol-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-width: 180px;
+  transition: border-color 0.18s;
+}
+.arbol-search:focus-within { border-color: var(--sky); }
+.arbol-search input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.arbol-search input::placeholder { color: var(--text-dim); }
+.arbol-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.arbol-btn:hover { color: var(--text); border-color: var(--border-hover); }
+.arbol-btn.active { color: var(--sky); border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.07); }
+#arbol-svg-wrap {
+  width: 100%;
+  height: 460px;
+  cursor: grab;
+  touch-action: none;
+  display: block;
+}
+#arbol-svg-wrap:active { cursor: grabbing; }
+#arbol-svg-wrap svg { width: 100%; height: 100%; display: block; }
+.arbol-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.arbol-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 460px;
+  color: var(--text-muted);
+  font-size: 14px;
+  gap: 12px;
+}
+.arbol-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--sky);
+  border-radius: 50%;
+  animation: arbol-spin 0.8s linear infinite;
+}
+@keyframes arbol-spin { to { transform: rotate(360deg); } }
+#arbol-tooltip {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: var(--bg2);
+  border: 1px solid rgba(56,189,248,0.35);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  min-width: 170px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+#arbol-tooltip.show { opacity: 1; }
+#arbol-tooltip .tt-name { font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 13.5px; }
+#arbol-tooltip .tt-row { display: flex; justify-content: space-between; gap: 12px; color: var(--text-muted); font-size: 12px; margin-top: 3px; }
+#arbol-tooltip .tt-val { color: var(--text); font-weight: 500; }
+.nodo-g { cursor: pointer; }
+@media (max-width: 600px) {
+  #arbol-svg-wrap { height: 360px; }
+  .arbol-loading  { height: 360px; }
+  .arbol-search   { min-width: 130px; }
+  .arbol-btn      { padding: 5px 8px; font-size: 11.5px; }
+}
 
 /* ── Pagos resultado ── */
 .pago-resultado {
