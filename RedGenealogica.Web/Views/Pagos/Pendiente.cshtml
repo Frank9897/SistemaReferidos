@@ -1,31 +1,24 @@
-@{
-    Layout = "_Layout";
-}
+@* Error.cshtml — Views/Pagos/Error.cshtml *@
+@{ ViewData["Title"] = "Error en el pago"; Layout = "_Layout"; }
 
-<div class="pago-resultado pending">
-    <h2>⏳ Pago pendiente</h2>
-
-    <p>
-        Tu pago está siendo procesado. 
-        Esto puede tardar unos minutos dependiendo del medio de pago.
-    </p>
-
-    <p class="redirect">
-        Serás redirigido al panel en <span id="contador">3</span> segundos...
-    </p>
+<div class="centered-page">
+    <div style="text-align:center; max-width:440px;">
+        <div style="font-size:56px; margin-bottom:16px;">❌</div>
+        <div class="pago-resultado error" style="margin:0;">
+            <h2>Error en el pago</h2>
+            <p>Hubo un problema al procesar el pago. Podés intentarlo nuevamente o contactar a soporte.</p>
+            <p class="redirect">Volviendo al panel en <span id="contador">5</span> segundos...</p>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+                <a href="/Usuario/Panel" class="btn btn-secondary">Ir al panel</a>
+            </div>
+        </div>
+    </div>
 </div>
 
+@section Scripts {
 <script>
-    let segundos = 3;
-    const contador = document.getElementById("contador");
-
-    const intervalo = setInterval(() => {
-        segundos--;
-        contador.innerText = segundos;
-
-        if (segundos <= 0) {
-            clearInterval(intervalo);
-            window.location.href = "/Usuario/Panel";
-        }
-    }, 1000);
+    let s = 5;
+    const el = document.getElementById("contador");
+    const t = setInterval(() => { s--; el.textContent = s; if (s <= 0) { clearInterval(t); window.location.href = "/Usuario/Panel"; } }, 1000);
 </script>
+}
