@@ -16,6 +16,7 @@ using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
+using RedGenealogica.Web.Enumeraciones;
 
 namespace RedGenealogica.Web.Controllers;
 
@@ -113,7 +114,7 @@ public class ReferidosController : Controller
         ViewBag.Referido = referido;
         // URL directa de pago: /Pagos/Pagar?referidoId=X
         ViewBag.UrlPago = Url.Action("Pagar", "Pagos", new { referidoId = id }, Request.Scheme);
-
+        ViewBag.CuentaActiva = usuario.EstadoUsuario == EstadoUsuario.Activo;
         return View();
     }
 
