@@ -42,14 +42,13 @@
     <div class="acciones-inline">
         @if (Model.EstadoUsuario != EstadoUsuario.Suspendido)
         {
-            <form method="post" action="/Administrador/Suspender/@Model.Id">
-                @Html.AntiForgeryToken()
+            <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@Model.Id" method="post">
                 <button type="submit" class="btn btn-danger">Suspender</button>
             </form>
         }
         else
         {
-            <form method="post" action="/Administrador/Reactivar/@Model.Id">
+            <form asp-controller="Administrador" asp-action="Reactivar" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-success">Reactivar</button>
             </form>
@@ -90,7 +89,7 @@
                         <td>
                             @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
                             {
-                                <form method="post" action="/Administrador/ConvertirReferido/@r.Id">
+                                <form asp-controller="Administrador" asp-action="ConvertirReferido" asp-route-id="@Model.Id" method="post">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-success btn-sm">Convertir a usuario</button>
                                 </form>

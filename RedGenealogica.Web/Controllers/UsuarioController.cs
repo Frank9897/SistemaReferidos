@@ -45,6 +45,7 @@ public class UsuarioController : Controller
 
         var referidos = await _contexto.Referidos
             .Where(r => r.UsuarioId == usuario.Id)
+            .OrderByDescending(r => r.FechaRegistro)
             .ToListAsync();
 
         // [CORREGIDO] Era EstadoUsuario.Activo → ahora EstadoReferido.Convertido
