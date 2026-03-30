@@ -1,0 +1,147 @@
+@using RedGenealogica.Web.Enumeraciones
+@{
+    ViewData["Title"] = "Solicitar retiro";
+    var usuario  = ViewBag.Usuario  as RedGenealogica.Web.Models.Usuario;
+    var historial = ViewBag.Historial as List<RedGenealogica.Web.Models.SolicitudRetiro> ?? new();
+    var tienePendiente = historial.Any(s => s.Estado == EstadoRetiro.Pendiente);
+}
+
+<div style="max-width:560px;">
+
+    <div style="margin-bottom:22px;">
+        <div class="section-title">💸 Solicitar retiro</div>
+        <div class="section-subtitle">Retirá tus comisiones acumuladas a tu cuenta de MercadoPago</div>
+    </div>
+
+    <!-- SALDO DISPONIBLE -->
+    <div class="card" style="margin-bottom:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.4px;">Saldo disponible</div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:36px; font-weight:700; color:var(--green);">
+                    $@usuario?.SaldoDisponible.ToString("N2")
+                </div>
+            </div>
+            @if (usuario?.SaldoPendienteRetiro > 0)
+            {
+                <div style="text-align:right;">
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">En proceso de retiro</div>
+                    <div style="font-size:20px; font-weight:600; color:var(--amber);">
+                        $@usuario.SaldoPendienteRetiro.ToString("N2")
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    @if (tienePendiente)
+    {
+        <div class="alert alert-warning" style="margin-bottom:18px;">
+            ⏳ Ya tenés una solicitud pendiente. Esperá a que el admin la resuelva antes de solicitar otro retiro.
+        </div>
+    }
+    else if (usuario?.SaldoDisponible <= 0)
+    {
+        <div class="alert alert-info" style="margin-bottom:18px;">
+            No tenés saldo disponible para retirar aún. ¡Seguí sumando referidos!
+        </div>
+    }
+    else
+    {
+        <div class="card" style="margin-bottom:18px;">
+            <div class="card-header">
+                <span class="card-title">Nueva solicitud</span>
+            </div>
+
+            <form method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="form-group">
+                    <label>Monto a retirar ($)</label>
+                    <input name="monto" type="number" step="0.01" min="0.01"
+                           max="@usuario?.SaldoDisponible.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                           placeholder="Ej: 5000.00" required />
+                    <span style="font-size:12px; color:var(--text-muted);">
+                        Máximo disponible: $@usuario?.SaldoDisponible.ToString("N2")
+                    </span>
+                </div>
+
+                <div class="form-group" style="margin-top:14px;">
+                    <label>CBU o alias de MercadoPago</label>
+                    <input name="cbuAlias" type="text"
+                           placeholder="Ej: miusuario.mp o 0000003100..."
+                           maxlength="100" required />
+                    <span style="font-size:12px; color:var(--text-muted);">
+                        Ingresá el CBU o alias de la cuenta donde querés recibir el dinero
+                    </span>
+                </div>
+
+                <div style="background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius-sm); padding:12px 14px; margin:16px 0; font-size:13px; color:var(--text-muted);">
+                    ⚠️ Una vez enviada la solicitud, el monto quedará bloqueado hasta que el admin la procese. El tiempo de acreditación depende de MercadoPago.
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+                    Solicitar retiro
+                </button>
+            </form>
+        </div>
+    }
+
+    <!-- HISTORIAL -->
+    @if (historial.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Últimos retiros</span>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>CBU/Alias</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in historial)
+                    {
+                        var badgeRetiro = s.Estado switch {
+                            EstadoRetiro.Completado => "badge-success",
+                            EstadoRetiro.Pendiente  => "badge-warning",
+                            EstadoRetiro.Aprobado   => "badge-info",
+                            EstadoRetiro.Rechazado  => "badge-danger",
+                            _ => "badge-muted"
+                        };
+                        var labelRetiro = s.Estado switch {
+                            EstadoRetiro.Completado => "Completado",
+                            EstadoRetiro.Pendiente  => "Pendiente",
+                            EstadoRetiro.Aprobado   => "Aprobado",
+                            EstadoRetiro.Rechazado  => "Rechazado",
+                            _ => s.Estado.ToString()
+                        };
+                        <tr>
+                            <td>@s.FechaSolicitud.ToString("dd/MM/yy")</td>
+                            <td style="color:var(--green); font-weight:600;">$@s.Monto.ToString("N2")</td>
+                            <td style="color:var(--text-muted); font-size:12.5px;">@s.CbuAlias</td>
+                            <td>
+                                <span class="badge @badgeRetiro">@labelRetiro</span>
+                                @if (!string.IsNullOrEmpty(s.NotaAdmin) && s.Estado == EstadoRetiro.Rechazado)
+                                {
+                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px;">@s.NotaAdmin</div>
+                                }
+                                @if (!string.IsNullOrEmpty(s.ReferenciaTransferencia))
+                                {
+                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px;">Ref: @s.ReferenciaTransferencia</div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @await Html.PartialAsync("_BotonVolver")
+</div>

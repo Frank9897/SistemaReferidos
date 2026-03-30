@@ -155,4 +155,46 @@ public class UsuarioController : Controller
         var urlPago = await _servicioPagos.CrearPreferencia(referido.Id);
         return Redirect(urlPago);
     }
+
+    // GET /Usuario/SolicitarRetiro
+    [HttpGet]
+    public async Task<IActionResult> SolicitarRetiro()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
+        // Cargar los últimos 5 retiros para mostrar historial
+        var historial = await _contexto.SolicitudesRetiro
+            .Where(s => s.UsuarioId == usuario.Id)
+            .OrderByDescending(s => s.FechaSolicitud)
+            .Take(5)
+            .ToListAsync();
+
+        ViewBag.Usuario  = usuario;
+        ViewBag.Historial = historial;
+        return View();
+    }
+
+    // POST /Usuario/SolicitarRetiro
+    [HttpPost]
+    public async Task<IActionResult> SolicitarRetiro(decimal monto, string cbuAlias)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
+        var servicioRetiros = HttpContext.RequestServices
+            .GetRequiredService<ServicioRetiros>();
+
+        var (exito, mensaje) = await servicioRetiros
+            .SolicitarRetiroAsync(usuario.Id, monto, cbuAlias);
+
+        if (exito)
+            TempData["Exito"] = mensaje;
+        else
+            TempData["Error"] = mensaje;
+
+        return RedirectToAction("SolicitarRetiro");
+    }
 }

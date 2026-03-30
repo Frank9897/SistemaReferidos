@@ -53,6 +53,13 @@ public class ServicioRetiros
         if (monto > usuario.SaldoDisponible)
             return (false, $"Saldo insuficiente. Disponible: ${usuario.SaldoDisponible:F2}");
 
+        // Verificar que no haya ya un retiro pendiente
+        var tienePendiente = await _contexto.SolicitudesRetiro
+            .AnyAsync(s => s.UsuarioId == usuarioId && s.Estado == EstadoRetiro.Pendiente);
+
+        if (tienePendiente)
+            return (false, "Ya tenés una solicitud de retiro pendiente. Esperá a que el admin la resuelva antes de solicitar otro.");
+            
         // Bloquear el monto: sale de Disponible y entra en PendienteRetiro
         usuario.SaldoDisponible -= monto;
         usuario.SaldoPendienteRetiro += monto;
