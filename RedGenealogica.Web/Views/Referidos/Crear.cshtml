@@ -1,37 +1,66 @@
+@* Crear.cshtml — Views/Referidos/Crear.cshtml *@
 @model RedGenealogica.Web.ViewModels.RegistrarReferidoViewModel
-@{
-    ViewBag.MostrarVolver = true;
-}
+@{ ViewData["Title"] = "Registrar referido"; }
+
 <div class="centered-page">
     <div class="center-box">
-<h2>Registrar Referido</h2>
 
-<div asp-validation-summary="All"></div>
-<div class="form-container">
-<form method="post">
-    <div>
-        <label>Nombre</label>
-        <input asp-for="NombreCompleto" />
-    </div>
+        <div style="margin-bottom:20px;">
+            <div class="section-title">👤 Registrar referido</div>
+            <div class="section-subtitle">Completá los datos de la persona que querés sumar a tu red</div>
+        </div>
 
-    <div>
-        <label>Email</label>
-        <input asp-for="CorreoElectronico" />
-    </div>
+        <div class="card">
+            <div asp-validation-summary="All" class="validation-summary-errors"></div>
 
-    <div>
-        <label>Teléfono</label>
-        <input asp-for="Telefono" />
-    </div>
+            <form method="post">
 
-    <div>
-        <label>Producto</label>
-        <input asp-for="ProductoId" value="1" />
-    </div>
+                <div class="form-group">
+                    <label asp-for="NombreCompleto">Nombre completo *</label>
+                    <input asp-for="NombreCompleto" placeholder="Juan Pérez" />
+                    <span asp-validation-for="NombreCompleto" class="field-validation-error"></span>
+                </div>
 
-    <button type="submit">Registrar</button>
-</form>
-</div>
-@await Html.PartialAsync("_BotonVolver")
+                <div class="form-group">
+                    <label asp-for="CorreoElectronico">Correo electrónico</label>
+                    <input asp-for="CorreoElectronico" type="email" placeholder="juan@email.com" />
+                    <span asp-validation-for="CorreoElectronico" class="field-validation-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Telefono">Teléfono</label>
+                    <input asp-for="Telefono" placeholder="+54 9 11 1234-5678" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ProductoId">Producto *</label>
+                    @if (ViewBag.Productos != null && ((List<RedGenealogica.Web.Models.Producto>)ViewBag.Productos).Any())
+                    {
+                        <select asp-for="ProductoId">
+                            <option value="">— Seleccioná un producto —</option>
+                            @foreach (var p in (List<RedGenealogica.Web.Models.Producto>)ViewBag.Productos)
+                            {
+                                <option value="@p.Id">@p.Nombre — $@p.Precio.ToString("N0")</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">No hay productos activos disponibles. Contactá al administrador.</div>
+                    }
+                    <span asp-validation-for="ProductoId" class="field-validation-error"></span>
+                </div>
+
+                <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:16px; font-size:13px; color:var(--text-muted);">
+                    💡 Una vez registrado, el referido deberá pagar el producto para que tu cuenta se active y empieces a ganar comisiones.
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+                    Registrar referido
+                </button>
+            </form>
+        </div>
+
+        @await Html.PartialAsync("_BotonVolver")
     </div>
 </div>

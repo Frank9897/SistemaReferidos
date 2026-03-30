@@ -1,0 +1,40 @@
+@* LinkPago.cshtml — Views/Referidos/LinkPago.cshtml *@
+@{ ViewData["Title"] = "Link de pago"; var referido = ViewBag.Referido as RedGenealogica.Web.Models.Referido; var urlPago = ViewBag.UrlPago as string; }
+
+<div class="centered-page">
+    <div class="center-box">
+        <div class="section-title">💳 Link de pago</div>
+        <div class="section-subtitle">Compartí este link con tu referido para que complete el pago</div>
+
+        <div class="card">
+            <div style="margin-bottom:18px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">REFERIDO</div>
+                <div style="font-weight:600; font-size:16px;">@referido?.NombreCompleto</div>
+                @if (!string.IsNullOrEmpty(referido?.CorreoElectronico))
+                {
+                    <div style="font-size:13px; color:var(--text-muted);">@referido.CorreoElectronico</div>
+                }
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="margin:18px 0;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">LINK DE PAGO DIRECTO</div>
+                <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--sky); word-break:break-all; font-family:monospace;">
+                    @urlPago
+                </div>
+                <button onclick="navigator.clipboard.writeText('@urlPago'); this.textContent='¡Copiado!';" class="btn btn-secondary btn-sm" style="margin-top:8px;">
+                    Copiar link
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--text-muted);">
+                💡 Una vez que tu referido complete el pago, tu cuenta se activará automáticamente y comenzarás a ganar comisiones.
+            </div>
+        </div>
+
+        @await Html.PartialAsync("_BotonVolver")
+    </div>
+</div>

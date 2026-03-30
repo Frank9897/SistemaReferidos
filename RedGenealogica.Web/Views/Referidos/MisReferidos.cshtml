@@ -1,0 +1,80 @@
+@* MisReferidos.cshtml — Views/Referidos/MisReferidos.cshtml *@
+@model List<RedGenealogica.Web.Models.Referido>
+@using RedGenealogica.Web.Enumeraciones
+@{ ViewData["Title"] = "Mis referidos"; }
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px;">
+    <div>
+        <div class="section-title">👥 Mis referidos</div>
+        <div class="section-subtitle">@Model.Count referido(s) registrado(s)</div>
+    </div>
+    <a href="/Referidos/Crear" class="btn btn-primary">+ Registrar nuevo</a>
+</div>
+
+<div class="card">
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <p>Aún no registraste ningún referido.<br>
+            <a href="/Referidos/Crear" style="color:var(--sky);">Registrá tu primer referido →</a></p>
+        </div>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Contacto</th>
+                    <th>Producto</th>
+                    <th>Estado</th>
+                    <th>Registrado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    var badgeClass = r.Estado switch {
+                        EstadoReferido.Convertido => "badge-success",
+                        EstadoReferido.Pagado     => "badge-info",
+                        EstadoReferido.Cancelado  => "badge-danger",
+                        _ => "badge-warning"
+                    };
+                    var estadoLabel = r.Estado switch {
+                        EstadoReferido.Convertido => "Convertido",
+                        EstadoReferido.Pagado     => "Pagado",
+                        EstadoReferido.Cancelado  => "Cancelado",
+                        _ => "Pendiente"
+                    };
+                    <tr>
+                        <td><strong>@r.NombreCompleto</strong></td>
+                        <td style="color:var(--text-muted);">
+                            @(r.CorreoElectronico ?? r.Telefono ?? "—")
+                        </td>
+                        <td>@(r.Producto?.Nombre ?? "—")</td>
+                        <td><span class="badge @badgeClass">@estadoLabel</span></td>
+                        <td>@r.FechaRegistro.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (r.Estado == EstadoReferido.Pendiente)
+                            {
+                                <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">💳 Ver link</a>
+                            }
+                            else if (r.Estado == EstadoReferido.Convertido)
+                            {
+                                <span style="font-size:12px; color:var(--green);">✓ Activo en la red</span>
+                            }
+                            else if (r.Estado == EstadoReferido.Pagado)
+                            {
+                                <span style="font-size:12px; color:var(--sky);">Esperando conversión</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@await Html.PartialAsync("_BotonVolver")
