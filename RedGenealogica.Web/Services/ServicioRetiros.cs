@@ -96,11 +96,7 @@ public class ServicioRetiros
         if (solicitud.Estado != EstadoRetiro.Pendiente)
             return (false, "Solo se pueden aprobar solicitudes pendientes");
 
-        // Desbloquear el monto pendiente (ya fue descontado del disponible al solicitar)
-        solicitud.Usuario!.SaldoPendienteRetiro -= solicitud.Monto;
-
-        solicitud.Estado = EstadoRetiro.Completado;
-        solicitud.ReferenciaTransferencia = referenciaTransferencia;
+        solicitud.Estado = EstadoRetiro.Aprobado;
         solicitud.NotaAdmin = nota;
         solicitud.AdminResolvidoId = adminId;
         solicitud.FechaResolucion = DateTime.UtcNow;
@@ -108,6 +104,30 @@ public class ServicioRetiros
         await _contexto.SaveChangesAsync();
 
         return (true, "Retiro completado y registrado");
+    }
+
+    public async Task<(bool exito, string mensaje)> CompletarRetiroAsync(int solicitudId, string referenciaTransferencia)
+    {
+        var solicitud = await _contexto.SolicitudesRetiro
+            .Include(s => s.Usuario)
+            .FirstOrDefaultAsync(s => s.Id == solicitudId);
+
+        if (solicitud == null)
+            return (false, "Solicitud no encontrada");
+
+        if (solicitud.Estado != EstadoRetiro.Aprobado)
+            return (false, "Solo se pueden completar solicitudes aprobadas");
+
+        // Ahora sí se descuenta definitivamente
+        solicitud.Usuario!.SaldoPendienteRetiro -= solicitud.Monto;
+
+        solicitud.Estado = EstadoRetiro.Completado;
+        solicitud.ReferenciaTransferencia = referenciaTransferencia;
+        solicitud.FechaResolucion = DateTime.UtcNow;
+
+        await _contexto.SaveChangesAsync();
+
+        return (true, "Retiro completado correctamente");
     }
 
     // ----------------------------------------------------------------
