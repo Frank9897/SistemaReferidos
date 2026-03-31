@@ -101,7 +101,8 @@ public class UsuarioController : Controller
         {
             Usuario = usuario,
             Referidos = referidos,
-            TotalReferidosDirectos = referidos.Count,
+            TotalReferidosDirectos = hijosDirectos.Count,
+            TotalReferidosRegistrados = referidos.Count,
             TotalReferidosIndirectos = referidosIndirectos,
             TotalReferidosActivos = totalReferidosActivos,
             TotalComisiones = totalComisiones,

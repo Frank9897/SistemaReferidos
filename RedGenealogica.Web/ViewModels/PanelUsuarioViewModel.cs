@@ -11,7 +11,7 @@ public class PanelUsuarioViewModel
     public int TotalReferidosIndirectos { get; set; }
     public int TotalReferidosActivos { get; set; }
     public decimal TotalComisiones { get; set; }
-
+    public int TotalReferidosRegistrados { get; set; }
     public string? SiguienteRango { get; set; }
     public int PuntosFaltantesParaSiguienteRango { get; set; }
     public int ProgresoRangoPorcentaje { get; set; }

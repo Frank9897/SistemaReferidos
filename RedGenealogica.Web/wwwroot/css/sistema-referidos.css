@@ -233,7 +233,9 @@ img { max-width: 100%; }
   height: 2px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-
+.metric-card.orange {
+    border-left: 4px solid #f59e0b;
+}
 .metric-card.blue::before  { background: var(--sky); }
 .metric-card.green::before { background: var(--green); }
 .metric-card.cyan::before  { background: #06B6D4; }
