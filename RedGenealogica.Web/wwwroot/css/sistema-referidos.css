@@ -211,7 +211,7 @@ img { max-width: 100%; }
 /* ── Métricas ── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -233,12 +233,11 @@ img { max-width: 100%; }
   height: 2px;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-.metric-card.orange {
-    border-left: 4px solid #f59e0b;
-}
+
 .metric-card.blue::before  { background: var(--sky); }
 .metric-card.green::before { background: var(--green); }
 .metric-card.cyan::before  { background: #06B6D4; }
+.metric-card.orange::before {background: var(--amber);}
 .metric-card.purple::before{ background: var(--purple); }
 .metric-card.amber::before { background: var(--amber); }
 

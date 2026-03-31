@@ -73,7 +73,9 @@ public class UsuarioController : Controller
 
         int totalDescendientes = ContarDescendientes(usuario.Id, todosLosUsuarios);
 
-        int referidosIndirectos = totalDescendientes - hijosDirectos.Count;
+        int referidosIndirectos = totalDescendientes > hijosDirectos.Count 
+            ? totalDescendientes - hijosDirectos.Count 
+            : 0;
 
         var rangoActual = await _contexto.RangosUsuario
             .FirstOrDefaultAsync(r => r.TipoRango == usuario.TipoRangoActual);

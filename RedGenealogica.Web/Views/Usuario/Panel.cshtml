@@ -62,7 +62,18 @@
         <div class="metric-label">Red total</div>
 
         <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-            @Model.TotalReferidosDirectos directos · @Model.TotalReferidosIndirectos indirectos
+            @if (Model.TotalReferidosIndirectos > 0)
+            {
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                    @Model.TotalReferidosDirectos directos · @Model.TotalReferidosIndirectos en tu red
+                </div>
+            }
+            else
+            {
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                    Aún sin red indirecta
+                </div>
+            }
         </div>
     </div>
 </div>
