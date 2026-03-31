@@ -140,17 +140,27 @@ public class UsuarioController : Controller
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
 
-        // [CORREGIDO] Era r.Estado != EstadoUsuario.Activo
-        // Busca referidos que aún no fueron convertidos (Pendiente o Pagado)
         var referido = await _contexto.Referidos
             .Include(r => r.Producto)
-            .FirstOrDefaultAsync(r =>
-                r.UsuarioId == usuario.Id &&
-                r.Estado != EstadoReferido.Convertido);
+            .Where(r => r.UsuarioId == usuario.Id)
+            .OrderBy(r => r.FechaRegistro)
+            .FirstOrDefaultAsync();
 
         if (referido == null)
         {
-            TempData["Error"] = "No tenés referidos pendientes para activar.";
+            TempData["Error"] = "Primero tenés que registrar un referido para activar tu cuenta.";
+            return RedirectToAction("Panel");
+        }
+
+        if (referido.Estado == EstadoReferido.Convertido || referido.Estado == EstadoReferido.Pagado)
+        {
+            TempData["Error"] = "Tu cuenta ya está activada.";
+            return RedirectToAction("Panel");
+        }
+
+        if (referido.Estado != EstadoReferido.Pendiente)
+        {
+            TempData["Error"] = "Este referido ya fue procesado.";
             return RedirectToAction("Panel");
         }
 
