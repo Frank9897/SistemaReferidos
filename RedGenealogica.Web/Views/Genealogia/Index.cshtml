@@ -3,29 +3,24 @@
 
 <div class="arbol-wrap">
 
+  <!-- TOOLBAR: título + búsqueda + botones, todos centrados verticalmente -->
   <div class="arbol-toolbar">
     <span class="arbol-titulo">🌳 Árbol genealógico</span>
 
     <div class="arbol-search">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
       </svg>
       <input id="arbol-buscar" type="text" placeholder="Buscar usuario..." autocomplete="off" />
     </div>
 
-    <button class="arbol-btn" id="btn-expandir" title="Expandir todo">⊕ Expandir</button>
-    <button class="arbol-btn" id="btn-colapsar" title="Colapsar todo">⊖ Colapsar</button>
-    <button class="arbol-btn" id="btn-centrar"  title="Centrar vista">⌖ Centrar</button>
-    <button class="arbol-btn" id="btn-fullscreen" title="Pantalla completa">⛶ Fullscreen</button>
+    <button class="arbol-btn" id="btn-expandir">⊕ Expandir</button>
+    <button class="arbol-btn" id="btn-colapsar">⊖ Colapsar</button>
+    <button class="arbol-btn" id="btn-centrar">⌖ Centrar</button>
+    <button class="arbol-btn" id="btn-fullscreen">⛶ Full</button>
   </div>
 
-  <div id="arbol-svg-wrap">
-    <div class="arbol-loading" id="arbol-loading">
-      <div class="arbol-spinner"></div>
-      <span>Cargando árbol...</span>
-    </div>
-  </div>
-
+  <!-- LEYENDA + instrucción: ahora va ARRIBA del canvas -->
   <div class="arbol-legend">
     <div class="legend-item"><div class="legend-dot" style="background:#A0522D"></div>Cobre</div>
     <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Bronce</div>
@@ -34,9 +29,15 @@
     <div class="legend-item"><div class="legend-dot" style="background:#22D3EE"></div>Platino</div>
     <div class="legend-item"><div class="legend-dot" style="background:#60A5FA"></div>Diamante</div>
     <div class="legend-item"><div class="legend-dot" style="background:#475569"></div>Referido</div>
-    <span style="margin-left:auto; font-size:11px; color:var(--text-dim);">
-      Click → expandir/colapsar · Arrastrar → mover · Rueda → zoom
-    </span>
+    <span class="arbol-hint">Click → expandir · Arrastrar → mover · Rueda → zoom</span>
+  </div>
+
+  <!-- CANVAS -->
+  <div id="arbol-svg-wrap">
+    <div class="arbol-loading" id="arbol-loading">
+      <div class="arbol-spinner"></div>
+      <span>Cargando árbol...</span>
+    </div>
   </div>
 
 </div>
@@ -50,9 +51,9 @@
 (function () {
 
   // ── Configuración ─────────────────────────────────────────────────
-  const R  = 28;   // radio del círculo principal
-  const VG = 90;   // separación vertical entre niveles
-  const HG = 70;   // separación horizontal entre nodos (nodeSize)
+  const R  = 22;   // radio del círculo principal (reducido de 28)
+  const VG = 110;  // separación vertical entre niveles (más espacio = links más largos)
+  const HG = 60;   // separación horizontal entre nodos
 
   const RANGO_COLOR = {
     Diamante: '#60A5FA', Platino: '#22D3EE', Oro: '#FFD700',
@@ -135,22 +136,22 @@
     const link = gEl.selectAll('path.arbol-link')
       .data(links, d => d.target.id);
 
-    const linkEnter = link.enter().insert('path', 'g') // insert antes de cualquier <g>
+    const linkEnter = link.enter().insert('path', 'g')
       .attr('class', 'arbol-link')
       .attr('fill', 'none')
-      .attr('stroke', 'url(#lg)')
-      .attr('stroke-width', 1.8)
-      .attr('d', () => bezier(
+      .attr('stroke', 'rgba(56,189,248,0.25)')
+      .attr('stroke-width', 1.2)
+      .attr('d', () => linkPath(
         { x: src.x0 ?? 0, y: src.y0 ?? 0 },
         { x: src.x0 ?? 0, y: src.y0 ?? 0 }
       ));
 
     linkEnter.merge(link)
       .transition().duration(DUR)
-      .attr('d', d => bezier(d.source, d.target));
+      .attr('d', d => linkPath(d.source, d.target));
 
     link.exit().transition().duration(DUR)
-      .attr('d', () => bezier({ x: src.x, y: src.y }, { x: src.x, y: src.y }))
+      .attr('d', () => linkPath({ x: src.x, y: src.y }, { x: src.x, y: src.y }))
       .remove();
 
     // ── NODOS (se dibujan DESPUÉS = quedan encima de los links) ──
@@ -182,13 +183,13 @@
       .attr('stroke', d => RANGO_COLOR[d.data.rango] || '#475569')
       .attr('stroke-width', 1.5);
 
-    // Icono de rango (dentro del círculo, arriba)
+    // Icono de rango (centrado dentro del círculo)
     enter.append('text')
       .attr('class', 'nodo-icon')
       .attr('text-anchor', 'middle')
-      .attr('y', -6)
+      .attr('y', 0)
       .attr('dominant-baseline', 'central')
-      .style('font-size', '13px')
+      .style('font-size', '16px')
       .style('pointer-events', 'none')
       .text(d => RANGO_ICON[d.data.rango] || '👤');
 
@@ -196,7 +197,7 @@
     enter.append('text')
       .attr('class', 'nodo-nombre')
       .attr('text-anchor', 'middle')
-      .attr('y', R + 13)
+      .attr('y', R + 14)
       .attr('fill', '#EAF0FF')
       .style('font-size', '10.5px')
       .style('font-weight', '600')
@@ -208,7 +209,7 @@
     enter.append('text')
       .attr('class', 'nodo-rango-label')
       .attr('text-anchor', 'middle')
-      .attr('y', R + 25)
+      .attr('y', R + 26)
       .attr('fill', d => RANGO_COLOR[d.data.rango] || '#475569')
       .style('font-size', '9px')
       .style('pointer-events', 'none')
@@ -218,7 +219,7 @@
     // Se agrega como último elemento → queda encima de todo
     const toggleG = enter.append('g')
       .attr('class', 'nodo-toggle')
-      .attr('transform', `translate(0, ${R + 34})`)
+      .attr('transform', `translate(0, ${R + 36})`)
       .on('click', (e, d) => { e.stopPropagation(); toggleNodo(d); });
 
     toggleG.append('circle')
@@ -283,13 +284,12 @@
     nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
   }
 
-  // ── Bezier link (fuente y target en centros de círculos) ──────────
-  function bezier(s, t) {
-    // Los links salen desde abajo del círculo origen y entran arriba del destino
+  // ── Link con codo ortogonal (sale vertical, dobla horizontal, baja) ──
+  function linkPath(s, t) {
     const sy = s.y + R;
     const ty = t.y - R;
-    const my = (sy + ty) / 2;
-    return `M${s.x},${sy} C${s.x},${my} ${t.x},${my} ${t.x},${ty}`;
+    const my = sy + (ty - sy) * 0.45; // punto de quiebre al 45% del recorrido
+    return `M${s.x},${sy} L${s.x},${my} L${t.x},${my} L${t.x},${ty}`;
   }
 
   // ── Colapsar / Expandir ───────────────────────────────────────────
@@ -434,6 +434,9 @@
 
   document.getElementById('btn-colapsar').addEventListener('click', () => {
     if (!root) return;
+    // Colapsar TODO desde root: primero expandir todo para tener el árbol completo,
+    // luego colapsar todos los nodos excepto el root mismo
+    expandirTodo(root);
     if (root.children) root.children.forEach(colapsar);
     update(root);
     setTimeout(centrar, DUR + 50);
