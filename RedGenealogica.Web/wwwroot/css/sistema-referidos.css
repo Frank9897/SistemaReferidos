@@ -208,15 +208,18 @@ img { max-width: 100%; }
   color: var(--text);
 }
 
-/* ── Métricas ── */
+/* =====================================================
+   GRID MÉTRICAS (FIX 5 COLUMNAS)
+   ===================================================== */
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -238,7 +241,7 @@ img { max-width: 100%; }
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 16px;
   transition: 0.2s;
   position: relative;
   overflow: hidden;
@@ -286,6 +289,9 @@ img { max-width: 100%; }
   color: var(--text-muted);
   font-weight: 400;
 }
+
+
+
 
 /* ── Badges ── */
 .badge {
