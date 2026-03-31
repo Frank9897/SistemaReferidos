@@ -67,7 +67,13 @@ public class UsuarioController : Controller
             .AsNoTracking()
             .ToListAsync();
 
-        int referidosIndirectos = ContarReferidosIndirectos(usuario.Id, todosLosUsuarios);
+        var hijosDirectos = todosLosUsuarios
+            .Where(u => u.IdUsuarioPadre == usuario.Id)
+            .ToList();
+
+        int totalDescendientes = ContarDescendientes(usuario.Id, todosLosUsuarios);
+
+        int referidosIndirectos = totalDescendientes - hijosDirectos.Count;
 
         var rangoActual = await _contexto.RangosUsuario
             .FirstOrDefaultAsync(r => r.TipoRango == usuario.TipoRangoActual);
@@ -108,20 +114,19 @@ public class UsuarioController : Controller
         return View(modelo);
     }
 
-    private static int ContarReferidosIndirectos(int usuarioId, List<Usuario> usuarios)
+    private static int ContarDescendientes(int usuarioId, List<Usuario> usuarios)
     {
         var hijos = usuarios.Where(u => u.IdUsuarioPadre == usuarioId).ToList();
-        if (hijos.Count == 0)
-            return 0;
 
         int total = 0;
+
         foreach (var hijo in hijos)
         {
             total += 1;
-            total += ContarReferidosIndirectos(hijo.Id, usuarios);
+            total += ContarDescendientes(hijo.Id, usuarios);
         }
 
-        return total - hijos.Count;
+        return total;
     }
 
     [HttpPost]
