@@ -3,24 +3,31 @@
 
 <div class="arbol-wrap">
 
-  <!-- TOOLBAR: título + búsqueda + botones, todos centrados verticalmente -->
+  @* ============================================================
+     BLOQUE MODIFICADO: toolbar tipo "nav"
+     - Búsqueda alineada a la misma altura que los botones.
+     - Acciones agrupadas para mantener una composición limpia.
+     ============================================================ *@
   <div class="arbol-toolbar">
     <span class="arbol-titulo">🌳 Árbol genealógico</span>
 
-    <div class="arbol-search">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    <div class="arbol-search" role="search" aria-label="Buscar usuario en el árbol">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
       </svg>
       <input id="arbol-buscar" type="text" placeholder="Buscar usuario..." autocomplete="off" />
     </div>
 
-    <button class="arbol-btn" id="btn-expandir">⊕ Expandir</button>
-    <button class="arbol-btn" id="btn-colapsar">⊖ Colapsar</button>
-    <button class="arbol-btn" id="btn-centrar">⌖ Centrar</button>
-    <button class="arbol-btn" id="btn-fullscreen">⛶ Full</button>
+    <div class="arbol-actions">
+      <button class="arbol-btn" id="btn-expandir" type="button">⊕ Expandir</button>
+      <button class="arbol-btn" id="btn-colapsar" type="button">⊖ Colapsar</button>
+      <button class="arbol-btn" id="btn-centrar" type="button">⌖ Centrar</button>
+      <button class="arbol-btn" id="btn-fullscreen" type="button">⛶ Full</button>
+    </div>
   </div>
 
-  <!-- LEYENDA + instrucción: ahora va ARRIBA del canvas -->
+  @* Leyenda y ayuda visual: se mantiene arriba del canvas para reforzar lectura *@
   <div class="arbol-legend">
     <div class="legend-item"><div class="legend-dot" style="background:#A0522D"></div>Cobre</div>
     <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Bronce</div>
@@ -32,14 +39,13 @@
     <span class="arbol-hint">Click → expandir · Arrastrar → mover · Rueda → zoom</span>
   </div>
 
-  <!-- CANVAS -->
+  @* Área de render del árbol *@
   <div id="arbol-svg-wrap">
     <div class="arbol-loading" id="arbol-loading">
       <div class="arbol-spinner"></div>
       <span>Cargando árbol...</span>
     </div>
   </div>
-
 </div>
 
 <div id="arbol-tooltip"></div>
@@ -50,10 +56,13 @@
 <script>
 (function () {
 
-  // ── Configuración ─────────────────────────────────────────────────
-  const R  = 22;   // radio del círculo principal (reducido de 28)
-  const VG = 110;  // separación vertical entre niveles (más espacio = links más largos)
-  const HG = 60;   // separación horizontal entre nodos
+  // ── Configuración del layout ────────────────────────────────────
+  const R = 22;   // radio del nodo
+  const VG = 110; // separación vertical entre niveles
+  const HG = 60;  // separación horizontal entre nodos
+  const DUR = 280; // duración de animaciones
+
+  const DEFAULT_TREE_HEIGHT = '460px';
 
   const RANGO_COLOR = {
     Diamante: '#60A5FA', Platino: '#22D3EE', Oro: '#FFD700',
@@ -66,40 +75,44 @@
     Plata: '⚡', Bronce: '🔶', Cobre: '🔸', Referido: '👤'
   };
 
-  const DUR = 280; // duración animaciones ms
-
-  // ── Estado ────────────────────────────────────────────────────────
-  let root, svgEl, gEl, zoomBeh;
-  const wrap    = document.getElementById('arbol-svg-wrap');
+  // ── Estado ───────────────────────────────────────────────────────
+  let root, svgEl, gEl, zoomBeh, searchTimer;
+  const wrap = document.getElementById('arbol-svg-wrap');
   const tooltip = document.getElementById('arbol-tooltip');
+  const arbolWrap = document.querySelector('.arbol-wrap');
+  const btnFullscreen = document.getElementById('btn-fullscreen');
+  const treeHost = document.getElementById('arbol-svg-wrap');
 
-  // ── Fetch ─────────────────────────────────────────────────────────
+  // ── Carga inicial ────────────────────────────────────────────────
   fetch('/Genealogia/ObtenerArbol')
     .then(r => r.json())
     .then(data => {
-      document.getElementById('arbol-loading').remove();
+      const loader = document.getElementById('arbol-loading');
+      if (loader) loader.remove();
       init(data);
     })
     .catch(() => {
-      document.getElementById('arbol-loading').innerHTML =
-        '<span style="color:var(--red)">Error al cargar el árbol</span>';
+      const loader = document.getElementById('arbol-loading');
+      if (loader) {
+        loader.innerHTML = '<span style="color:var(--red)">Error al cargar el árbol</span>';
+      }
     });
 
-  // ── Inicializar SVG ───────────────────────────────────────────────
+  // ── Inicialización de SVG y jerarquía D3 ────────────────────────
   function init(data) {
     svgEl = d3.select(wrap).append('svg')
-      .attr('width', '100%').attr('height', '100%');
+      .attr('width', '100%')
+      .attr('height', '100%');
 
-    // Defs: gradiente para los links
     const defs = svgEl.append('defs');
-    defs.append('linearGradient').attr('id', 'lg')
+    defs.append('linearGradient')
+      .attr('id', 'lg')
       .attr('gradientUnits', 'userSpaceOnUse')
       .call(g => {
-        g.append('stop').attr('offset','0%').attr('stop-color','rgba(56,189,248,0.5)');
-        g.append('stop').attr('offset','100%').attr('stop-color','rgba(56,189,248,0.08)');
+        g.append('stop').attr('offset', '0%').attr('stop-color', 'rgba(56,189,248,0.5)');
+        g.append('stop').attr('offset', '100%').attr('stop-color', 'rgba(56,189,248,0.08)');
       });
 
-    // Grupo principal (receptor del zoom/pan)
     gEl = svgEl.append('g');
 
     zoomBeh = d3.zoom()
@@ -108,13 +121,17 @@
 
     svgEl.call(zoomBeh).on('dblclick.zoom', null);
 
-    // Jerarquía D3
     root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
-    root.x0 = 0; root.y0 = 0;
+    root.x0 = 0;
+    root.y0 = 0;
 
-    // Colapsar hijos del nivel 1 hacia abajo (dejar solo root + hijos directos)
-    if (root.children)
-      root.children.forEach(c => { if (c.children) colapsar(c); });
+    // BLOQUE MODIFICADO: estado inicial del árbol
+    // Deja el root con sus hijos directos visibles y colapsa cualquier nivel inferior.
+    if (root.children) {
+      root.children.forEach(c => {
+        if (c.children) colapsar(c);
+      });
+    }
 
     update(root);
     centrar();
@@ -125,14 +142,14 @@
     return d3.tree().nodeSize([HG + R * 2, VG]);
   }
 
-  // ── Update principal ──────────────────────────────────────────────
+  // ── Render principal ─────────────────────────────────────────────
   function update(src) {
     layout()(root);
 
     const nodes = root.descendants();
     const links = root.links();
 
-    // ── LINKS (se dibujan PRIMERO = quedan detrás de los nodos) ──
+    // LINKS: primero para que queden detrás de los nodos
     const link = gEl.selectAll('path.arbol-link')
       .data(links, d => d.target.id);
 
@@ -147,14 +164,17 @@
       ));
 
     linkEnter.merge(link)
-      .transition().duration(DUR)
+      .transition()
+      .duration(DUR)
       .attr('d', d => linkPath(d.source, d.target));
 
-    link.exit().transition().duration(DUR)
+    link.exit()
+      .transition()
+      .duration(DUR)
       .attr('d', () => linkPath({ x: src.x, y: src.y }, { x: src.x, y: src.y }))
       .remove();
 
-    // ── NODOS (se dibujan DESPUÉS = quedan encima de los links) ──
+    // NODOS: luego para quedar por encima de los links
     const node = gEl.selectAll('g.nodo-g')
       .data(nodes, d => d.id);
 
@@ -162,11 +182,10 @@
       .attr('class', 'nodo-g')
       .attr('transform', () => `translate(${src.x0 ?? 0},${src.y0 ?? 0})`)
       .style('opacity', 0)
-      .on('click',      (e, d) => { e.stopPropagation(); toggleNodo(d); })
+      .on('click', (e, d) => { e.stopPropagation(); toggleNodo(d); })
       .on('mouseenter', (e, d) => showTooltip(e, d))
-      .on('mouseleave', ()     => hideTooltip());
+      .on('mouseleave', () => hideTooltip());
 
-    // Círculo exterior (borde con color de rango)
     enter.append('circle')
       .attr('class', 'nodo-border')
       .attr('r', R + 3)
@@ -175,7 +194,6 @@
       .attr('stroke-width', 2)
       .attr('opacity', 0.6);
 
-    // Círculo interior (fondo)
     enter.append('circle')
       .attr('class', 'nodo-circle')
       .attr('r', R)
@@ -183,7 +201,6 @@
       .attr('stroke', d => RANGO_COLOR[d.data.rango] || '#475569')
       .attr('stroke-width', 1.5);
 
-    // Icono de rango (centrado dentro del círculo)
     enter.append('text')
       .attr('class', 'nodo-icon')
       .attr('text-anchor', 'middle')
@@ -193,7 +210,6 @@
       .style('pointer-events', 'none')
       .text(d => RANGO_ICON[d.data.rango] || '👤');
 
-    // Nombre abajo del círculo
     enter.append('text')
       .attr('class', 'nodo-nombre')
       .attr('text-anchor', 'middle')
@@ -205,7 +221,6 @@
       .style('pointer-events', 'none')
       .text(d => truncar(d.data.nombre, 12));
 
-    // Rango label abajo del nombre
     enter.append('text')
       .attr('class', 'nodo-rango-label')
       .attr('text-anchor', 'middle')
@@ -215,8 +230,7 @@
       .style('pointer-events', 'none')
       .text(d => d.data.rango);
 
-    // Botón +/− DEBAJO del texto (bien separado de los links)
-    // Se agrega como último elemento → queda encima de todo
+    // Toggle visual dentro del nodo (+ / −)
     const toggleG = enter.append('g')
       .attr('class', 'nodo-toggle')
       .attr('transform', `translate(0, ${R + 36})`)
@@ -235,9 +249,9 @@
       .style('font-size', '12px')
       .style('pointer-events', 'none');
 
-    // Hover: glow suave con color del rango
+    // Hover glow suave
     enter
-      .on('mouseenter.glow', function(e, d) {
+      .on('mouseenter.glow', function (e, d) {
         const color = RANGO_COLOR[d.data.rango] || '#475569';
         d3.select(this).select('.nodo-circle')
           .transition().duration(150)
@@ -248,7 +262,7 @@
           .attr('opacity', 1)
           .attr('stroke-width', 2.5);
       })
-      .on('mouseleave.glow', function() {
+      .on('mouseleave.glow', function () {
         d3.select(this).select('.nodo-circle')
           .transition().duration(150)
           .attr('fill', '#0F172A')
@@ -259,49 +273,48 @@
           .attr('stroke-width', 2);
       });
 
-    // Merge enter + update existente
     const merged = enter.merge(node);
 
-    merged.transition().duration(DUR)
+    merged.transition()
+      .duration(DUR)
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .style('opacity', 1);
 
-    // Actualizar texto +/−
+    // Estado del toggle según si tiene hijos visibles u ocultos
     merged.select('.nodo-toggle text')
       .text(d => d.children ? '−' : d._children ? '+' : '');
 
-    // Ocultar toggle si no tiene hijos en ningún estado
     merged.select('.nodo-toggle')
       .style('display', d => (d.children || d._children) ? null : 'none');
 
-    // Exit con animación
-    node.exit().transition().duration(DUR)
+    node.exit()
+      .transition()
+      .duration(DUR)
       .attr('transform', () => `translate(${src.x},${src.y})`)
       .style('opacity', 0)
       .remove();
 
-    // Guardar posición para próxima animación
     nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
   }
 
-  // ── Link con codo ortogonal (sale vertical, dobla horizontal, baja) ──
+  // ── Conector ortogonal entre padre e hijo ─────────────────────────
   function linkPath(s, t) {
     const sy = s.y + R;
     const ty = t.y - R;
-    const my = sy + (ty - sy) * 0.45; // punto de quiebre al 45% del recorrido
+    const my = sy + (ty - sy) * 0.45;
     return `M${s.x},${sy} L${s.x},${my} L${t.x},${my} L${t.x},${ty}`;
   }
 
-  // ── Colapsar / Expandir ───────────────────────────────────────────
+  // ── BLOQUE MODIFICADO: colapsado total del árbol ─────────────────
   function colapsar(d) {
-    if (d.children) {
-      d._children = d.children;
-      d._children.forEach(colapsar);
-      d.children = null;
-    }
+    if (!d || !d.children) return;
+    d._children = d.children;
+    d._children.forEach(colapsar);
+    d.children = null;
   }
 
   function expandirTodo(d) {
+    if (!d) return;
     if (d._children) {
       d.children = d._children;
       d._children = null;
@@ -311,51 +324,37 @@
 
   function toggleNodo(d) {
     if (d.children) {
-      // Colapsar hijos
-      d._children = d.children;
-      d.children = null;
+      colapsar(d);
     } else if (d._children) {
-      // Expandir hijos (solo el nivel directo, no recursivo)
       d.children = d._children;
       d._children = null;
     }
     update(d);
   }
 
-  // ── Centrar ───────────────────────────────────────────────────────
+  // ── Centrado del árbol ────────────────────────────────────────────
   function centrar() {
     if (!svgEl || !root) return;
     const W = wrap.clientWidth || 800;
-    const H = wrap.clientHeight || 460;
     svgEl.transition().duration(400)
-      .call(zoomBeh.transform,
-        d3.zoomIdentity.translate(W / 2 - root.x, 60));
+      .call(zoomBeh.transform, d3.zoomIdentity.translate(W / 2 - root.x, 60));
   }
 
   // ── Tooltip ───────────────────────────────────────────────────────
   function showTooltip(e, d) {
     const color = RANGO_COLOR[d.data.rango] || '#475569';
-    const hijosCnt = (d.children ? d.children.length : 0) +
-                     (d._children ? d._children.length : 0);
+    const hijosCnt = (d.children ? d.children.length : 0) + (d._children ? d._children.length : 0);
+
     tooltip.innerHTML = `
       <div class="tt-name">${d.data.nombre}</div>
-      <div class="tt-row"><span>Rango</span>
-        <span class="tt-val" style="color:${color}">${d.data.rango}</span></div>
-      <div class="tt-row"><span>Estado</span>
-        <span class="tt-val">${d.data.estado || '—'}</span></div>
-      <div class="tt-row"><span>Puntos</span>
-        <span class="tt-val" style="color:#38BDF8">${d.data.comision || 0}</span></div>
-      ${hijosCnt > 0
-        ? `<div class="tt-row"><span>Referidos</span>
-           <span class="tt-val">${hijosCnt}</span></div>`
-        : ''}
+      <div class="tt-row"><span>Rango</span><span class="tt-val" style="color:${color}">${d.data.rango}</span></div>
+      <div class="tt-row"><span>Estado</span><span class="tt-val">${d.data.estado || '—'}</span></div>
+      <div class="tt-row"><span>Puntos</span><span class="tt-val" style="color:#38BDF8">${d.data.comision || 0}</span></div>
+      ${hijosCnt > 0 ? `<div class="tt-row"><span>Referidos</span><span class="tt-val">${hijosCnt}</span></div>` : ''}
     `;
 
-    // Posicionar sin salirse de la pantalla
-    const tx = e.clientX + 14;
-    const ty = e.clientY + 14;
-    tooltip.style.left = tx + 'px';
-    tooltip.style.top  = ty + 'px';
+    tooltip.style.left = (e.clientX + 14) + 'px';
+    tooltip.style.top = (e.clientY + 14) + 'px';
     tooltip.classList.add('show');
   }
 
@@ -363,8 +362,7 @@
     tooltip.classList.remove('show');
   }
 
-  // ── Búsqueda con highlight de múltiples coincidencias ─────────────
-  let searchTimer;
+  // ── Búsqueda con debounce ─────────────────────────────────────────
   document.getElementById('arbol-buscar').addEventListener('input', function () {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => buscar(this.value.trim()), 300);
@@ -373,7 +371,6 @@
   function buscar(q) {
     if (!root) return;
 
-    // Limpiar highlights anteriores
     gEl.selectAll('.nodo-circle').attr('fill', '#0F172A').style('filter', null);
     gEl.selectAll('.nodo-border').attr('opacity', 0.6).attr('stroke-width', 2);
 
@@ -384,10 +381,12 @@
 
     root.each(d => {
       if (d.data.nombre && d.data.nombre.toLowerCase().includes(ql)) {
-        // Expandir el camino completo desde root hasta este nodo
         let anc = d.parent;
         while (anc) {
-          if (anc._children) { anc.children = anc._children; anc._children = null; }
+          if (anc._children) {
+            anc.children = anc._children;
+            anc._children = null;
+          }
           anc = anc.parent;
         }
         encontrados.push(d);
@@ -396,24 +395,20 @@
 
     if (encontrados.length === 0) return;
 
-    // Re-renderizar con los nodos expandidos
     update(root);
 
-    // Centrar en el primero encontrado
     const primero = encontrados[0];
     const W = wrap.clientWidth || 800;
     const H = wrap.clientHeight || 460;
     svgEl.transition().duration(500)
       .call(zoomBeh.transform,
-        d3.zoomIdentity
-          .translate(W / 2 - primero.x, H / 2 - primero.y)
-          .scale(1));
+        d3.zoomIdentity.translate(W / 2 - primero.x, H / 2 - primero.y).scale(1)
+      );
 
-    // Highlight de TODOS los coincidentes
     setTimeout(() => {
       gEl.selectAll('g.nodo-g')
         .filter(d => d.data.nombre && d.data.nombre.toLowerCase().includes(ql))
-        .each(function(d) {
+        .each(function (d) {
           const color = RANGO_COLOR[d.data.rango] || '#38BDF8';
           d3.select(this).select('.nodo-circle')
             .attr('fill', '#1A3A5C')
@@ -425,48 +420,55 @@
     }, 560);
   }
 
-  // ── Botones toolbar ───────────────────────────────────────────────
+  // ── Toolbar actions ───────────────────────────────────────────────
   document.getElementById('btn-expandir').addEventListener('click', () => {
     if (!root) return;
     expandirTodo(root);
     update(root);
+    setTimeout(centrar, DUR + 50);
   });
 
+  // BLOQUE MODIFICADO: colapsar completo, dejando solo el nodo padre visible.
   document.getElementById('btn-colapsar').addEventListener('click', () => {
     if (!root) return;
-    // Colapsar TODO desde root: primero expandir todo para tener el árbol completo,
-    // luego colapsar todos los nodos excepto el root mismo
-    expandirTodo(root);
-    if (root.children) root.children.forEach(colapsar);
+    colapsar(root);
     update(root);
     setTimeout(centrar, DUR + 50);
   });
 
   document.getElementById('btn-centrar').addEventListener('click', centrar);
 
-  document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    const el = document.querySelector('.arbol-wrap');
-    const btn = document.getElementById('btn-fullscreen');
-    if (!document.fullscreenElement) {
-      el.requestFullscreen().then(() => {
-        btn.textContent = '✕ Salir';
-        btn.classList.add('active');
-        document.getElementById('arbol-svg-wrap').style.height =
-          (window.screen.height - 90) + 'px';
-        setTimeout(centrar, 200);
-      });
-    } else {
-      document.exitFullscreen().then(() => {
-        btn.textContent = '⛶ Fullscreen';
-        btn.classList.remove('active');
-        document.getElementById('arbol-svg-wrap').style.height = '460px';
-        setTimeout(centrar, 200);
-      });
+  // BLOQUE MODIFICADO: fullscreen sincronizado con fullscreenchange.
+  // Soluciona el estado visual incorrecto al salir con ESC o desde el navegador.
+  function syncFullscreenUI() {
+    const isFullscreen = !!document.fullscreenElement;
+    btnFullscreen.textContent = isFullscreen ? '✕ Salir' : '⛶ Full';
+    btnFullscreen.classList.toggle('active', isFullscreen);
+    treeHost.style.height = isFullscreen ? 'calc(100vh - 170px)' : DEFAULT_TREE_HEIGHT;
+
+    if (root) {
+      setTimeout(centrar, 180);
+    }
+  }
+
+  btnFullscreen.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await arbolWrap.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error(err);
     }
   });
 
+  document.addEventListener('fullscreenchange', syncFullscreenUI);
+
   // ── Resize responsive ─────────────────────────────────────────────
-  new ResizeObserver(() => { if (root) centrar(); }).observe(wrap);
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(() => { if (root) centrar(); }).observe(wrap);
+  }
 
   // ── Pinch to zoom (mobile) ────────────────────────────────────────
   let pinchDist = 0;
@@ -482,7 +484,7 @@
   }, { passive: false });
   wrap.addEventListener('touchend', () => { pinchDist = 0; });
 
-  // ── Helpers ───────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────
   function truncar(s, max) {
     return s && s.length > max ? s.slice(0, max) + '…' : (s || '');
   }
