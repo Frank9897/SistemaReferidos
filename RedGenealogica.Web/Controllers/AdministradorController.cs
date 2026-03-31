@@ -239,8 +239,12 @@ public class AdministradorController : Controller
     [HttpGet]
     public async Task<IActionResult> Retiros()
     {
-        var pendientes = await _servicioRetiros.ObtenerPendientesAsync();
-        return View(pendientes);
+        var retiros = await _contexto.SolicitudesRetiro
+            .Include(r => r.Usuario)
+            .OrderByDescending(r => r.FechaSolicitud)
+            .ToListAsync();
+
+        return View(retiros);
     }
 
     [HttpPost]
@@ -251,6 +255,20 @@ public class AdministradorController : Controller
 
         var (exito, mensaje) = await _servicioRetiros.AprobarRetiroAsync(
             id, adminId, referenciaTransferencia, nota);
+
+        if (exito)
+            TempData["Exito"] = mensaje;
+        else
+            TempData["Error"] = mensaje;
+
+        return RedirectToAction("Retiros");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CompletarRetiro(int id, string referenciaTransferencia)
+    {
+        var (exito, mensaje) = await _servicioRetiros.CompletarRetiroAsync(
+            id, referenciaTransferencia);
 
         if (exito)
             TempData["Exito"] = mensaje;

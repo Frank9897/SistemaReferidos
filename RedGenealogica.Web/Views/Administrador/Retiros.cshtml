@@ -11,14 +11,14 @@
 
 <div class="card">
     <div class="card-header">
-        <span class="card-title">💸 Solicitudes de retiro pendientes (@Model.Count)</span>
+        <span class="card-title">💸 Gestión de retiros (@Model.Count)</span>
     </div>
 
     @if (!Model.Any())
     {
         <div class="empty-state">
             <div class="empty-icon">✅</div>
-            <p>No hay solicitudes pendientes</p>
+            <p>No hay solicitudes de retiro</p>
         </div>
     }
     else
@@ -29,6 +29,23 @@
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
                     <div>
                         <div style="font-weight:600; font-size:15px;">@s.Usuario?.Nombres @s.Usuario?.Apellidos</div>
+                            <div style="margin-top:6px;">
+                                @switch (s.Estado)
+                                {
+                                    case EstadoRetiro.Pendiente:
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        break;
+                                    case EstadoRetiro.Aprobado:
+                                        <span class="badge bg-info text-dark">Aprobado</span>
+                                        break;
+                                    case EstadoRetiro.Completado:
+                                        <span class="badge bg-success">Completado</span>
+                                        break;
+                                    case EstadoRetiro.Rechazado:
+                                        <span class="badge bg-danger">Rechazado</span>
+                                        break;
+                                }
+                            </div>
                         <div style="font-size:12.5px; color:var(--text-muted);">@s.Usuario?.Email</div>
                         <div style="margin-top:8px;">
                             <span style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--green);">$@s.Monto.ToString("N2")</span>
@@ -42,28 +59,56 @@
                     </div>
 
                     <div style="display:flex; flex-direction:column; gap:10px; min-width:260px;">
-                        <!-- Aprobar -->
-                        <form method="post" action="/Administrador/AprobarRetiro/@s.Id">
-                            @Html.AntiForgeryToken()
-                            <div style="margin-bottom:6px;">
-                                <label style="font-size:11px;">Referencia de transferencia *</label>
-                                <input name="referenciaTransferencia" required placeholder="ID de transferencia MP" style="margin-bottom:6px;" />
-                                <input name="nota" placeholder="Nota (opcional)" />
-                            </div>
-                            <button type="submit" class="btn btn-success" style="width:100%; justify-content:center;">✓ Aprobar y completar</button>
-                        </form>
 
-                        <div style="text-align:center; font-size:11px; color:var(--text-dim);">— o —</div>
+                        @if (s.Estado == EstadoRetiro.Pendiente)
+                        {
+                            <!-- Aprobar -->
+                            <form method="post" action="/Administrador/AprobarRetiro/@s.Id">
+                                @Html.AntiForgeryToken()
+                                <div style="margin-bottom:6px;">
+                                    <label style="font-size:11px;">Nota (opcional)</label>
+                                    <input name="nota" placeholder="Ej: Validado OK" />
+                                </div>
+                                <button type="submit" class="btn btn-success" style="width:100%; justify-content:center;">
+                                    ✓ Aprobar
+                                </button>
+                            </form>
 
-                        <!-- Rechazar -->
-                        <form method="post" action="/Administrador/RechazarRetiro/@s.Id">
-                            @Html.AntiForgeryToken()
-                            <div style="margin-bottom:6px;">
-                                <label style="font-size:11px;">Motivo de rechazo *</label>
-                                <input name="motivo" required placeholder="Ej: Saldo insuficiente verificado" />
+                            <div style="text-align:center; font-size:11px; color:var(--text-dim);">— o —</div>
+
+                            <!-- Rechazar -->
+                            <form method="post" action="/Administrador/RechazarRetiro/@s.Id">
+                                @Html.AntiForgeryToken()
+                                <div style="margin-bottom:6px;">
+                                    <label style="font-size:11px;">Motivo de rechazo *</label>
+                                    <input name="motivo" required placeholder="Ej: Datos inválidos" />
+                                </div>
+                                <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;">
+                                    ✕ Rechazar
+                                </button>
+                            </form>
+                        }
+                        else if (s.Estado == EstadoRetiro.Aprobado)
+                        {
+                            <!-- Completar -->
+                            <form method="post" action="/Administrador/CompletarRetiro/@s.Id">
+                                @Html.AntiForgeryToken()
+                                <div style="margin-bottom:6px;">
+                                    <label style="font-size:11px;">Referencia de transferencia *</label>
+                                    <input name="referenciaTransferencia" required placeholder="ID transferencia MP" />
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+                                    💰 Completar pago
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div style="text-align:center; font-size:12px; color:var(--text-muted);">
+                                Sin acciones disponibles
                             </div>
-                            <button type="submit" class="btn btn-danger" style="width:100%; justify-content:center;">✕ Rechazar</button>
-                        </form>
+                        }
+
                     </div>
                 </div>
             </div>
