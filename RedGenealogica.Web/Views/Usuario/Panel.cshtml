@@ -30,12 +30,12 @@
             <span class="badge-rango @rangoClass">@rangoIcono @Model.Usuario.TipoRangoActual</span>
             @if (Model.Usuario.EstadoUsuario == EstadoUsuario.Pendiente)
             {
-                <span class="badge badge-warning" style="margin-left:8px;">Pendiente de activación</span>
+                <span class="badge badge-warning" style="margin-left:8px;">Cuenta no activa</span>
             }
         </div>
     </div>
     <div class="acciones-inline">
-        <a href="/Referidos/Crear" class="btn btn-primary">+ Registrar referido</a>
+        <a href="/Referidos/Crear" class="btn btn-primary">+ Invitar referido</a>
         <a href="/Genealogia" class="btn btn-secondary">Ver árbol</a>
     </div>
 </div>
@@ -65,7 +65,7 @@
         <div class="metric-value">@Model.Usuario.PuntosAcumulados</div>
         <div class="metric-label">Puntos acumulados</div>
     </div>
-    <div class="metric-card green">
+    <div class="metric-card green highlight">
         <div class="metric-icon">💰</div>
         <div class="metric-value">$@Model.TotalComisiones.ToString("N0")</div>
         <div class="metric-label">Comisiones totales</div>
@@ -83,7 +83,7 @@
     <div class="metric-card purple">
         <div class="metric-icon">🌐</div>
         <div class="metric-value">@(Model.TotalReferidosDirectos + Model.TotalReferidosIndirectos)</div>
-        <div class="metric-label">Red total</div>
+        <div class="metric-label">Tamaño de tu red</div>
             @if (Model.TotalReferidosIndirectos > 0)
             {
                 <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
@@ -105,6 +105,9 @@
     <div class="card" style="margin-bottom:0;">
         <div class="card-header">
             <span class="card-title">💵 Saldo disponible</span>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">
+                Podés retirar este dinero cuando quieras
+            </div>
             <a href="/Usuario/SolicitarRetiro" class="btn btn-success btn-sm">Retirar</a>
         </div>
         <div style="font-family:'Space Grotesk',sans-serif; font-size:32px; font-weight:700; color:var(--green);">
