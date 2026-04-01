@@ -12,10 +12,6 @@ namespace RedGenealogica.Web.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(
-                table: "Productos",
-                keyColumn: "Id",
-                keyValue: 1);
 
             migrationBuilder.CreateTable(
                 name: "Notificaciones",
