@@ -2,14 +2,7 @@
 // ServicioRetiros.cs
 // Ubicación: Services/ServicioRetiros.cs
 //
-// NUEVO SERVICIO
-//
-// Gestiona el ciclo completo de retiro de comisiones:
-//   SolicitarRetiro → AprobarRetiro → CompletarRetiro / RechazarRetiro
-//
-// El saldo se bloquea en SaldoPendienteRetiro al solicitar,
-// se descuenta de SaldoDisponible al completar,
-// y se devuelve si es rechazado.
+// CAMBIO: notificaciones al aprobar y rechazar retiros.
 // ============================================================
 
 using Microsoft.EntityFrameworkCore;
@@ -22,16 +15,16 @@ namespace RedGenealogica.Web.Services;
 public class ServicioRetiros
 {
     private readonly ContextoAplicacion _contexto;
+    private readonly ServicioNotificaciones _servicioNotificaciones;
 
-    public ServicioRetiros(ContextoAplicacion contexto)
+    public ServicioRetiros(
+        ContextoAplicacion contexto,
+        ServicioNotificaciones servicioNotificaciones)
     {
         _contexto = contexto;
+        _servicioNotificaciones = servicioNotificaciones;
     }
 
-    // ----------------------------------------------------------------
-    // El usuario solicita un retiro desde su panel.
-    // Bloquea el monto en SaldoPendienteRetiro para evitar doble retiro.
-    // ----------------------------------------------------------------
     public async Task<(bool exito, string mensaje)> SolicitarRetiroAsync(
         int usuarioId, decimal monto, string cbuAlias)
     {
@@ -42,47 +35,34 @@ public class ServicioRetiros
             return (false, "Debés ingresar tu CBU o alias de MercadoPago");
 
         var usuario = await _contexto.Users.FindAsync(usuarioId);
-
-        if (usuario == null)
-            return (false, "Usuario no encontrado");
-
+        if (usuario == null) return (false, "Usuario no encontrado");
         if (usuario.EstadoUsuario != EstadoUsuario.Activo)
             return (false, "Tu cuenta no está activa");
-
-        // Verificar que el saldo disponible alcance (sin contar el bloqueado)
         if (monto > usuario.SaldoDisponible)
             return (false, $"Saldo insuficiente. Disponible: ${usuario.SaldoDisponible:F2}");
 
-        // Verificar que no haya ya un retiro pendiente
         var tienePendiente = await _contexto.SolicitudesRetiro
             .AnyAsync(s => s.UsuarioId == usuarioId && s.Estado == EstadoRetiro.Pendiente);
 
         if (tienePendiente)
-            return (false, "Ya tenés una solicitud de retiro pendiente. Esperá a que el admin la resuelva antes de solicitar otro.");
-            
-        // Bloquear el monto: sale de Disponible y entra en PendienteRetiro
-        usuario.SaldoDisponible -= monto;
+            return (false, "Ya tenés una solicitud pendiente. Esperá a que el admin la resuelva.");
+
+        usuario.SaldoDisponible      -= monto;
         usuario.SaldoPendienteRetiro += monto;
 
-        var solicitud = new SolicitudRetiro
+        _contexto.SolicitudesRetiro.Add(new SolicitudRetiro
         {
-            UsuarioId = usuarioId,
-            Monto = monto,
-            CbuAlias = cbuAlias,
-            Estado = EstadoRetiro.Pendiente,
+            UsuarioId     = usuarioId,
+            Monto         = monto,
+            CbuAlias      = cbuAlias,
+            Estado        = EstadoRetiro.Pendiente,
             FechaSolicitud = DateTime.UtcNow
-        };
+        });
 
-        _contexto.SolicitudesRetiro.Add(solicitud);
         await _contexto.SaveChangesAsync();
-
         return (true, "Solicitud enviada. El admin la revisará a la brevedad.");
     }
 
-    // ----------------------------------------------------------------
-    // El admin aprueba la solicitud y registra la referencia de transferencia.
-    // El saldo pasa de PendienteRetiro a Completado (se descuenta definitivamente).
-    // ----------------------------------------------------------------
     public async Task<(bool exito, string mensaje)> AprobarRetiroAsync(
         int solicitudId, int adminId, string referenciaTransferencia, string? nota = null)
     {
@@ -90,49 +70,49 @@ public class ServicioRetiros
             .Include(s => s.Usuario)
             .FirstOrDefaultAsync(s => s.Id == solicitudId);
 
-        if (solicitud == null)
-            return (false, "Solicitud no encontrada");
-
+        if (solicitud == null) return (false, "Solicitud no encontrada");
         if (solicitud.Estado != EstadoRetiro.Pendiente)
             return (false, "Solo se pueden aprobar solicitudes pendientes");
 
-        solicitud.Estado = EstadoRetiro.Aprobado;
-        solicitud.NotaAdmin = nota;
+        solicitud.Estado          = EstadoRetiro.Aprobado;
+        solicitud.NotaAdmin       = nota;
         solicitud.AdminResolvidoId = adminId;
         solicitud.FechaResolucion = DateTime.UtcNow;
 
         await _contexto.SaveChangesAsync();
 
-        return (true, "Retiro completado y registrado");
+        // Notificación al usuario
+        await _servicioNotificaciones.CrearAsync(
+            solicitud.UsuarioId,
+            TipoNotificacion.RetiroAprobado,
+            "✅ Retiro aprobado",
+            $"Tu solicitud de retiro por ${solicitud.Monto:N2} fue aprobada. El dinero está en camino a {solicitud.CbuAlias}.",
+            "/Usuario/SolicitarRetiro"
+        );
+
+        return (true, "Retiro aprobado correctamente");
     }
 
-    public async Task<(bool exito, string mensaje)> CompletarRetiroAsync(int solicitudId, string referenciaTransferencia)
+    public async Task<(bool exito, string mensaje)> CompletarRetiroAsync(
+        int solicitudId, string referenciaTransferencia)
     {
         var solicitud = await _contexto.SolicitudesRetiro
             .Include(s => s.Usuario)
             .FirstOrDefaultAsync(s => s.Id == solicitudId);
 
-        if (solicitud == null)
-            return (false, "Solicitud no encontrada");
-
+        if (solicitud == null) return (false, "Solicitud no encontrada");
         if (solicitud.Estado != EstadoRetiro.Aprobado)
             return (false, "Solo se pueden completar solicitudes aprobadas");
 
-        // Ahora sí se descuenta definitivamente
         solicitud.Usuario!.SaldoPendienteRetiro -= solicitud.Monto;
-
-        solicitud.Estado = EstadoRetiro.Completado;
+        solicitud.Estado                  = EstadoRetiro.Completado;
         solicitud.ReferenciaTransferencia = referenciaTransferencia;
-        solicitud.FechaResolucion = DateTime.UtcNow;
+        solicitud.FechaResolucion         = DateTime.UtcNow;
 
         await _contexto.SaveChangesAsync();
-
         return (true, "Retiro completado correctamente");
     }
 
-    // ----------------------------------------------------------------
-    // El admin rechaza la solicitud. El saldo vuelve a SaldoDisponible.
-    // ----------------------------------------------------------------
     public async Task<(bool exito, string mensaje)> RechazarRetiroAsync(
         int solicitudId, int adminId, string motivo)
     {
@@ -140,29 +120,31 @@ public class ServicioRetiros
             .Include(s => s.Usuario)
             .FirstOrDefaultAsync(s => s.Id == solicitudId);
 
-        if (solicitud == null)
-            return (false, "Solicitud no encontrada");
-
+        if (solicitud == null) return (false, "Solicitud no encontrada");
         if (solicitud.Estado != EstadoRetiro.Pendiente)
             return (false, "Solo se pueden rechazar solicitudes pendientes");
 
-        // Devolver el saldo bloqueado al disponible
-        solicitud.Usuario!.SaldoDisponible += solicitud.Monto;
-        solicitud.Usuario.SaldoPendienteRetiro -= solicitud.Monto;
-
-        solicitud.Estado = EstadoRetiro.Rechazado;
-        solicitud.NotaAdmin = motivo;
+        solicitud.Usuario!.SaldoDisponible      += solicitud.Monto;
+        solicitud.Usuario.SaldoPendienteRetiro  -= solicitud.Monto;
+        solicitud.Estado           = EstadoRetiro.Rechazado;
+        solicitud.NotaAdmin        = motivo;
         solicitud.AdminResolvidoId = adminId;
-        solicitud.FechaResolucion = DateTime.UtcNow;
+        solicitud.FechaResolucion  = DateTime.UtcNow;
 
         await _contexto.SaveChangesAsync();
+
+        // Notificación al usuario
+        await _servicioNotificaciones.CrearAsync(
+            solicitud.UsuarioId,
+            TipoNotificacion.RetiroRechazado,
+            "❌ Retiro rechazado",
+            $"Tu solicitud de retiro por ${solicitud.Monto:N2} fue rechazada. Motivo: {motivo}. El saldo fue devuelto a tu cuenta.",
+            "/Usuario/SolicitarRetiro"
+        );
 
         return (true, "Solicitud rechazada y saldo devuelto al usuario");
     }
 
-    // ----------------------------------------------------------------
-    // Lista todas las solicitudes pendientes. Usado en el panel admin.
-    // ----------------------------------------------------------------
     public async Task<List<SolicitudRetiro>> ObtenerPendientesAsync()
     {
         return await _contexto.SolicitudesRetiro
@@ -172,9 +154,6 @@ public class ServicioRetiros
             .ToListAsync();
     }
 
-    // ----------------------------------------------------------------
-    // Lista el historial de retiros de un usuario específico.
-    // ----------------------------------------------------------------
     public async Task<List<SolicitudRetiro>> ObtenerHistorialAsync(int usuarioId)
     {
         return await _contexto.SolicitudesRetiro

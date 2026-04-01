@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@* _Layout.cshtml — Views/Shared/_Layout.cshtml *@
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
@@ -25,6 +26,30 @@
                         <a href="/Administrador/Usuarios" style="color: var(--sky);">Admin</a>
                     }
 
+                    <!-- CAMPANA DE NOTIFICACIONES -->
+                    <div class="notif-wrap" id="notif-wrap">
+                        <button class="notif-btn" id="notif-btn" title="Notificaciones">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+                        </button>
+
+                        <!-- DROPDOWN -->
+                        <div class="notif-dropdown" id="notif-dropdown">
+                            <div class="notif-header">
+                                <span style="font-weight:600; font-size:13.5px;">Notificaciones</span>
+                                <button class="notif-leer-todas" id="notif-leer-todas">Marcar todas leídas</button>
+                            </div>
+                            <div id="notif-lista">
+                                <div class="notif-empty">Sin notificaciones nuevas</div>
+                            </div>
+                            <a href="/Notificaciones" class="notif-ver-todas">Ver historial completo →</a>
+                        </div>
+                    </div>
+
                     <form asp-controller="Autenticacion" asp-action="Logout" method="post" class="logout-form">
                         <button type="submit" class="btn btn-secondary btn-sm">Salir</button>
                     </form>
@@ -41,7 +66,6 @@
 
     <main>
         <div class="main-container">
-
             @if (TempData["Exito"] != null)
             {
                 <div class="alert alert-success">✓ @TempData["Exito"]</div>
@@ -50,7 +74,6 @@
             {
                 <div class="alert alert-error">✕ @TempData["Error"]</div>
             }
-
             @RenderBody()
         </div>
     </main>
@@ -60,5 +83,131 @@
     </footer>
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        <script>
+        (function () {
+            const btn      = document.getElementById('notif-btn');
+            const dropdown = document.getElementById('notif-dropdown');
+            const badge    = document.getElementById('notif-badge');
+            const lista    = document.getElementById('notif-lista');
+            const leerTodas = document.getElementById('notif-leer-todas');
+            let abierto    = false;
+
+            // ── Abrir / cerrar dropdown ──────────────────────────────
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                abierto = !abierto;
+                dropdown.classList.toggle('show', abierto);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('notif-wrap').contains(e.target)) {
+                    abierto = false;
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            // ── Marcar todas leídas ──────────────────────────────────
+            leerTodas.addEventListener('click', async () => {
+                await fetch('/Notificaciones/MarcarTodasLeidas', { method: 'POST', headers: { 'RequestVerificationToken': getAntiforgeryToken() } });
+                badge.style.display = 'none';
+                lista.innerHTML = '<div class="notif-empty">Sin notificaciones nuevas</div>';
+            });
+
+            // ── Renderizar items ─────────────────────────────────────
+            function renderItems(items) {
+                if (!items || items.length === 0) {
+                    lista.innerHTML = '<div class="notif-empty">Sin notificaciones nuevas</div>';
+                    return;
+                }
+
+                lista.innerHTML = items.map(n => `
+                    <div class="notif-item" data-id="${n.id}">
+                        <div class="notif-item-titulo">${n.titulo}</div>
+                        <div class="notif-item-msg">${n.mensaje}</div>
+                        <div class="notif-item-fecha">${n.fecha}</div>
+                        ${n.urlAccion ? `<a class="notif-item-link" href="${n.urlAccion}" onclick="marcarLeida(${n.id}, event)">Ver →</a>` : ''}
+                    </div>
+                `).join('');
+            }
+
+            // ── Polling cada 30 segundos ─────────────────────────────
+            async function polling() {
+                try {
+                    const res  = await fetch('/Notificaciones/NoLeidas');
+                    const data = await res.json();
+
+                    if (data.count > 0) {
+                        badge.textContent  = data.count > 9 ? '9+' : data.count;
+                        badge.style.display = 'flex';
+                        renderItems(data.items);
+
+                        // Toast si hay nuevas (solo cuando el dropdown está cerrado)
+                        if (!abierto && data.count > 0)
+                            mostrarToast(data.items[0]);
+                    } else {
+                        badge.style.display = 'none';
+                        if (!abierto)
+                            lista.innerHTML = '<div class="notif-empty">Sin notificaciones nuevas</div>';
+                    }
+                } catch (e) { /* silencioso */ }
+            }
+
+            // ── Toast de notificación ────────────────────────────────
+            let toastUltimoId = null;
+            function mostrarToast(notif) {
+                if (notif.id === toastUltimoId) return;
+                toastUltimoId = notif.id;
+
+                const t = document.createElement('div');
+                t.className = 'notif-toast';
+                t.innerHTML = `
+                    <div class="notif-toast-titulo">${notif.titulo}</div>
+                    <div class="notif-toast-msg">${notif.mensaje}</div>
+                `;
+                document.body.appendChild(t);
+
+                // Animación entrada
+                requestAnimationFrame(() => t.classList.add('show'));
+
+                // Auto-cierre a los 4 segundos
+                setTimeout(() => {
+                    t.classList.remove('show');
+                    setTimeout(() => t.remove(), 350);
+                }, 4000);
+
+                // Click para cerrar
+                t.addEventListener('click', () => {
+                    t.classList.remove('show');
+                    setTimeout(() => t.remove(), 350);
+                    if (notif.urlAccion) window.location.href = notif.urlAccion;
+                });
+            }
+
+            // ── Marcar una notificación leída ────────────────────────
+            window.marcarLeida = async function(id, e) {
+                e?.preventDefault();
+                await fetch(`/Notificaciones/MarcarLeida/${id}`, {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': getAntiforgeryToken() }
+                });
+                const item = lista.querySelector(`[data-id="${id}"]`);
+                if (item) item.remove();
+                await polling();
+            };
+
+            // ── Token antiforgery ────────────────────────────────────
+            function getAntiforgeryToken() {
+                return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            }
+
+            // Arrancar polling
+            polling();
+            setInterval(polling, 30000);
+        })();
+        </script>
+    }
 </body>
 </html>

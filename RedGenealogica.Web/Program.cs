@@ -1,8 +1,5 @@
 // ============================================================
-// Program.cs
-// Ubicación: Program.cs
-//
-// CAMBIO: agrega ServicioRetiros al contenedor de dependencias.
+// Program.cs — agrega ServicioNotificaciones al contenedor
 // ============================================================
 
 using Microsoft.AspNetCore.Identity;
@@ -15,12 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-// Servicios de negocio
 builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioPagos>();
 builder.Services.AddScoped<ServicioReferidos>();
 builder.Services.AddScoped<ServicioRangos>();
-builder.Services.AddScoped<ServicioRetiros>();   // NUEVO
+builder.Services.AddScoped<ServicioRetiros>();
+builder.Services.AddScoped<ServicioNotificaciones>();   // NUEVO
 
 builder.Services.AddHttpClient();
 
@@ -50,7 +47,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 var app = builder.Build();
 
-// Seed del rol Admin al arrancar
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();

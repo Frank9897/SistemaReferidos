@@ -2,20 +2,12 @@
 // ServicioPagos.cs
 // Ubicación: Services/ServicioPagos.cs
 //
-// CAMBIOS PRINCIPALES:
-//
-//   [NUEVO] Activación automática de A cuando B paga:
-//     ConfirmarPago ahora verifica si el referidor (A) está Pendiente.
-//     Si es así, lo activa automáticamente. A no paga nada — se activa
-//     cuando su primer referido paga el producto.
-//
-//   [NUEVO] Comisiones calculadas sobre precio real del producto:
-//     GenerarComisiones usa los porcentajes de Producto.ComisionNivelX
-//     multiplicados por el BonusComisionPorcentaje del rango del receptor.
-//     Fórmula: comision = precio * (porcentajeProducto/100) * (1 + bonus/100)
-//
-//   [NUEVO] SaldoDisponible: cada comisión acredita dinero real en
-//     el campo Usuario.SaldoDisponible, además de puntos de ranking.
+// CAMBIO: integración con ServicioNotificaciones.
+// Se disparan notificaciones automáticas en ConfirmarPago:
+//   - Al referidor: "Tu referido pagó"
+//   - Al referidor: "Ganaste comisión" (si aplica)
+//   - Al referidor: "Subiste de rango" (si subió)
+//   - A cada ancestro que recibe comisión en GenerarComisiones
 // ============================================================
 
 using Microsoft.EntityFrameworkCore;
@@ -34,37 +26,28 @@ public class ServicioPagos
     private readonly IConfiguration _configuration;
     private readonly ServicioReferidos _servicioReferidos;
     private readonly ServicioRangos _servicioRangos;
+    private readonly ServicioNotificaciones _servicioNotificaciones;
 
     public ServicioPagos(
         ContextoAplicacion contexto,
         IConfiguration configuration,
         ServicioReferidos servicioReferidos,
-        ServicioRangos servicioRangos)
+        ServicioRangos servicioRangos,
+        ServicioNotificaciones servicioNotificaciones)
     {
         _contexto = contexto;
         _configuration = configuration;
         _servicioReferidos = servicioReferidos;
         _servicioRangos = servicioRangos;
+        _servicioNotificaciones = servicioNotificaciones;
     }
 
     // ----------------------------------------------------------------
-    // [NUEVO] GenerarComisiones
-    //
-    // Calcula la comisión de cada ancestro según:
-    //   1. El porcentaje del producto para ese nivel (ComisionNivelX)
-    //   2. El bonus de rango del receptor (BonusComisionPorcentaje)
-    //
-    // Fórmula: comision = precioProducto * (pctNivel/100) * (1 + bonus/100)
-    //
-    // Ejemplo: Switch $100, nivel 1 = 10%, receptor Oro (bonus 40%)
-    //   comision = $100 * 0.10 * 1.40 = $14
-    //
-    // Además de acreditar dinero (SaldoDisponible), suma puntos de
-    // ranking proporcionales para el leaderboard.
+    // Genera comisiones para los ancestros del árbol.
+    // Dispara notificación a cada padre que recibe comisión.
     // ----------------------------------------------------------------
     public async Task GenerarComisiones(int referidoId, int usuarioOrigenId, Producto producto)
     {
-        // Porcentajes base por nivel definidos en el producto
         var porcentajesPorNivel = new Dictionary<int, decimal>
         {
             { 1, producto.ComisionNivel1Porcentaje },
@@ -80,17 +63,14 @@ public class ServicioPagos
             var usuario = await _contexto.Users
                 .FirstOrDefaultAsync(u => u.Id == usuarioActualId);
 
-            if (usuario?.IdUsuarioPadre == null)
-                break;
+            if (usuario?.IdUsuarioPadre == null) break;
 
             var padre = await _contexto.Users
                 .Include(u => u.MovimientosPuntos)
                 .FirstOrDefaultAsync(u => u.Id == usuario.IdUsuarioPadre);
 
-            if (padre == null)
-                break;
+            if (padre == null) break;
 
-            // Idempotencia: no pagar dos veces la misma comisión
             var yaExiste = await _contexto.MovimientosPuntos
                 .AnyAsync(x =>
                     x.UsuarioId == padre.Id &&
@@ -104,39 +84,53 @@ public class ServicioPagos
                 continue;
             }
 
-            // Obtener el bonus de comisión según el rango actual del padre
             var rangoInfo = await _contexto.RangosUsuario
                 .FirstOrDefaultAsync(r => r.TipoRango == padre.TipoRangoActual && r.Activo);
 
             var bonusPorcentaje = rangoInfo?.BonusComisionPorcentaje ?? 0m;
             var pctBase = porcentajesPorNivel[nivelActual];
-
-            // Comisión en dinero real: precio del producto * % nivel * multiplicador de rango
             var comisionDinero = Math.Round(
-                producto.Precio * (pctBase / 100m) * (1m + bonusPorcentaje / 100m),
-                2);
-
-            // Puntos de ranking: 1 punto por cada peso de comisión (redondeado)
+                producto.Precio * (pctBase / 100m) * (1m + bonusPorcentaje / 100m), 2);
             var puntosGanados = (int)Math.Floor(comisionDinero);
 
-            // Registrar movimiento con todos los datos para auditoría
             _contexto.MovimientosPuntos.Add(new MovimientoPuntos
             {
-                UsuarioId = padre.Id,
-                Monto = comisionDinero,
+                UsuarioId     = padre.Id,
+                Monto         = comisionDinero,
                 CantidadPuntos = puntosGanados,
-                Motivo = $"Comisión nivel {nivelActual} — {producto.Nombre}",
-                ReferidoId = referidoId,
-                Nivel = nivelActual,
+                Motivo        = $"Comisión nivel {nivelActual} — {producto.Nombre}",
+                ReferidoId    = referidoId,
+                Nivel         = nivelActual,
                 FechaMovimiento = DateTime.UtcNow
             });
 
-            // Acreditar dinero real al saldo del padre (retirable)
-            padre.SaldoDisponible += comisionDinero;
-
-            // Acumular puntos de ranking y recalcular rango
+            var rangoAnterior = padre.TipoRangoActual;
+            padre.SaldoDisponible  += comisionDinero;
             padre.PuntosAcumulados += puntosGanados;
-            padre.TipoRangoActual = await _servicioRangos.ObtenerRangoAsync(padre.PuntosAcumulados);
+            padre.TipoRangoActual   = await _servicioRangos.ObtenerRangoAsync(padre.PuntosAcumulados);
+
+            await _contexto.SaveChangesAsync();
+
+            // Notificación: comisión recibida
+            await _servicioNotificaciones.CrearAsync(
+                padre.Id,
+                TipoNotificacion.ComisionRecibida,
+                "💰 Comisión recibida",
+                $"Ganaste ${comisionDinero:N2} de comisión nivel {nivelActual} por la venta de {producto.Nombre}.",
+                "/Usuario/Panel"
+            );
+
+            // Notificación adicional si subió de rango
+            if (padre.TipoRangoActual != rangoAnterior)
+            {
+                await _servicioNotificaciones.CrearAsync(
+                    padre.Id,
+                    TipoNotificacion.SubidaDeRango,
+                    "🏆 ¡Subiste de rango!",
+                    $"Felicitaciones, ahora sos {padre.TipoRangoActual}. Tus comisiones aumentaron.",
+                    "/Usuario/Panel"
+                );
+            }
 
             usuarioActualId = padre.Id;
             nivelActual++;
@@ -146,14 +140,7 @@ public class ServicioPagos
     }
 
     // ----------------------------------------------------------------
-    // [ACTUALIZADO] ConfirmarPago
-    //
-    // Flujo completo cuando B paga el producto:
-    //   1. Marca el referido como Pagado (idempotencia con PagoConfirmado)
-    //   2. [NUEVO] Activa a A automáticamente si estaba Pendiente
-    //      (A se activa con el primer pago de cualquiera de sus referidos)
-    //   3. Suma 100 puntos de ranking a A por referido activado
-    //   4. Genera comisiones en dinero para A y sus ancestros
+    // Confirma el pago de un referido y dispara todas las notificaciones.
     // ----------------------------------------------------------------
     public async Task ConfirmarPago(int referidoId)
     {
@@ -166,55 +153,74 @@ public class ServicioPagos
                 .Include(r => r.Producto)
                 .FirstOrDefaultAsync(r => r.Id == referidoId);
 
-            if (referido == null)
-            {
-                await transaccion.RollbackAsync();
-                return;
-            }
+            if (referido == null) { await transaccion.RollbackAsync(); return; }
+            if (referido.PagoConfirmado) { await transaccion.RollbackAsync(); return; }
 
-            // Guard de idempotencia: protege contra webhooks duplicados
-            if (referido.PagoConfirmado)
-            {
-                await transaccion.RollbackAsync();
-                return;
-            }
-
-            // Marca como confirmado antes de cualquier otra operación
             referido.PagoConfirmado = true;
-            referido.Estado = EstadoReferido.Pagado;
+            referido.Estado         = EstadoReferido.Pagado;
             referido.FechaActivacion = DateTime.UtcNow;
 
-            var referidor = referido.Usuario!;
+            var referidor    = referido.Usuario!;
+            var rangoAnterior = referidor.TipoRangoActual;
+            var eraActivo    = referidor.EstadoUsuario == EstadoUsuario.Activo;
 
-            // [NUEVO] Activa al referidor (A) automáticamente si estaba Pendiente.
-            // A no paga nada: se activa cuando su primer referido completa el pago.
-            if (referidor.EstadoUsuario == EstadoUsuario.Pendiente)
+            // Activar al referidor si estaba Pendiente
+            if (!eraActivo)
             {
-                referidor.EstadoUsuario = EstadoUsuario.Activo;
+                referidor.EstadoUsuario  = EstadoUsuario.Activo;
                 referidor.FechaActivacion = DateTime.UtcNow;
             }
 
-            // Suma 100 puntos de ranking a A por tener un referido que pagó
             referidor.PuntosAcumulados += 100;
-            referidor.TipoRangoActual =
-                await _servicioRangos.ObtenerRangoAsync(referidor.PuntosAcumulados);
+            referidor.TipoRangoActual   = await _servicioRangos.ObtenerRangoAsync(referidor.PuntosAcumulados);
 
-            // Registra el movimiento de puntos (no dinero, solo ranking)
             _contexto.MovimientosPuntos.Add(new MovimientoPuntos
             {
-                UsuarioId = referidor.Id,
+                UsuarioId      = referidor.Id,
                 CantidadPuntos = 100,
-                Monto = 0m,
-                Motivo = $"Referido activado — {referido.NombreCompleto}",
-                ReferidoId = referido.Id,
-                Nivel = 0,
+                Monto          = 0m,
+                Motivo         = $"Referido activado — {referido.NombreCompleto}",
+                ReferidoId     = referido.Id,
+                Nivel          = 0,
                 FechaMovimiento = DateTime.UtcNow
             });
 
             await _contexto.SaveChangesAsync();
 
-            // Genera comisiones en dinero para A y sus ancestros (niveles 1-3)
-            // Usa el producto real del referido para calcular los montos
+            // Notificación: referido pagó
+            await _servicioNotificaciones.CrearAsync(
+                referidor.Id,
+                TipoNotificacion.ReferidoPago,
+                "✅ Tu referido pagó",
+                $"{referido.NombreCompleto} completó el pago de {referido.Producto?.Nombre}. Ganaste 100 puntos.",
+                "/Referidos/MisReferidos"
+            );
+
+            // Notificación: cuenta activada (solo si estaba pendiente)
+            if (!eraActivo)
+            {
+                await _servicioNotificaciones.CrearAsync(
+                    referidor.Id,
+                    TipoNotificacion.Sistema,
+                    "🎉 ¡Tu cuenta está activa!",
+                    "Tu cuenta fue activada. Ya podés registrar más referidos y ganar comisiones.",
+                    "/Usuario/Panel"
+                );
+            }
+
+            // Notificación: subida de rango del referidor
+            if (referidor.TipoRangoActual != rangoAnterior)
+            {
+                await _servicioNotificaciones.CrearAsync(
+                    referidor.Id,
+                    TipoNotificacion.SubidaDeRango,
+                    "🏆 ¡Subiste de rango!",
+                    $"Felicitaciones, ahora sos {referidor.TipoRangoActual}. Tus comisiones aumentaron.",
+                    "/Usuario/Panel"
+                );
+            }
+
+            // Generar comisiones para ancestros (con sus propias notificaciones)
             await GenerarComisiones(referido.Id, referidor.Id, referido.Producto!);
 
             await transaccion.CommitAsync();
@@ -227,7 +233,7 @@ public class ServicioPagos
     }
 
     // ----------------------------------------------------------------
-    // Crea preferencia de pago en MercadoPago y devuelve la URL de checkout.
+    // Crea preferencia de pago en MercadoPago.
     // ----------------------------------------------------------------
     public async Task<string> CrearPreferencia(int referidoId)
     {
@@ -252,36 +258,34 @@ public class ServicioPagos
             {
                 new
                 {
-                    title = referido.Producto!.Nombre,
-                    quantity = 1,
+                    title     = referido.Producto!.Nombre,
+                    quantity  = 1,
                     unit_price = referido.Producto.Precio
                 }
             },
-            payer = new { email = "test_user_123@testuser.com" },
-            back_urls = new
+            payer            = new { email = "test_user_123@testuser.com" },
+            back_urls        = new
             {
-                success = $"{baseUrl}/Pagos/Exito?ok=1",
-                failure = $"{baseUrl}/Pagos/Error",
-                pending = $"{baseUrl}/Pagos/Pendiente"
+                success  = $"{baseUrl}/Pagos/Exito?ok=1",
+                failure  = $"{baseUrl}/Pagos/Error",
+                pending  = $"{baseUrl}/Pagos/Pendiente"
             },
-            auto_return = "approved",
+            auto_return      = "approved",
             notification_url = $"{baseUrl}/Pagos/Webhook",
             external_reference = referidoId.ToString(),
-            metadata = new { referido_id = referidoId }
+            metadata         = new { referido_id = referidoId }
         };
 
-        var json = JsonSerializer.Serialize(body);
+        var json     = JsonSerializer.Serialize(body);
         var response = await http.PostAsync(
             "https://api.mercadopago.com/checkout/preferences",
             new StringContent(json, Encoding.UTF8, "application/json"));
 
         var content = await response.Content.ReadAsStringAsync();
-
         if (!response.IsSuccessStatusCode)
             throw new Exception("Error MercadoPago: " + content);
 
         var result = JsonDocument.Parse(content);
-
         if (!result.RootElement.TryGetProperty("init_point", out var initPoint))
             throw new Exception("Respuesta inválida MP: " + content);
 
@@ -290,15 +294,13 @@ public class ServicioPagos
 
     // ----------------------------------------------------------------
     // Procesa el webhook de MercadoPago.
-    // Llama a ConfirmarPago y luego convierte el referido en usuario.
     // ----------------------------------------------------------------
     public async Task<bool> ProcesarWebhookPagoAsync(string idPago)
     {
         var yaProcesado = await _contexto.RegistrosWebhook
             .AnyAsync(x => x.IdPago == idPago);
 
-        if (yaProcesado)
-            return false;
+        if (yaProcesado) return false;
 
         var accessToken = _configuration["MercadoPago:AccessToken"]
             ?? throw new Exception("Token de MercadoPago no configurado");
@@ -308,45 +310,34 @@ public class ServicioPagos
             new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await cliente.GetAsync($"https://api.mercadopago.com/v1/payments/{idPago}");
-
         if (!response.IsSuccessStatusCode)
             throw new Exception("Error al consultar MercadoPago");
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content     = await response.Content.ReadAsStringAsync();
         var paymentJson = JsonDocument.Parse(content);
+        var status      = paymentJson.RootElement.GetProperty("status").GetString();
 
-        var status = paymentJson.RootElement.GetProperty("status").GetString();
-
-        if (status != "approved")
-            return false;
+        if (status != "approved") return false;
 
         var externalReference = paymentJson.RootElement
             .GetProperty("external_reference").GetString();
 
-        if (string.IsNullOrEmpty(externalReference))
-            return false;
+        if (string.IsNullOrEmpty(externalReference)) return false;
 
         int referidoId = int.Parse(externalReference);
-
-        var referido = await _contexto.Referidos.FindAsync(referidoId);
-        if (referido == null)
-            return false;
+        var referido   = await _contexto.Referidos.FindAsync(referidoId);
+        if (referido == null) return false;
 
         await ConfirmarPago(referidoId);
 
-        // El referido queda como Pagado. Solo se convierte a usuario
-        // cuando el admin lo decide desde el panel (flujo manual intencional)
-        // await _servicioReferidos.ConvertirReferidoAUsuarioAsync(referidoId);
-
         _contexto.RegistrosWebhook.Add(new RegistroWebhook
         {
-            IdPago = idPago,
-            Estado = status,
+            IdPago        = idPago,
+            Estado        = status,
             FechaRegistro = DateTime.UtcNow
         });
 
         await _contexto.SaveChangesAsync();
-
         return true;
     }
 }

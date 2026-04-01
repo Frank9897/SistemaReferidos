@@ -2,12 +2,8 @@
 // ContextoAplicacion.cs
 // Ubicación: Data/ContextoAplicacion.cs
 //
-// CAMBIOS:
-//   - DbSet<SolicitudRetiro> agregado
-//   - Seed del producto de ejemplo (Switch TP-Link) con comisiones
-//   - Seed de RangoUsuario actualizado con BonusComisionPorcentaje
-//   - Configuración de SolicitudRetiro en OnModelCreating
-//   - Columnas nuevas en Producto y Usuario configuradas
+// CAMBIO: agrega DbSet<Notificacion> y su configuración.
+// El resto del archivo es idéntico al anterior.
 // ============================================================
 
 using Microsoft.AspNetCore.Identity;
@@ -23,13 +19,14 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
     public ContextoAplicacion(DbContextOptions<ContextoAplicacion> options)
         : base(options) { }
 
-    public DbSet<Producto> Productos => Set<Producto>();
-    public DbSet<Pago> Pagos => Set<Pago>();
-    public DbSet<Referido> Referidos => Set<Referido>();
+    public DbSet<Producto>         Productos         => Set<Producto>();
+    public DbSet<Pago>             Pagos             => Set<Pago>();
+    public DbSet<Referido>         Referidos         => Set<Referido>();
     public DbSet<MovimientoPuntos> MovimientosPuntos => Set<MovimientoPuntos>();
-    public DbSet<RangoUsuario> RangosUsuario => Set<RangoUsuario>();
-    public DbSet<RegistroWebhook> RegistrosWebhook => Set<RegistroWebhook>();
-    public DbSet<SolicitudRetiro> SolicitudesRetiro => Set<SolicitudRetiro>();
+    public DbSet<RangoUsuario>     RangosUsuario     => Set<RangoUsuario>();
+    public DbSet<RegistroWebhook>  RegistrosWebhook  => Set<RegistroWebhook>();
+    public DbSet<SolicitudRetiro>  SolicitudesRetiro => Set<SolicitudRetiro>();
+    public DbSet<Notificacion>     Notificaciones    => Set<Notificacion>();  // NUEVO
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -165,16 +162,30 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // ── Notificacion ─────────────────────────────────────────────
+        modelBuilder.Entity<Notificacion>(entity =>
+        {
+            entity.ToTable("Notificaciones");
+            entity.Property(x => x.Titulo).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Mensaje).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.UrlAccion).HasMaxLength(200);
+
+            entity.HasOne(x => x.Usuario)
+                .WithMany()
+                .HasForeignKey(x => x.UsuarioId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Índice para acelerar el polling (UsuarioId + Leida)
+            entity.HasIndex(x => new { x.UsuarioId, x.Leida });
+        });
+
         // ── RegistroWebhook ──────────────────────────────────────────
         modelBuilder.Entity<RegistroWebhook>(entity =>
         {
             entity.ToTable("RegistrosWebhook");
         });
 
-        // ================================================================
-        // SEED — Rangos con bonus de comisión por rango
-        // Cobre no tiene bonus. El bonus aumenta con el rango.
-        // ================================================================
+        // ── Seeds de rangos ──────────────────────────────────────────
         modelBuilder.Entity<RangoUsuario>().HasData(
             new RangoUsuario { Id = 1, TipoRango = TipoRango.Cobre,    NombreVisible = "Cobre",    PuntosMinimos = 0,    PuntosMaximos = 99,           Orden = 1, BonusComisionPorcentaje = 0m,  ColorPrincipal = "#8B5A2B", IconoCss = "bi-shield",       Activo = true },
             new RangoUsuario { Id = 2, TipoRango = TipoRango.Bronce,   NombreVisible = "Bronce",   PuntosMinimos = 100,  PuntosMaximos = 299,          Orden = 2, BonusComisionPorcentaje = 10m, ColorPrincipal = "#B08D57", IconoCss = "bi-shield-check", Activo = true },

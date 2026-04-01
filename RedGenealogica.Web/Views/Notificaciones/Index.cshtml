@@ -1,0 +1,73 @@
+@* Index.cshtml — Views/Notificaciones/Index.cshtml *@
+@model List<RedGenealogica.Web.Models.Notificacion>
+@using RedGenealogica.Web.Enumeraciones
+@{ ViewData["Title"] = "Notificaciones"; }
+
+<div style="max-width:700px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px;">
+        <div>
+            <div class="section-title">🔔 Notificaciones</div>
+            <div class="section-subtitle">Historial completo de actividad de tu cuenta</div>
+        </div>
+    </div>
+
+    <div class="card">
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">🔔</div>
+                <p>Sin notificaciones aún. Cuando tus referidos paguen o recibas comisiones, aparecerán aquí.</p>
+            </div>
+        }
+        else
+        {
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                @foreach (var n in Model)
+                {
+                    var iconoTipo = n.Tipo switch {
+                        TipoNotificacion.ReferidoPago      => "✅",
+                        TipoNotificacion.ComisionRecibida  => "💰",
+                        TipoNotificacion.SubidaDeRango     => "🏆",
+                        TipoNotificacion.RetiroAprobado    => "✅",
+                        TipoNotificacion.RetiroRechazado   => "❌",
+                        TipoNotificacion.ReferidoConvertido => "👤",
+                        _ => "📣"
+                    };
+
+                    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-bottom:1px solid var(--border);">
+                        <div style="font-size:20px; flex-shrink:0; margin-top:2px;">@iconoTipo</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:14px; color:var(--text);">@n.Titulo</div>
+                            <div style="font-size:13px; color:var(--text-muted); margin-top:3px; line-height:1.5;">@n.Mensaje</div>
+                            @if (!string.IsNullOrEmpty(n.UrlAccion))
+                            {
+                                <a href="@n.UrlAccion" style="font-size:12.5px; color:var(--sky); margin-top:6px; display:inline-block;">Ver detalle →</a>
+                            }
+                        </div>
+                        <div style="font-size:11.5px; color:var(--text-dim); flex-shrink:0; white-space:nowrap;">
+                            @n.FechaCreacion.ToString("dd/MM/yy HH:mm")
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (ViewBag.Pagina > 1 || Model.Count == 20)
+            {
+                <div style="display:flex; justify-content:space-between; margin-top:16px;">
+                    @if (ViewBag.Pagina > 1)
+                    {
+                        <a href="/Notificaciones?pagina=@(ViewBag.Pagina - 1)" class="btn btn-secondary btn-sm">← Anterior</a>
+                    }
+                    else { <span></span> }
+
+                    @if (Model.Count == 20)
+                    {
+                        <a href="/Notificaciones?pagina=@(ViewBag.Pagina + 1)" class="btn btn-secondary btn-sm">Siguiente →</a>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @await Html.PartialAsync("_BotonVolver")
+</div>
