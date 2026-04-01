@@ -216,4 +216,42 @@ public class UsuarioController : Controller
 
         return RedirectToAction("SolicitarRetiro");
     }
+
+    [HttpGet]
+    public async Task<IActionResult> EditarPerfil()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
+        var vm = new EditarPerfilViewModel
+        {
+            Nombres = usuario.Nombres,
+            Apellidos = usuario.Apellidos,
+            CbuAlias = usuario.CbuAlias
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EditarPerfil(EditarPerfilViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
+        usuario.Nombres = model.Nombres;
+        usuario.Apellidos = model.Apellidos;
+        usuario.CbuAlias = model.CbuAlias;
+
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = "Perfil actualizado correctamente";
+
+        return RedirectToAction("Panel");
+    }
 }

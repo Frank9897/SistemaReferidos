@@ -31,8 +31,28 @@ public class ServicioRetiros
         if (monto <= 0)
             return (false, "El monto debe ser mayor a cero");
 
+        // Si no envía CBU, intentar usar el del perfil
         if (string.IsNullOrWhiteSpace(cbuAlias))
-            return (false, "Debés ingresar tu CBU o alias de MercadoPago");
+        {
+            var usuarioExistente = await _contexto.Users.FindAsync(usuarioId);
+
+            if (usuarioExistente == null)
+                return (false, "Usuario no encontrado");
+
+            if (string.IsNullOrWhiteSpace(usuarioExistente.CbuAlias))
+                return (false, "Debés ingresar tu CBU o alias de MercadoPago");
+
+            cbuAlias = usuarioExistente.CbuAlias;
+        }
+        else
+        {
+            // Si lo envía manualmente, actualizar el perfil
+            var usuarioExistente = await _contexto.Users.FindAsync(usuarioId);
+            if (usuarioExistente != null)
+            {
+                usuarioExistente.CbuAlias = cbuAlias;
+            }
+        }
 
         var usuario = await _contexto.Users.FindAsync(usuarioId);
         if (usuario == null) return (false, "Usuario no encontrado");

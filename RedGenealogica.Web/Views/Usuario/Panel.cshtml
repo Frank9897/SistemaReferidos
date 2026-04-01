@@ -35,6 +35,7 @@
         </div>
     </div>
     <div class="acciones-inline">
+        <a href="/Usuario/EditarPerfil" class="btn btn-secondary">⚙️ Editar perfil</a>
         <a href="/Referidos/Crear" class="btn btn-primary">+ Invitar referido</a>
         <a href="/Genealogia" class="btn btn-secondary">Ver árbol</a>
     </div>
@@ -52,12 +53,6 @@
                     </div>
                 </div>
             }
-@if (TempData["Exito"] != null)
-{
-    <div class="alert alert-success">
-        @TempData["Exito"]
-    </div>
-}
 <!-- MÉTRICAS -->
 <div class="grid">
     <div class="metric-card blue">
