@@ -16,6 +16,12 @@
 }
 
 <!-- HEADER -->
+@if (ViewBag.Activado == true)
+{
+    <div class="alert alert-success" style="margin-bottom:18px;">
+        🎉 Tu cuenta fue activada correctamente
+    </div>
+}
 <div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
     <div>
         <div class="titulo-principal">Hola, @Model.Usuario.Nombres 👋</div>
@@ -46,6 +52,12 @@
                     </div>
                 </div>
             }
+@if (TempData["Exito"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Exito"]
+    </div>
+}
 <!-- MÉTRICAS -->
 <div class="grid">
     <div class="metric-card blue">

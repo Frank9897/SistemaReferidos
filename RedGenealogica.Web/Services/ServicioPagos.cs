@@ -260,7 +260,7 @@ public class ServicioPagos
             payer = new { email = "test_user_123@testuser.com" },
             back_urls = new
             {
-                success = $"{baseUrl}/Pagos/Exito",
+                success = $"{baseUrl}/Pagos/Exito?ok=1",
                 failure = $"{baseUrl}/Pagos/Error",
                 pending = $"{baseUrl}/Pagos/Pendiente"
             },

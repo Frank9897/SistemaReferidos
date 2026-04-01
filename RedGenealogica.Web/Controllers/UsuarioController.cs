@@ -39,9 +39,10 @@ public class UsuarioController : Controller
     public async Task<IActionResult> Panel()
     {
         var usuario = await _userManager.GetUserAsync(User);
-
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
+            
+        ViewBag.Activado = Request.Query["activado"] == "1";
 
         var referidos = await _contexto.Referidos
             .Where(r => r.UsuarioId == usuario.Id)
