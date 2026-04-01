@@ -47,11 +47,45 @@
                                 }
                             </div>
                         <div style="font-size:12.5px; color:var(--text-muted);">@s.Usuario?.Email</div>
-                        <div style="margin-top:8px;">
-                            <span style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--green);">$@s.Monto.ToString("N2")</span>
-                        </div>
-                        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                            CBU/Alias: <strong style="color:var(--text);">@s.CbuAlias</strong>
+                        <a href="https://www.mercadopago.com.ar/"
+                            target="_blank"
+                            class="btn btn-primary"
+                            style="width:100%; justify-content:center;">
+                            💳 Abrir MercadoPago
+                        </a>
+                        <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+                            <span style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--green);">
+                                $@s.Monto.ToString("N2")
+                            </span>
+
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+
+                                <div style="font-size:12px;">
+                                    Alias: <strong>@s.CbuAlias</strong>
+                                </div>
+
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm"
+                                            onclick="copiarTexto('@Html.Raw(s.CbuAlias)')">
+                                        📋 Alias
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-secondary btn-sm"
+                                            onclick="copiarTexto('@s.Monto.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)')">
+                                        💰 Monto
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-primary btn-sm"
+                                            onclick="copiarTexto('Alias: @s.CbuAlias | Monto: @s.Monto.ToString("F2")')">
+                                        📦 Todo
+                                    </button>
+
+                                </div>
+                            </div>
                         </div>
                         <div style="font-size:12px; color:var(--text-muted);">
                             Solicitado: @s.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")
@@ -61,7 +95,10 @@
                     <div style="display:flex; flex-direction:column; gap:10px; min-width:260px;">
 
                         @if (s.Estado == EstadoRetiro.Pendiente)
-                        {
+                        {    
+                            <div style="margin-top:6px; font-size:11px; color:#f59e0b;">
+                                ⚠️ Pendiente de pago
+                            </div>
                             <!-- Aprobar -->
                             <form method="post" action="/Administrador/AprobarRetiro/@s.Id">
                                 @Html.AntiForgeryToken()
@@ -95,7 +132,13 @@
                                 @Html.AntiForgeryToken()
                                 <div style="margin-bottom:6px;">
                                     <label style="font-size:11px;">Referencia de transferencia *</label>
-                                    <input name="referenciaTransferencia" required placeholder="ID transferencia MP" />
+                                    <input name="referenciaTransferencia"
+                                        required
+                                        placeholder="Ej: 12345678901234" />
+
+                                    <span style="font-size:11px; color:var(--text-muted);">
+                                        Pegá el ID de la transferencia de MercadoPago
+                                    </span>
                                 </div>
                                 <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
                                     💰 Completar pago
@@ -115,3 +158,10 @@
         }
     }
 </div>
+<script>
+function copiarTexto(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        console.log("Copiado:", texto);
+    });
+}
+</script>
