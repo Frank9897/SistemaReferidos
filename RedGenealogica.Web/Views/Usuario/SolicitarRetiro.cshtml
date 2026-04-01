@@ -110,9 +110,48 @@
                     ⚠️ Una vez enviada la solicitud, el monto quedará bloqueado hasta que el admin la procese. El tiempo de acreditación depende de MercadoPago.
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+                <button type="button" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;"
+                        onclick="abrirConfirmacion()">
                     Solicitar retiro
                 </button>
+                <div id="modalConfirmacion" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+
+                    <div class="card" style="max-width:420px; width:100%; padding:18px;">
+
+                        <div style="font-size:18px; font-weight:600; margin-bottom:10px;">
+                            Confirmar retiro
+                        </div>
+
+                        <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+                            Revisá los datos antes de continuar
+                        </div>
+
+                        <div style="margin-bottom:10px;">
+                            <strong>Monto:</strong>
+                            <span id="confirmMonto"></span>
+                        </div>
+
+                        <div style="margin-bottom:14px;">
+                            <strong>CBU / Alias:</strong>
+                            <span id="confirmAlias"></span>
+                        </div>
+
+                        <div style="background:rgba(239,68,68,0.08); padding:10px; border-radius:var(--radius-sm); font-size:12px; color:var(--text-muted); margin-bottom:14px;">
+                            ⚠️ Esta acción no se puede deshacer hasta que el admin procese el retiro
+                        </div>
+
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-secondary" style="flex:1;" onclick="cerrarConfirmacion()">
+                                Cancelar
+                            </button>
+
+                            <button class="btn btn-primary" style="flex:1;" onclick="confirmarEnvio()">
+                                Confirmar
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
             </form>
         </div>
     }
@@ -174,3 +213,49 @@
 
     @await Html.PartialAsync("_BotonVolver")
 </div>
+
+<script>
+function abrirConfirmacion() {
+
+    const montoInput = document.querySelector('input[name="monto"]');
+    const aliasInput = document.querySelector('input[name="cbuAlias"]');
+
+    if (!montoInput.value || parseFloat(montoInput.value) <= 0) {
+        alert("Ingresá un monto válido");
+        return;
+    }
+
+    const monto = parseFloat(montoInput.value).toLocaleString("es-AR", {
+        style: "currency",
+        currency: "ARS"
+    });
+
+    let alias = "";
+
+    if (aliasInput) {
+        alias = aliasInput.value;
+    } else {
+        // cuando viene del hidden input
+        const hidden = document.querySelector('input[type="hidden"][name="cbuAlias"]');
+        alias = hidden ? hidden.value : "";
+    }
+
+    if (!alias) {
+        alert("Ingresá un CBU o alias válido");
+        return;
+    }
+
+    document.getElementById("confirmMonto").innerText = monto;
+    document.getElementById("confirmAlias").innerText = alias;
+
+    document.getElementById("modalConfirmacion").style.display = "flex";
+}
+
+function cerrarConfirmacion() {
+    document.getElementById("modalConfirmacion").style.display = "none";
+}
+
+function confirmarEnvio() {
+    document.querySelector("form").submit();
+}
+</script>
