@@ -12,8 +12,8 @@ using RedGenealogica.Web.Data;
 namespace RedGenealogica.Web.Migrations
 {
     [DbContext(typeof(ContextoAplicacion))]
-    [Migration("20260327234221_AddWebhookLog")]
-    partial class AddWebhookLog
+    [Migration("20260405161904_InicialLimpia")]
+    partial class InicialLimpia
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -172,7 +172,8 @@ namespace RedGenealogica.Web.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("Monto")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<string>("Motivo")
                         .IsRequired()
@@ -195,6 +196,47 @@ namespace RedGenealogica.Web.Migrations
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("MovimientosPuntos", (string)null);
+                });
+
+            modelBuilder.Entity("RedGenealogica.Web.Models.Notificacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Leida")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("UrlAccion")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "Leida");
+
+                    b.ToTable("Notificaciones", (string)null);
                 });
 
             modelBuilder.Entity("RedGenealogica.Web.Models.Pago", b =>
@@ -263,12 +305,28 @@ namespace RedGenealogica.Web.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean");
 
+                    b.Property<decimal>("ComisionNivel1Porcentaje")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("ComisionNivel2Porcentaje")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("ComisionNivel3Porcentaje")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
                     b.Property<string>("Descripcion")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImagenUrl")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -278,6 +336,9 @@ namespace RedGenealogica.Web.Migrations
                     b.Property<decimal>("Precio")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<int?>("StockDisponible")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -294,6 +355,10 @@ namespace RedGenealogica.Web.Migrations
 
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal>("BonusComisionPorcentaje")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<string>("ColorPrincipal")
                         .HasMaxLength(30)
@@ -329,6 +394,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 1,
                             Activo = true,
+                            BonusComisionPorcentaje = 0m,
                             ColorPrincipal = "#8B5A2B",
                             IconoCss = "bi-shield",
                             NombreVisible = "Cobre",
@@ -341,6 +407,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 2,
                             Activo = true,
+                            BonusComisionPorcentaje = 10m,
                             ColorPrincipal = "#B08D57",
                             IconoCss = "bi-shield-check",
                             NombreVisible = "Bronce",
@@ -353,6 +420,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 3,
                             Activo = true,
+                            BonusComisionPorcentaje = 20m,
                             ColorPrincipal = "#BFC1C2",
                             IconoCss = "bi-award",
                             NombreVisible = "Plata",
@@ -365,6 +433,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 4,
                             Activo = true,
+                            BonusComisionPorcentaje = 40m,
                             ColorPrincipal = "#D4AF37",
                             IconoCss = "bi-trophy",
                             NombreVisible = "Oro",
@@ -377,6 +446,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 5,
                             Activo = true,
+                            BonusComisionPorcentaje = 60m,
                             ColorPrincipal = "#62D0FF",
                             IconoCss = "bi-gem",
                             NombreVisible = "Platino",
@@ -389,6 +459,7 @@ namespace RedGenealogica.Web.Migrations
                         {
                             Id = 6,
                             Activo = true,
+                            BonusComisionPorcentaje = 80m,
                             ColorPrincipal = "#00E5FF",
                             IconoCss = "bi-gem",
                             NombreVisible = "Diamante",
@@ -425,6 +496,9 @@ namespace RedGenealogica.Web.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<bool>("PagoConfirmado")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("PagoReferidoId")
                         .HasColumnType("integer");
 
@@ -459,6 +533,77 @@ namespace RedGenealogica.Web.Migrations
                     b.ToTable("Referidos", (string)null);
                 });
 
+            modelBuilder.Entity("RedGenealogica.Web.Models.RegistroWebhook", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FechaRegistro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IdPago")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RegistrosWebhook", (string)null);
+                });
+
+            modelBuilder.Entity("RedGenealogica.Web.Models.SolicitudRetiro", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AdminResolvidoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CbuAlias")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FechaResolucion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("FechaSolicitud")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Monto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("NotaAdmin")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("ReferenciaTransferencia")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("SolicitudesRetiro", (string)null);
+                });
+
             modelBuilder.Entity("RedGenealogica.Web.Models.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -474,6 +619,13 @@ namespace RedGenealogica.Web.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CbuAlias")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("CiclosCompletados")
+                        .HasColumnType("integer");
 
                     b.Property<string>("CodigoReferido")
                         .IsRequired()
@@ -542,6 +694,14 @@ namespace RedGenealogica.Web.Migrations
                     b.Property<int>("PuntosAcumulados")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("SaldoDisponible")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("SaldoPendienteRetiro")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
@@ -559,8 +719,6 @@ namespace RedGenealogica.Web.Migrations
 
                     b.HasIndex("CodigoReferido")
                         .IsUnique();
-
-                    b.HasIndex("DocumentoIdentidad");
 
                     b.HasIndex("IdUsuarioPadre");
 
@@ -643,6 +801,17 @@ namespace RedGenealogica.Web.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("RedGenealogica.Web.Models.Notificacion", b =>
+                {
+                    b.HasOne("RedGenealogica.Web.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("RedGenealogica.Web.Models.Pago", b =>
                 {
                     b.HasOne("RedGenealogica.Web.Models.Producto", "Producto")
@@ -702,6 +871,17 @@ namespace RedGenealogica.Web.Migrations
                     b.Navigation("UsuarioConvertido");
                 });
 
+            modelBuilder.Entity("RedGenealogica.Web.Models.SolicitudRetiro", b =>
+                {
+                    b.HasOne("RedGenealogica.Web.Models.Usuario", "Usuario")
+                        .WithMany("SolicitudesRetiro")
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("RedGenealogica.Web.Models.Usuario", b =>
                 {
                     b.HasOne("RedGenealogica.Web.Models.Usuario", "UsuarioPadre")
@@ -728,6 +908,8 @@ namespace RedGenealogica.Web.Migrations
                     b.Navigation("ReferidosDirectos");
 
                     b.Navigation("ReferidosRegistrados");
+
+                    b.Navigation("SolicitudesRetiro");
                 });
 #pragma warning restore 612, 618
         }

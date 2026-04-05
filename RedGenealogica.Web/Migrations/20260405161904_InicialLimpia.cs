@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace RedGenealogica.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class Inicial : Migration
+    public partial class InicialLimpia : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -38,6 +38,11 @@ namespace RedGenealogica.Web.Migrations
                     Nombre = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     Descripcion = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Precio = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    ComisionNivel1Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    ComisionNivel2Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    ComisionNivel3Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    StockDisponible = table.Column<int>(type: "integer", nullable: true),
+                    ImagenUrl = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
                     Activo = table.Column<bool>(type: "boolean", nullable: false),
                     FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -57,6 +62,7 @@ namespace RedGenealogica.Web.Migrations
                     PuntosMaximos = table.Column<int>(type: "integer", nullable: false),
                     Orden = table.Column<int>(type: "integer", nullable: false),
                     NombreVisible = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    BonusComisionPorcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
                     ColorPrincipal = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
                     IconoCss = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: true),
                     Activo = table.Column<bool>(type: "boolean", nullable: false)
@@ -64,6 +70,21 @@ namespace RedGenealogica.Web.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_RangosUsuario", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RegistrosWebhook",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    IdPago = table.Column<string>(type: "text", nullable: false),
+                    Estado = table.Column<string>(type: "text", nullable: false),
+                    FechaRegistro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RegistrosWebhook", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -82,7 +103,11 @@ namespace RedGenealogica.Web.Migrations
                     EstadoUsuario = table.Column<int>(type: "integer", nullable: false),
                     FechaRegistro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     FechaActivacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    SaldoDisponible = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    SaldoPendienteRetiro = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CbuAlias = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     IdUsuarioPadre = table.Column<int>(type: "integer", nullable: true),
+                    CiclosCompletados = table.Column<int>(type: "integer", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -216,6 +241,31 @@ namespace RedGenealogica.Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notificaciones",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
+                    Tipo = table.Column<int>(type: "integer", nullable: false),
+                    Titulo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    Mensaje = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    UrlAccion = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Leida = table.Column<bool>(type: "boolean", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notificaciones", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notificaciones_Usuarios_UsuarioId",
+                        column: x => x.UsuarioId,
+                        principalTable: "Usuarios",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Pagos",
                 columns: table => new
                 {
@@ -230,7 +280,8 @@ namespace RedGenealogica.Web.Migrations
                     NombreCuentaEnmascarado = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
                     EsSimulado = table.Column<bool>(type: "boolean", nullable: false),
                     FechaSolicitud = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    FechaConfirmacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    FechaConfirmacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Confirmado = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -243,6 +294,33 @@ namespace RedGenealogica.Web.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Pagos_Usuarios_UsuarioId",
+                        column: x => x.UsuarioId,
+                        principalTable: "Usuarios",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SolicitudesRetiro",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UsuarioId = table.Column<int>(type: "integer", nullable: false),
+                    Monto = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Estado = table.Column<int>(type: "integer", nullable: false),
+                    CbuAlias = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ReferenciaTransferencia = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: true),
+                    NotaAdmin = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    FechaSolicitud = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    FechaResolucion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    AdminResolvidoId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SolicitudesRetiro", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SolicitudesRetiro_Usuarios_UsuarioId",
                         column: x => x.UsuarioId,
                         principalTable: "Usuarios",
                         principalColumn: "Id",
@@ -264,7 +342,9 @@ namespace RedGenealogica.Web.Migrations
                     PagoReferidoId = table.Column<int>(type: "integer", nullable: true),
                     Estado = table.Column<int>(type: "integer", nullable: false),
                     FechaRegistro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    FechaActivacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    FechaActivacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UsuarioConvertidoId = table.Column<int>(type: "integer", nullable: true),
+                    PagoConfirmado = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -288,6 +368,12 @@ namespace RedGenealogica.Web.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
+                        name: "FK_Referidos_Usuarios_UsuarioConvertidoId",
+                        column: x => x.UsuarioConvertidoId,
+                        principalTable: "Usuarios",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
                         name: "FK_Referidos_Usuarios_UsuarioId",
                         column: x => x.UsuarioId,
                         principalTable: "Usuarios",
@@ -305,7 +391,9 @@ namespace RedGenealogica.Web.Migrations
                     CantidadPuntos = table.Column<int>(type: "integer", nullable: false),
                     Motivo = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
                     ReferidoId = table.Column<int>(type: "integer", nullable: true),
-                    FechaMovimiento = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    FechaMovimiento = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Monto = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Nivel = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -326,15 +414,15 @@ namespace RedGenealogica.Web.Migrations
 
             migrationBuilder.InsertData(
                 table: "RangosUsuario",
-                columns: new[] { "Id", "Activo", "ColorPrincipal", "IconoCss", "NombreVisible", "Orden", "PuntosMaximos", "PuntosMinimos", "TipoRango" },
+                columns: new[] { "Id", "Activo", "BonusComisionPorcentaje", "ColorPrincipal", "IconoCss", "NombreVisible", "Orden", "PuntosMaximos", "PuntosMinimos", "TipoRango" },
                 values: new object[,]
                 {
-                    { 1, true, "#8B5A2B", "bi-shield", "Cobre", 1, 99, 0, 1 },
-                    { 2, true, "#B08D57", "bi-shield-check", "Bronce", 2, 299, 100, 2 },
-                    { 3, true, "#BFC1C2", "bi-award", "Plata", 3, 599, 300, 3 },
-                    { 4, true, "#D4AF37", "bi-trophy", "Oro", 4, 999, 600, 4 },
-                    { 5, true, "#62D0FF", "bi-gem", "Platino", 5, 1499, 1000, 5 },
-                    { 6, true, "#00E5FF", "bi-gem", "Diamante", 6, 2147483647, 1500, 6 }
+                    { 1, true, 0m, "#8B5A2B", "bi-shield", "Cobre", 1, 99, 0, 1 },
+                    { 2, true, 10m, "#B08D57", "bi-shield-check", "Bronce", 2, 299, 100, 2 },
+                    { 3, true, 20m, "#BFC1C2", "bi-award", "Plata", 3, 599, 300, 3 },
+                    { 4, true, 40m, "#D4AF37", "bi-trophy", "Oro", 4, 999, 600, 4 },
+                    { 5, true, 60m, "#62D0FF", "bi-gem", "Platino", 5, 1499, 1000, 5 },
+                    { 6, true, 80m, "#00E5FF", "bi-gem", "Diamante", 6, 2147483647, 1500, 6 }
                 });
 
             migrationBuilder.CreateIndex(
@@ -374,6 +462,11 @@ namespace RedGenealogica.Web.Migrations
                 column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notificaciones_UsuarioId_Leida",
+                table: "Notificaciones",
+                columns: new[] { "UsuarioId", "Leida" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Pagos_ProductoId",
                 table: "Pagos",
                 column: "ProductoId");
@@ -399,8 +492,18 @@ namespace RedGenealogica.Web.Migrations
                 column: "ProductoId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Referidos_UsuarioConvertidoId",
+                table: "Referidos",
+                column: "UsuarioConvertidoId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Referidos_UsuarioId",
                 table: "Referidos",
+                column: "UsuarioId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SolicitudesRetiro_UsuarioId",
+                table: "SolicitudesRetiro",
                 column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
@@ -413,11 +516,6 @@ namespace RedGenealogica.Web.Migrations
                 table: "Usuarios",
                 column: "CodigoReferido",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Usuarios_DocumentoIdentidad",
-                table: "Usuarios",
-                column: "DocumentoIdentidad");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Usuarios_IdUsuarioPadre",
@@ -453,7 +551,16 @@ namespace RedGenealogica.Web.Migrations
                 name: "MovimientosPuntos");
 
             migrationBuilder.DropTable(
+                name: "Notificaciones");
+
+            migrationBuilder.DropTable(
                 name: "RangosUsuario");
+
+            migrationBuilder.DropTable(
+                name: "RegistrosWebhook");
+
+            migrationBuilder.DropTable(
+                name: "SolicitudesRetiro");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
