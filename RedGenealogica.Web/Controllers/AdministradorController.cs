@@ -206,9 +206,6 @@ public class AdministradorController : Controller
         producto.Nombre = modelo.Nombre;
         producto.Descripcion = modelo.Descripcion;
         producto.Precio = modelo.Precio;
-        producto.ComisionNivel1Porcentaje = modelo.ComisionNivel1Porcentaje;
-        producto.ComisionNivel2Porcentaje = modelo.ComisionNivel2Porcentaje;
-        producto.ComisionNivel3Porcentaje = modelo.ComisionNivel3Porcentaje;
         producto.StockDisponible = modelo.StockDisponible;
         producto.ImagenUrl = modelo.ImagenUrl;
 

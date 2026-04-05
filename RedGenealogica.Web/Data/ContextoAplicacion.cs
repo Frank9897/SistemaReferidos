@@ -60,9 +60,6 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
             entity.Property(x => x.Descripcion).HasMaxLength(500);
             entity.Property(x => x.ImagenUrl).HasMaxLength(250);
             entity.Property(x => x.Precio).HasPrecision(18, 2);
-            entity.Property(x => x.ComisionNivel1Porcentaje).HasPrecision(5, 2);
-            entity.Property(x => x.ComisionNivel2Porcentaje).HasPrecision(5, 2);
-            entity.Property(x => x.ComisionNivel3Porcentaje).HasPrecision(5, 2);
         });
 
         // ── Pago ─────────────────────────────────────────────────────
