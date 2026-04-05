@@ -2,12 +2,17 @@
 // Usuario.cs
 // Ubicación: Models/Usuario.cs
 //
-// CAMBIOS:
-//   - SaldoDisponible: acumula el dinero de comisiones retirable.
-//     Se suma con cada comisión recibida y se descuenta al retirar.
-//   - SaldoPendienteRetiro: monto en proceso de retiro (aprobado
-//     por el admin pero aún no transferido). Evita que el usuario
-//     solicite dos retiros del mismo saldo.
+// RESPONSABILIDAD:
+// Representa al usuario autenticado del sistema, extendiendo
+// IdentityUser<int> con datos del negocio: árbol de referidos,
+// puntos, rangos, saldo y ciclos de premios.
+//
+// NOTAS:
+// - SaldoDisponible: dinero real disponible para retiro.
+// - SaldoPendienteRetiro: dinero bloqueado mientras un retiro
+//   está en proceso.
+// - CiclosCompletados: cantidad de ciclos de 3 referidos pagos
+//   que ya cobraron premio.
 // ============================================================
 
 using System.ComponentModel.DataAnnotations;
@@ -36,7 +41,7 @@ public class Usuario : IdentityUser<int>
     [StringLength(250)]
     public string? FotoPerfilUrl { get; set; }
 
-    // Puntos de ranking (no son dinero, no se retiran)
+    // Puntos de ranking. No son dinero.
     public int PuntosAcumulados { get; set; } = 0;
 
     public TipoRango TipoRangoActual { get; set; } = TipoRango.Cobre;
@@ -47,13 +52,12 @@ public class Usuario : IdentityUser<int>
 
     public DateTime? FechaActivacion { get; set; }
 
-    // Saldo en dinero real disponible para retirar (suma de comisiones recibidas)
+    // Dinero real disponible para retirar.
     public decimal SaldoDisponible { get; set; } = 0m;
 
-    // Saldo bloqueado mientras hay un retiro en proceso
+    // Dinero bloqueado mientras hay un retiro en proceso.
     public decimal SaldoPendienteRetiro { get; set; } = 0m;
 
-    // CBU o alias de MercadoPago para recibir transferencias
     [StringLength(100)]
     public string? CbuAlias { get; set; }
 
@@ -66,5 +70,6 @@ public class Usuario : IdentityUser<int>
     public ICollection<Referido> ReferidosRegistrados { get; set; } = new List<Referido>();
     public ICollection<SolicitudRetiro> SolicitudesRetiro { get; set; } = new List<SolicitudRetiro>();
 
+    // Cantidad de ciclos ya completados y cobrados.
     public int CiclosCompletados { get; set; } = 0;
 }

@@ -62,6 +62,20 @@ public class ServicioReferidos
         if (producto == null)
             return null;
 
+
+        // 🔒 Evitar duplicados por email (si viene informado)
+        if (!string.IsNullOrWhiteSpace(modelo.CorreoElectronico))
+        {
+            var yaExiste = await _contexto.Referidos
+                .AnyAsync(r =>
+                    r.UsuarioId == usuarioId &&
+                    r.CorreoElectronico == modelo.CorreoElectronico &&
+                    r.Estado != EstadoReferido.Cancelado);
+
+            if (yaExiste)
+                return null;
+        }
+
         var referido = new Referido
         {
             UsuarioId = usuarioId,
@@ -69,7 +83,8 @@ public class ServicioReferidos
             NombreCompleto = modelo.NombreCompleto,
             CorreoElectronico = modelo.CorreoElectronico,
             Telefono = modelo.Telefono,
-            Estado = EstadoReferido.Pendiente
+            Estado = EstadoReferido.Pendiente,
+            FechaRegistro = DateTime.UtcNow
         };
 
         _contexto.Referidos.Add(referido);

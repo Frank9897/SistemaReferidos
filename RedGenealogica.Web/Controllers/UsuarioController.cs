@@ -2,20 +2,26 @@
 // UsuarioController.cs
 // Ubicación: Controllers/UsuarioController.cs
 //
-// CORRECCIÓN: reemplazadas las 2 comparaciones contra EstadoUsuario
-// por EstadoReferido, que es el tipo correcto del campo Referido.Estado
+// RESPONSABILIDAD:
+// - Mostrar el panel del usuario.
+// - Manejar activación de cuenta mediante pago del primer referido.
+// - Gestionar retiros.
+// - Editar perfil.
+//
+// NOTA:
+// Se eliminó cualquier referencia a comisiones multinivel.
+// El panel ahora muestra premios, ciclos y progreso de rango.
 // ============================================================
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using RedGenealogica.Web.Models;
-using RedGenealogica.Web.Services;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
-using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
-using System.Security.Claims;
+using RedGenealogica.Web.Models;
+using RedGenealogica.Web.Services;
+using RedGenealogica.Web.ViewModels;
 
 namespace RedGenealogica.Web.Controllers;
 
@@ -36,12 +42,17 @@ public class UsuarioController : Controller
         _contexto = contexto;
     }
 
+    // ----------------------------------------------------------------
+    // GET /Usuario/Panel
+    // Muestra el panel principal del usuario con métricas de red,
+    // saldo disponible, rango actual y progreso de ciclo.
+    // ----------------------------------------------------------------
     public async Task<IActionResult> Panel()
     {
         var usuario = await _userManager.GetUserAsync(User);
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
-            
+
         ViewBag.Activado = Request.Query["activado"] == "1";
 
         var referidos = await _contexto.Referidos
@@ -49,14 +60,15 @@ public class UsuarioController : Controller
             .OrderByDescending(r => r.FechaRegistro)
             .ToListAsync();
 
-        // [CORREGIDO] Era EstadoUsuario.Activo → ahora EstadoReferido.Convertido
-        // Un referido "activo" en el nuevo modelo es uno que fue Convertido a usuario
+        // Referidos "activos" en el nuevo modelo: ya convertidos a usuario.
         var totalReferidosActivos = await _contexto.Referidos
             .CountAsync(r => r.UsuarioId == usuario.Id && r.Estado == EstadoReferido.Convertido);
 
-        var totalComisiones = await _contexto.MovimientosPuntos
-            .Where(m => m.UsuarioId == usuario.Id)
-            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
+        // Cantidad de referidos pagos directos para el ciclo actual.
+        var referidosPagadosDirectos = await _contexto.Referidos
+            .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado);
+
+        var referidosActuales = referidosPagadosDirectos % 3;
 
         var ultimosMovimientos = await _contexto.MovimientosPuntos
             .Where(m => m.UsuarioId == usuario.Id)
@@ -74,8 +86,8 @@ public class UsuarioController : Controller
 
         int totalDescendientes = ContarDescendientes(usuario.Id, todosLosUsuarios);
 
-        int referidosIndirectos = totalDescendientes > hijosDirectos.Count 
-            ? totalDescendientes - hijosDirectos.Count 
+        int referidosIndirectos = totalDescendientes > hijosDirectos.Count
+            ? totalDescendientes - hijosDirectos.Count
             : 0;
 
         var rangoActual = await _contexto.RangosUsuario
@@ -108,16 +120,19 @@ public class UsuarioController : Controller
             TotalReferidosRegistrados = referidos.Count,
             TotalReferidosIndirectos = referidosIndirectos,
             TotalReferidosActivos = totalReferidosActivos,
-            TotalComisiones = totalComisiones,
             SiguienteRango = siguienteRango?.NombreVisible,
             PuntosFaltantesParaSiguienteRango = puntosFaltantes,
             ProgresoRangoPorcentaje = progreso,
+            ReferidosActuales = referidosActuales,
             UltimosMovimientos = ultimosMovimientos
         };
 
         return View(modelo);
     }
 
+    // ----------------------------------------------------------------
+    // Recorre el árbol de usuarios para contar descendientes.
+    // ----------------------------------------------------------------
     private static int ContarDescendientes(int usuarioId, List<Usuario> usuarios)
     {
         var hijos = usuarios.Where(u => u.IdUsuarioPadre == usuarioId).ToList();
@@ -133,6 +148,10 @@ public class UsuarioController : Controller
         return total;
     }
 
+    // ----------------------------------------------------------------
+    // POST /Usuario/ActivarCuenta
+    // Inicia el pago del primer referido para activar la cuenta.
+    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> ActivarCuenta()
     {
@@ -175,7 +194,10 @@ public class UsuarioController : Controller
         return Redirect(urlPago);
     }
 
+    // ----------------------------------------------------------------
     // GET /Usuario/SolicitarRetiro
+    // Muestra saldo e historial de solicitudes de retiro.
+    // ----------------------------------------------------------------
     [HttpGet]
     public async Task<IActionResult> SolicitarRetiro()
     {
@@ -183,19 +205,21 @@ public class UsuarioController : Controller
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
 
-        // Cargar los últimos 5 retiros para mostrar historial
         var historial = await _contexto.SolicitudesRetiro
             .Where(s => s.UsuarioId == usuario.Id)
             .OrderByDescending(s => s.FechaSolicitud)
             .Take(5)
             .ToListAsync();
 
-        ViewBag.Usuario  = usuario;
+        ViewBag.Usuario = usuario;
         ViewBag.Historial = historial;
         return View();
     }
 
+    // ----------------------------------------------------------------
     // POST /Usuario/SolicitarRetiro
+    // Procesa la solicitud de retiro.
+    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> SolicitarRetiro(decimal monto, string cbuAlias)
     {
@@ -217,6 +241,9 @@ public class UsuarioController : Controller
         return RedirectToAction("SolicitarRetiro");
     }
 
+    // ----------------------------------------------------------------
+    // GET /Usuario/EditarPerfil
+    // ----------------------------------------------------------------
     [HttpGet]
     public async Task<IActionResult> EditarPerfil()
     {
@@ -234,6 +261,9 @@ public class UsuarioController : Controller
         return View(vm);
     }
 
+    // ----------------------------------------------------------------
+    // POST /Usuario/EditarPerfil
+    // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> EditarPerfil(EditarPerfilViewModel model)
     {

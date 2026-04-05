@@ -114,20 +114,32 @@
 
     <div class="card">
         <div class="card-header">
-            <div class="card-title">🎯 Progreso de ciclo</div>
+            <span class="card-title">🎯 Progreso de ciclo</span>
         </div>
 
         <div class="progress-bar">
             <div class="progress-fill" style="width:@Model.ProgresoCiclo%"></div>
         </div>
 
-        <div class="section-subtitle">
-            @Model.ReferidosActuales / 3 referidos completados
+        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
+            <span>@Model.ReferidosActuales / 3 referidos</span>
+            @if (Model.ReferidosActuales > 0)
+            {
+                <span>Faltan @(3 - Model.ReferidosActuales)</span>
+            }
+            else if (Model.Usuario.CiclosCompletados > 0)
+            {
+                <span style="color:var(--green);">✔ Ciclo completado</span>
+            }
+            else
+            {
+                <span>Empezá tu primer ciclo</span>
+            }
         </div>
 
-        <small class="text-muted">
-            Al completar 3 referidos pagos obtenés un premio.
-        </small>
+        <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">
+            💰 Cada 3 referidos pagos obtenés un premio equivalente al valor del producto.
+        </div>
     </div>
     
     
@@ -220,7 +232,7 @@
                     <th>Fecha</th>
                     <th>Motivo</th>
                     <th>Puntos</th>
-                    <th>Comisión</th>
+                    <th>Monto</th>
                 </tr>
             </thead>
             <tbody>

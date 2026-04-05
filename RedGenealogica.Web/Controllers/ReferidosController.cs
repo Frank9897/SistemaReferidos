@@ -2,10 +2,14 @@
 // ReferidosController.cs
 // Ubicación: Controllers/ReferidosController.cs
 //
-// CAMBIO:
-//   Un usuario Pendiente SÍ puede registrar referidos.
-//   El mensaje de error ahora distingue entre suspendido
-//   y pendiente de activación.
+// RESPONSABILIDAD:
+// - Registrar referidos.
+// - Mostrar link de pago.
+// - Listar referidos del usuario.
+//
+// NOTA:
+// Se conserva la posibilidad de registrar referidos en estado
+// pendiente o activo. El mensaje de error se adapta al nuevo flujo.
 // ============================================================
 
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +17,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
+using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
-using RedGenealogica.Web.Enumeraciones;
 
 namespace RedGenealogica.Web.Controllers;
 
@@ -55,8 +59,8 @@ public class ReferidosController : Controller
 
     // ----------------------------------------------------------------
     // POST /Referidos/Crear
-    // Registra el referido. Tanto usuarios Pendientes como Activos
-    // pueden registrar referidos. La activación ocurre cuando paga.
+    // Registra el referido. Un usuario pendiente o activo puede
+    // registrar referidos. La activación real ocurre cuando paga.
     // ----------------------------------------------------------------
     [HttpPost]
     public async Task<IActionResult> Crear(RegistrarReferidoViewModel modelo)
@@ -64,7 +68,9 @@ public class ReferidosController : Controller
         if (!ModelState.IsValid)
         {
             ViewBag.Productos = await _contexto.Productos
-                .Where(p => p.Activo).ToListAsync();
+                .Where(p => p.Activo)
+                .ToListAsync();
+
             return View(modelo);
         }
 
@@ -76,20 +82,21 @@ public class ReferidosController : Controller
 
         if (referido == null)
         {
-            ModelState.AddModelError("", "No podés registrar referidos. Tu cuenta puede estar suspendida.");
+            ModelState.AddModelError("", "No podés registrar referidos. Tu cuenta puede estar suspendida o sin permisos.");
             ViewBag.Productos = await _contexto.Productos
-                .Where(p => p.Activo).ToListAsync();
+                .Where(p => p.Activo)
+                .ToListAsync();
+
             return View(modelo);
         }
 
-        TempData["Exito"] = $"Referido registrado. Compartile el link de pago para que active tu cuenta.";
+        TempData["Exito"] = "Referido registrado. Compartile el link de pago para que complete su activación.";
         return RedirectToAction("Panel", "Usuario");
     }
 
     // ----------------------------------------------------------------
     // GET /Referidos/LinkPago/{id}
-    // Devuelve la URL de MercadoPago para que el usuario se la comparta
-    // al referido. Solo disponible si el referido está Pendiente.
+    // Devuelve la URL de MercadoPago para compartir con el referido.
     // ----------------------------------------------------------------
     [HttpGet]
     public async Task<IActionResult> LinkPago(int id)
@@ -105,16 +112,16 @@ public class ReferidosController : Controller
         if (referido == null)
             return NotFound();
 
-        if (referido.Estado != Enumeraciones.EstadoReferido.Pendiente)
+        if (referido.Estado != EstadoReferido.Pendiente)
         {
             TempData["Error"] = "Este referido ya completó el pago.";
             return RedirectToAction("Panel", "Usuario");
         }
 
         ViewBag.Referido = referido;
-        // URL directa de pago: /Pagos/Pagar?referidoId=X
         ViewBag.UrlPago = Url.Action("Pagar", "Pagos", new { referidoId = id }, Request.Scheme);
         ViewBag.CuentaActiva = usuario.EstadoUsuario == EstadoUsuario.Activo;
+
         return View();
     }
 
