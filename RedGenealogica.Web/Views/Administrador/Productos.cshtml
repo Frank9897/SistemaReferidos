@@ -28,9 +28,6 @@
                 <tr>
                     <th>Producto</th>
                     <th>Precio</th>
-                    <th>Comisión N1</th>
-                    <th>Comisión N2</th>
-                    <th>Comisión N3</th>
                     <th>Stock</th>
                     <th>Estado</th>
                     <th>Acciones</th>
@@ -48,9 +45,6 @@
                             }
                         </td>
                         <td style="color:var(--sky); font-weight:600;">$@p.Precio.ToString("N0")</td>
-                        <td><span class="badge badge-info">@p.ComisionNivel1Porcentaje%</span></td>
-                        <td><span class="badge badge-muted">@p.ComisionNivel2Porcentaje%</span></td>
-                        <td><span class="badge badge-muted">@p.ComisionNivel3Porcentaje%</span></td>
                         <td>@(p.StockDisponible?.ToString() ?? "∞")</td>
                         <td>
                             @if (p.Activo)

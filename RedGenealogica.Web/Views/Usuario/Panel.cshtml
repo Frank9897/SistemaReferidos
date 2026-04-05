@@ -55,43 +55,42 @@
             }
 <!-- MÉTRICAS -->
 <div class="grid">
-    <div class="metric-card blue">
-        <div class="metric-icon">⭐</div>
-        <div class="metric-value">@Model.Usuario.PuntosAcumulados</div>
-        <div class="metric-label">Puntos acumulados</div>
-    </div>
-    <div class="metric-card green highlight">
+
+    <!-- PREMIOS -->
+    <div class="metric-card green">
         <div class="metric-icon">💰</div>
-        <div class="metric-value">$@Model.TotalComisiones.ToString("N0")</div>
-        <div class="metric-label">Comisiones totales</div>
+        <div class="metric-value">$@Model.Usuario.SaldoDisponible.ToString("N0")</div>
+        <div class="metric-label">Premios acumulados</div>
     </div>
-    <div class="metric-card cyan">
+
+    <!-- CICLOS -->
+    <div class="metric-card purple">
+        <div class="metric-icon">🔁</div>
+        <div class="metric-value">@Model.Usuario.CiclosCompletados</div>
+        <div class="metric-label">Ciclos completados</div>
+    </div>
+
+    <!-- REFERIDOS ACTIVOS -->
+    <div class="metric-card blue">
         <div class="metric-icon">👥</div>
-        <div class="metric-value">@Model.TotalReferidosDirectos</div>
-        <div class="metric-label">Referidos directos</div>
+        <div class="metric-value">@Model.TotalReferidosActivos</div>
+        <div class="metric-label">Referidos activos</div>
     </div>
-    <div class="metric-card orange">
+
+    <!-- REFERIDOS REGISTRADOS -->
+    <div class="metric-card cyan">
         <div class="metric-icon">🧾</div>
         <div class="metric-value">@Model.TotalReferidosRegistrados</div>
         <div class="metric-label">Referidos registrados</div>
     </div>
-    <div class="metric-card purple">
-        <div class="metric-icon">🌐</div>
-        <div class="metric-value">@(Model.TotalReferidosDirectos + Model.TotalReferidosIndirectos)</div>
-        <div class="metric-label">Tamaño de tu red</div>
-            @if (Model.TotalReferidosIndirectos > 0)
-            {
-                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                    @Model.TotalReferidosDirectos directos · @Model.TotalReferidosIndirectos en tu red
-                </div>
-            }
-            else
-            {
-                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                    Aún sin red indirecta
-                </div>
-            }
+
+    <!-- RANGO -->
+    <div class="metric-card amber">
+        <div class="metric-icon">🏆</div>
+        <div class="metric-value">@Model.Usuario.TipoRangoActual</div>
+        <div class="metric-label">Rango actual</div>
     </div>
+
 </div>
 
 <!-- SALDO + PROGRESO -->
@@ -113,33 +112,25 @@
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:0;">
+    <div class="card">
         <div class="card-header">
-            <span class="card-title">📈 Progreso de rango</span>
-            @if (!string.IsNullOrWhiteSpace(Model.SiguienteRango))
-            {
-                <span style="font-size:12px; color:var(--text-muted);">→ @Model.SiguienteRango</span>
-            }
+            <div class="card-title">🎯 Progreso de ciclo</div>
         </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width:@Model.ProgresoRangoPorcentaje%"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-muted);">
-            <span>@Model.Usuario.PuntosAcumulados pts</span>
-            @if (Model.PuntosFaltantesParaSiguienteRango > 0)
-            {
-                <span>Faltan @Model.PuntosFaltantesParaSiguienteRango pts</span>
-            }
-            else
-            {
-                <span style="color:var(--green);">¡Rango máximo!</span>
-            }
-        </div>
-        <div style="margin-top:8px; font-size:12px; color:var(--text-muted);">
-            💡 Invitá más personas o ayudá a tus referidos a activarse para avanzar más rápido
-        </div>
-    </div>
 
+        <div class="progress-bar">
+            <div class="progress-fill" style="width:@Model.ProgresoCiclo%"></div>
+        </div>
+
+        <div class="section-subtitle">
+            @Model.ReferidosActuales / 3 referidos completados
+        </div>
+
+        <small class="text-muted">
+            Al completar 3 referidos pagos obtenés un premio.
+        </small>
+    </div>
+    
+    
 </div>
 
 <!-- REFERIDOS -->

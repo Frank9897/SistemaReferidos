@@ -1,15 +1,26 @@
+// ============================================================
+// ServicioPremios.cs
+//
+// RESPONSABILIDAD:
+// - Gestionar premios por ciclos (3 referidos pagos).
+// - Otorgar premio al usuario.
+// - Otorgar bono al padre directo.
+// - Evitar duplicación de pagos.
+// ============================================================
+
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Enumeraciones;
-using RedGenealogica.Web.Services;
+
+namespace RedGenealogica.Web.Services;
+
 public class ServicioPremios
 {
     private readonly ContextoAplicacion _contexto;
     private readonly ServicioNotificaciones _notificaciones;
 
     private const int REFERIDOS_POR_CICLO = 3;
-    private const decimal PREMIO = 100000m;
     private const decimal BONO_PADRE = 10000m;
 
     public ServicioPremios(ContextoAplicacion contexto, ServicioNotificaciones notificaciones)
@@ -18,56 +29,77 @@ public class ServicioPremios
         _notificaciones = notificaciones;
     }
 
-
+    // ============================================================
+    // Procesa pago de referido y valida si corresponde premio
+    // ============================================================
     public async Task ProcesarPagoReferidoAsync(int referidoId)
     {
-        var referido = await _contexto.Referidos
-            .Include(r => r.Usuario)
-            .FirstOrDefaultAsync(r => r.Id == referidoId);
+        using var tx = await _contexto.Database.BeginTransactionAsync();
 
-        if (referido == null) return;
-
-        var sponsor = referido.Usuario;
-        if (sponsor == null) return;
-
-        // Contar referidos pagados directos
-        var cantidadPagados = await _contexto.Referidos
-            .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
-
-        int ciclos = cantidadPagados / REFERIDOS_POR_CICLO;
-
-        if (ciclos <= sponsor.CiclosCompletados)
-            return;
-
-        int nuevosCiclos = ciclos - sponsor.CiclosCompletados;
-
-        for (int i = 0; i < nuevosCiclos; i++)
+        try
         {
-            await OtorgarPremioAsync(sponsor);
+            var referido = await _contexto.Referidos
+                .Include(r => r.Usuario)
+                .Include(r => r.Producto)
+                .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+            if (referido == null) return;
+
+            var sponsor = referido.Usuario;
+            if (sponsor == null) return;
+
+            // 🔢 Contar referidos pagos
+            var cantidadPagados = await _contexto.Referidos
+                .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
+
+            int ciclosCalculados = cantidadPagados / REFERIDOS_POR_CICLO;
+
+            if (ciclosCalculados <= sponsor.CiclosCompletados)
+            {
+                await tx.CommitAsync();
+                return;
+            }
+
+            int nuevosCiclos = ciclosCalculados - sponsor.CiclosCompletados;
+
+            for (int i = 0; i < nuevosCiclos; i++)
+            {
+                await OtorgarPremioAsync(sponsor, referido.Producto!.Precio);
+            }
+
+            sponsor.CiclosCompletados = ciclosCalculados;
+
+            await _contexto.SaveChangesAsync();
+            await tx.CommitAsync();
         }
-
-        sponsor.CiclosCompletados = ciclos;
-
-        await _contexto.SaveChangesAsync();
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
-    private async Task OtorgarPremioAsync(Usuario usuario)
+    // ============================================================
+    // Otorga premio + bono al padre directo
+    // ============================================================
+    private async Task OtorgarPremioAsync(Usuario usuario, decimal montoPremio)
     {
-        // 🎁 Premio
-        usuario.SaldoDisponible += PREMIO;
+        // 🎁 Premio principal
+        usuario.SaldoDisponible += montoPremio;
 
         await _notificaciones.CrearAsync(
             usuario.Id,
             TipoNotificacion.Sistema,
             "🎉 Premio obtenido",
-            $"Ganaste ${PREMIO:N0} por completar 3 referidos.",
+            $"Ganaste ${montoPremio:N0} por completar 3 referidos.",
             "/Usuario/Panel"
         );
 
         // 💰 Bono al padre directo
         if (usuario.IdUsuarioPadre.HasValue)
         {
-            var padre = await _contexto.Users.FindAsync(usuario.IdUsuarioPadre.Value);
+            var padre = await _contexto.Users
+                .FirstOrDefaultAsync(u => u.Id == usuario.IdUsuarioPadre.Value);
 
             if (padre != null)
             {
