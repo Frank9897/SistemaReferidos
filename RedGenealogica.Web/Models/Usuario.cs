@@ -65,4 +65,6 @@ public class Usuario : IdentityUser<int>
     public ICollection<MovimientoPuntos> MovimientosPuntos { get; set; } = new List<MovimientoPuntos>();
     public ICollection<Referido> ReferidosRegistrados { get; set; } = new List<Referido>();
     public ICollection<SolicitudRetiro> SolicitudesRetiro { get; set; } = new List<SolicitudRetiro>();
+
+    public int CiclosCompletados { get; set; } = 0;
 }

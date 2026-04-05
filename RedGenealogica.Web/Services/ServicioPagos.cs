@@ -28,116 +28,25 @@ public class ServicioPagos
     private readonly ServicioRangos _servicioRangos;
     private readonly ServicioNotificaciones _servicioNotificaciones;
 
+    private readonly ServicioPremios _servicioPremios;
+
     public ServicioPagos(
         ContextoAplicacion contexto,
         IConfiguration configuration,
         ServicioReferidos servicioReferidos,
         ServicioRangos servicioRangos,
-        ServicioNotificaciones servicioNotificaciones)
+        ServicioNotificaciones servicioNotificaciones,
+        ServicioPremios servicioPremios)
     {
         _contexto = contexto;
         _configuration = configuration;
         _servicioReferidos = servicioReferidos;
         _servicioRangos = servicioRangos;
         _servicioNotificaciones = servicioNotificaciones;
+        _servicioPremios = servicioPremios;
     }
 
-    // ----------------------------------------------------------------
-    // Genera comisiones para los ancestros del árbol.
-    // Dispara notificación a cada padre que recibe comisión.
-    // ----------------------------------------------------------------
-    public async Task GenerarComisiones(int referidoId, int usuarioOrigenId, Producto producto)
-    {
-        var porcentajesPorNivel = new Dictionary<int, decimal>
-        {
-            { 1, producto.ComisionNivel1Porcentaje },
-            { 2, producto.ComisionNivel2Porcentaje },
-            { 3, producto.ComisionNivel3Porcentaje }
-        };
-
-        int nivelActual = 1;
-        int? usuarioActualId = usuarioOrigenId;
-
-        while (usuarioActualId != null && porcentajesPorNivel.ContainsKey(nivelActual))
-        {
-            var usuario = await _contexto.Users
-                .FirstOrDefaultAsync(u => u.Id == usuarioActualId);
-
-            if (usuario?.IdUsuarioPadre == null) break;
-
-            var padre = await _contexto.Users
-                .Include(u => u.MovimientosPuntos)
-                .FirstOrDefaultAsync(u => u.Id == usuario.IdUsuarioPadre);
-
-            if (padre == null) break;
-
-            var yaExiste = await _contexto.MovimientosPuntos
-                .AnyAsync(x =>
-                    x.UsuarioId == padre.Id &&
-                    x.ReferidoId == referidoId &&
-                    x.Nivel == nivelActual);
-
-            if (yaExiste)
-            {
-                usuarioActualId = padre.Id;
-                nivelActual++;
-                continue;
-            }
-
-            var rangoInfo = await _contexto.RangosUsuario
-                .FirstOrDefaultAsync(r => r.TipoRango == padre.TipoRangoActual && r.Activo);
-
-            var bonusPorcentaje = rangoInfo?.BonusComisionPorcentaje ?? 0m;
-            var pctBase = porcentajesPorNivel[nivelActual];
-            var comisionDinero = Math.Round(
-                producto.Precio * (pctBase / 100m) * (1m + bonusPorcentaje / 100m), 2);
-            var puntosGanados = (int)Math.Floor(comisionDinero);
-
-            _contexto.MovimientosPuntos.Add(new MovimientoPuntos
-            {
-                UsuarioId     = padre.Id,
-                Monto         = comisionDinero,
-                CantidadPuntos = puntosGanados,
-                Motivo        = $"Comisión nivel {nivelActual} — {producto.Nombre}",
-                ReferidoId    = referidoId,
-                Nivel         = nivelActual,
-                FechaMovimiento = DateTime.UtcNow
-            });
-
-            var rangoAnterior = padre.TipoRangoActual;
-            padre.SaldoDisponible  += comisionDinero;
-            padre.PuntosAcumulados += puntosGanados;
-            padre.TipoRangoActual   = await _servicioRangos.ObtenerRangoAsync(padre.PuntosAcumulados);
-
-            await _contexto.SaveChangesAsync();
-
-            // Notificación: comisión recibida
-            await _servicioNotificaciones.CrearAsync(
-                padre.Id,
-                TipoNotificacion.ComisionRecibida,
-                "💰 Comisión recibida",
-                $"Ganaste ${comisionDinero:N2} de comisión nivel {nivelActual} por la venta de {producto.Nombre}.",
-                "/Usuario/Panel"
-            );
-
-            // Notificación adicional si subió de rango
-            if (padre.TipoRangoActual != rangoAnterior)
-            {
-                await _servicioNotificaciones.CrearAsync(
-                    padre.Id,
-                    TipoNotificacion.SubidaDeRango,
-                    "🏆 ¡Subiste de rango!",
-                    $"Felicitaciones, ahora sos {padre.TipoRangoActual}. Tus comisiones aumentaron.",
-                    "/Usuario/Panel"
-                );
-            }
-
-            usuarioActualId = padre.Id;
-            nivelActual++;
-        }
-
-        await _contexto.SaveChangesAsync();
-    }
+    
 
     // ----------------------------------------------------------------
     // Confirma el pago de un referido y dispara todas las notificaciones.
@@ -221,7 +130,7 @@ public class ServicioPagos
             }
 
             // Generar comisiones para ancestros (con sus propias notificaciones)
-            await GenerarComisiones(referido.Id, referidor.Id, referido.Producto!);
+            await _servicioPremios.ProcesarPagoReferidoAsync(referido.Id);
 
             await transaccion.CommitAsync();
         }

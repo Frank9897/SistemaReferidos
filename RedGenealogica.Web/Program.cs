@@ -17,7 +17,8 @@ builder.Services.AddScoped<ServicioPagos>();
 builder.Services.AddScoped<ServicioReferidos>();
 builder.Services.AddScoped<ServicioRangos>();
 builder.Services.AddScoped<ServicioRetiros>();
-builder.Services.AddScoped<ServicioNotificaciones>();   // NUEVO
+builder.Services.AddScoped<ServicioNotificaciones>();
+builder.Services.AddScoped<ServicioPremios>();
 
 builder.Services.AddHttpClient();
 
