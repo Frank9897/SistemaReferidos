@@ -92,4 +92,95 @@ public class GenealogiaController : Controller
             }
         }
     }
+
+    // ── Árbol global para el admin ────────────────────────────────
+    // Devuelve TODOS los usuarios y referidos del sistema.
+    // Los usuarios sin padre aparecen como raíces independientes.
+    // Para conectarlos visualmente se usa un nodo raíz virtual "SISTEMA".
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ObtenerArbolAdmin()
+    {
+        var todos = await _contexto.Users
+            .OrderBy(u => u.FechaRegistro)
+            .ToListAsync();
+
+        var nodos = new List<object>();
+
+        // Nodo raíz virtual que agrupa a todos
+        nodos.Add(new
+        {
+            id       = "SISTEMA",
+            nombre   = "Sistema",
+            padreId  = (string?)null,
+            tipo     = "sistema",
+            rango    = "Sistema",
+            estado   = "Activo",
+            comision = 0,
+            email    = "",
+            ciclos   = 0,
+            saldo    = 0m
+        });
+
+        var visitados = new HashSet<int>();
+        foreach (var u in todos)
+            await ConstruirNodoAdmin(u.Id, todos, nodos, visitados);
+
+        return Json(nodos);
+    }
+
+    private async Task ConstruirNodoAdmin(
+        int usuarioId,
+        List<Usuario> todos,
+        List<object> nodos,
+        HashSet<int> visitados)
+    {
+        if (visitados.Contains(usuarioId)) return;
+        visitados.Add(usuarioId);
+
+        var usuario = todos.FirstOrDefault(u => u.Id == usuarioId);
+        if (usuario == null) return;
+
+        // El padre en el árbol: su IdUsuarioPadre, o "SISTEMA" si es raíz
+        string padreId = usuario.IdUsuarioPadre.HasValue
+            ? "U_" + usuario.IdUsuarioPadre.Value
+            : "SISTEMA";
+
+        nodos.Add(new
+        {
+            id       = "U_" + usuario.Id,
+            nombre   = usuario.Nombres + " " + usuario.Apellidos,
+            padreId  = padreId,
+            tipo     = "usuario",
+            rango    = usuario.TipoRangoActual.ToString(),
+            estado   = usuario.EstadoUsuario.ToString(),
+            comision = usuario.PuntosAcumulados,
+            email    = usuario.Email ?? "",
+            ciclos   = usuario.CiclosCompletados,
+            saldo    = usuario.SaldoDisponible
+        });
+
+        // Referidos no convertidos (pendientes/pagados)
+        var referidos = await _contexto.Referidos
+            .Where(r => r.UsuarioId == usuarioId && r.UsuarioConvertidoId == null)
+            .ToListAsync();
+
+        foreach (var r in referidos)
+        {
+            nodos.Add(new
+            {
+                id       = "R_" + r.Id,
+                nombre   = r.NombreCompleto,
+                padreId  = "U_" + usuarioId,
+                tipo     = "referido",
+                rango    = "Referido",
+                estado   = r.Estado.ToString(),
+                comision = 0,
+                email    = r.CorreoElectronico ?? "",
+                ciclos   = 0,
+                saldo    = 0m
+            });
+        }
+    }
+
 }

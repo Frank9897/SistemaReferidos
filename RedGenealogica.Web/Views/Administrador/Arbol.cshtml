@@ -1,0 +1,480 @@
+@* Arbol.cshtml — Views/Administrador/Arbol.cshtml *@
+@{ ViewData["Title"] = "Árbol global del sistema"; }
+
+<div class="admin-tabs">
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+    <a href="/Administrador/Arbol" class="admin-tab active">Árbol global</a>
+</div>
+
+@* ── Panel estadístico ──────────────────────────────────────────── *@
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px; margin-bottom:18px;">
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">👥</div>
+        <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--sky);">@ViewBag.TotalUsuarios</div>
+        <div style="font-size:12px; color:var(--text-muted);">Usuarios totales</div>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">✅</div>
+        <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">@ViewBag.TotalActivos</div>
+        <div style="font-size:12px; color:var(--text-muted);">Usuarios activos</div>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">💳</div>
+        <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--indigo);">@ViewBag.TotalPagos</div>
+        <div style="font-size:12px; color:var(--text-muted);">Pagos confirmados</div>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">🔁</div>
+        <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--purple);">@ViewBag.TotalCiclos</div>
+        <div style="font-size:12px; color:var(--text-muted);">Ciclos completados</div>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">💰</div>
+        <div style="font-size:20px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">@string.Format("${0:N0}", (decimal)ViewBag.TotalPremios)</div>
+        <div style="font-size:12px; color:var(--text-muted);">Total en premios/saldos</div>
+    </div>
+    <div class="card" style="margin-bottom:0; text-align:center; padding:16px 12px;">
+        <div style="font-size:22px; margin-bottom:4px;">⏳</div>
+        <div style="font-size:24px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--amber);">@ViewBag.PendientesRetiro</div>
+        <div style="font-size:12px; color:var(--text-muted);">Retiros pendientes</div>
+    </div>
+</div>
+
+@* ── Árbol visual ───────────────────────────────────────────────── *@
+<div class="arbol-wrap">
+    <div class="arbol-toolbar">
+        <span class="arbol-titulo">🌐 Árbol global del sistema</span>
+        <div class="arbol-search" role="search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input id="arbol-buscar" type="text" placeholder="Buscar usuario o email..." autocomplete="off" />
+        </div>
+        <div class="arbol-actions">
+            <button class="arbol-btn" id="btn-expandir" type="button">⊕ Expandir</button>
+            <button class="arbol-btn" id="btn-colapsar" type="button">⊖ Colapsar</button>
+            <button class="arbol-btn" id="btn-centrar"  type="button">⌖ Centrar</button>
+            <button class="arbol-btn" id="btn-fullscreen" type="button">⛶ Full</button>
+        </div>
+    </div>
+
+    <div class="arbol-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#A0522D"></div>Cobre</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Bronce</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#C0C0C0"></div>Plata</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>Oro</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#22D3EE"></div>Platino</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#60A5FA"></div>Diamante</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#475569"></div>Referido</div>
+        <span class="arbol-hint">Click → expandir/colapsar · Hover → detalles · Click nodo usuario → ver info</span>
+    </div>
+
+    <div id="arbol-svg-wrap">
+        <div class="arbol-loading" id="arbol-loading">
+            <div class="arbol-spinner"></div>
+            <span>Cargando árbol global...</span>
+        </div>
+    </div>
+</div>
+
+@* Panel detalle del nodo seleccionado *@
+<div id="panel-nodo" style="display:none; margin-top:14px;" class="card">
+    <div class="card-header">
+        <span class="card-title" id="panel-nombre">—</span>
+        <span id="panel-badge" class="badge badge-info" style="font-size:11px;"></span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; font-size:13px;">
+        <div><span style="color:var(--text-muted);">Email</span><br><strong id="panel-email">—</strong></div>
+        <div><span style="color:var(--text-muted);">Estado</span><br><strong id="panel-estado">—</strong></div>
+        <div><span style="color:var(--text-muted);">Rango</span><br><strong id="panel-rango">—</strong></div>
+        <div><span style="color:var(--text-muted);">Ciclos</span><br><strong id="panel-ciclos" style="color:var(--purple);">—</strong></div>
+        <div><span style="color:var(--text-muted);">Saldo</span><br><strong id="panel-saldo" style="color:var(--green);">—</strong></div>
+        <div><span style="color:var(--text-muted);">Puntos</span><br><strong id="panel-puntos" style="color:var(--sky);">—</strong></div>
+    </div>
+    <div style="margin-top:10px;">
+        <a id="panel-link" href="#" class="btn btn-secondary btn-sm">Ver perfil completo →</a>
+    </div>
+</div>
+
+<div id="arbol-tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function () {
+
+  // ── Configuración idéntica a Genealogía ────────────────────────
+  const R   = 22;
+  const VG  = 110;
+  const HG  = 60;
+  const DUR = 280;
+  const DEFAULT_TREE_HEIGHT = '460px';
+
+  const RANGO_COLOR = {
+    Diamante:'#60A5FA', Platino:'#22D3EE', Oro:'#FFD700',
+    Plata:'#C0C0C0', Bronce:'#F97316', Cobre:'#A0522D',
+    Referido:'#475569', Sistema:'#6366F1'
+  };
+  const RANGO_ICON = {
+    Diamante:'💎', Platino:'🔷', Oro:'🏆',
+    Plata:'⚡', Bronce:'🔶', Cobre:'🔸',
+    Referido:'👤', Sistema:'🌐'
+  };
+
+  // ── Estado ───────────────────────────────────────────────────────
+  let root, svgEl, gEl, zoomBeh, searchTimer;
+  const wrap         = document.getElementById('arbol-svg-wrap');
+  const tooltip      = document.getElementById('arbol-tooltip');
+  const arbolWrap    = document.querySelector('.arbol-wrap');
+  const btnFullscreen = document.getElementById('btn-fullscreen');
+  const treeHost     = document.getElementById('arbol-svg-wrap');
+  const panelNodo    = document.getElementById('panel-nodo');
+
+  // ── Carga ─────────────────────────────────────────────────────────
+  fetch('/Genealogia/ObtenerArbolAdmin')
+    .then(r => r.json())
+    .then(data => {
+      const loader = document.getElementById('arbol-loading');
+      if (loader) loader.remove();
+      init(data);
+    })
+    .catch(() => {
+      const loader = document.getElementById('arbol-loading');
+      if (loader) loader.innerHTML = '<span style="color:var(--red)">Error al cargar el árbol</span>';
+    });
+
+  // ── Inicialización ────────────────────────────────────────────────
+  function init(data) {
+    svgEl = d3.select(wrap).append('svg')
+      .attr('width','100%').attr('height','100%');
+
+    const defs = svgEl.append('defs');
+    defs.append('linearGradient').attr('id','lg').attr('gradientUnits','userSpaceOnUse')
+      .call(g => {
+        g.append('stop').attr('offset','0%').attr('stop-color','rgba(56,189,248,0.5)');
+        g.append('stop').attr('offset','100%').attr('stop-color','rgba(56,189,248,0.08)');
+      });
+
+    gEl = svgEl.append('g');
+
+    zoomBeh = d3.zoom().scaleExtent([0.1,3])
+      .on('zoom', e => gEl.attr('transform', e.transform));
+
+    svgEl.call(zoomBeh).on('dblclick.zoom', null);
+
+    root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
+    root.x0 = 0; root.y0 = 0;
+
+    // Dejar el root con sus hijos directos visibles, colapsar niveles inferiores
+    if (root.children) {
+      root.children.forEach(c => {
+        if (c.children) colapsar(c);
+      });
+    }
+
+    update(root);
+    centrar();
+  }
+
+  // ── Layout ────────────────────────────────────────────────────────
+  function layout() {
+    return d3.tree().nodeSize([HG + R * 2, VG]);
+  }
+
+  // ── Render principal — copiado exacto de Genealogía ──────────────
+  function update(src) {
+    layout()(root);
+
+    const nodes = root.descendants();
+    const links = root.links();
+
+    const link = gEl.selectAll('path.arbol-link').data(links, d => d.target.id);
+
+    const linkEnter = link.enter().insert('path','g')
+      .attr('class','arbol-link').attr('fill','none')
+      .attr('stroke','rgba(56,189,248,0.25)').attr('stroke-width',1.2)
+      .attr('d', () => linkPath({x:src.x0??0,y:src.y0??0},{x:src.x0??0,y:src.y0??0}));
+
+    linkEnter.merge(link).transition().duration(DUR)
+      .attr('d', d => linkPath(d.source, d.target));
+
+    link.exit().transition().duration(DUR)
+      .attr('d', () => linkPath({x:src.x,y:src.y},{x:src.x,y:src.y})).remove();
+
+    const node = gEl.selectAll('g.nodo-g').data(nodes, d => d.id);
+
+    const enter = node.enter().append('g')
+      .attr('class','nodo-g')
+      .attr('transform', () => `translate(${src.x0??0},${src.y0??0})`)
+      .style('opacity',0)
+      .on('click', (e,d) => { e.stopPropagation(); toggleNodo(d); })
+      .on('mouseenter', (e,d) => showTooltip(e,d))
+      .on('mouseleave', () => hideTooltip());
+
+    enter.append('circle').attr('class','nodo-border')
+      .attr('r', R+3).attr('fill','none')
+      .attr('stroke', d => RANGO_COLOR[d.data.rango]||'#475569')
+      .attr('stroke-width',2).attr('opacity',0.6);
+
+    enter.append('circle').attr('class','nodo-circle')
+      .attr('r', R).attr('fill','#0F172A')
+      .attr('stroke', d => RANGO_COLOR[d.data.rango]||'#475569')
+      .attr('stroke-width',1.5);
+
+    enter.append('text').attr('class','nodo-icon')
+      .attr('text-anchor','middle').attr('dominant-baseline','central')
+      .style('font-size','16px').style('pointer-events','none')
+      .text(d => RANGO_ICON[d.data.rango]||'👤');
+
+    enter.append('text').attr('class','nodo-nombre')
+      .attr('text-anchor','middle').attr('y', R+14)
+      .attr('fill','#EAF0FF').style('font-size','10.5px')
+      .style('font-weight','600').style('font-family',"'DM Sans',sans-serif")
+      .style('pointer-events','none')
+      .text(d => truncar(d.data.nombre, 16));
+
+    enter.append('text').attr('class','nodo-rango-label')
+      .attr('text-anchor','middle').attr('y', R+26)
+      .attr('fill', d => RANGO_COLOR[d.data.rango]||'#475569')
+      .style('font-size','9px').style('pointer-events','none')
+      .text(d => d.data.rango);
+
+    // Toggle +/− — idéntico a Genealogía
+    const toggleG = enter.append('g')
+      .attr('class','nodo-toggle')
+      .attr('transform',`translate(0,${R+36})`)
+      .on('click', (e,d) => { e.stopPropagation(); toggleNodo(d); });
+
+    toggleG.append('circle').attr('r',7).attr('fill','#0F172A')
+      .attr('stroke','#38BDF8').attr('stroke-width',1.5);
+
+    toggleG.append('text').attr('text-anchor','middle')
+      .attr('dominant-baseline','central').attr('fill','#38BDF8')
+      .style('font-size','12px').style('pointer-events','none');
+
+    // Hover glow
+    enter
+      .on('mouseenter.glow', function(e,d) {
+        const color = RANGO_COLOR[d.data.rango]||'#475569';
+        d3.select(this).select('.nodo-circle').transition().duration(150)
+          .attr('fill','#1A2540').style('filter',`drop-shadow(0 0 5px ${color}55)`);
+        d3.select(this).select('.nodo-border').transition().duration(150)
+          .attr('opacity',1).attr('stroke-width',2.5);
+      })
+      .on('mouseleave.glow', function() {
+        d3.select(this).select('.nodo-circle').transition().duration(150)
+          .attr('fill','#0F172A').style('filter',null);
+        d3.select(this).select('.nodo-border').transition().duration(150)
+          .attr('opacity',0.6).attr('stroke-width',2);
+      });
+
+    const merged = enter.merge(node);
+
+    merged.transition().duration(DUR)
+      .attr('transform', d => `translate(${d.x},${d.y})`).style('opacity',1);
+
+    merged.select('.nodo-toggle text')
+      .text(d => d.children ? '−' : d._children ? '+' : '');
+    merged.select('.nodo-toggle')
+      .style('display', d => (d.children||d._children) ? null : 'none');
+
+    node.exit().transition().duration(DUR)
+      .attr('transform', () => `translate(${src.x},${src.y})`)
+      .style('opacity',0).remove();
+
+    nodes.forEach(d => { d.x0=d.x; d.y0=d.y; });
+  }
+
+  // ── Conector — idéntico a Genealogía ─────────────────────────────
+  function linkPath(s,t) {
+    const sy = s.y + R, ty = t.y - R;
+    const my = sy + (ty-sy)*0.45;
+    return `M${s.x},${sy} L${s.x},${my} L${t.x},${my} L${t.x},${ty}`;
+  }
+
+  // ── Colapsar/expandir — idéntico a Genealogía ─────────────────────
+  function colapsar(d) {
+    if (!d||!d.children) return;
+    d._children = d.children;
+    d._children.forEach(colapsar);
+    d.children = null;
+  }
+
+  function expandirTodo(d) {
+    if (!d) return;
+    if (d._children) { d.children=d._children; d._children=null; }
+    if (d.children) d.children.forEach(expandirTodo);
+  }
+
+  function toggleNodo(d) {
+    if (d.children) {
+      colapsar(d);
+    } else if (d._children) {
+      d.children = d._children;
+      d._children = null;
+    }
+    update(d);
+
+    // Si es usuario (no sistema/referido), mostrar panel de detalle
+    if (d.data.tipo === 'usuario') mostrarPanel(d);
+  }
+
+  // ── Panel detalle (exclusivo del árbol admin) ─────────────────────
+  function mostrarPanel(d) {
+    panelNodo.style.display = 'block';
+    document.getElementById('panel-nombre').textContent  = d.data.nombre;
+    document.getElementById('panel-badge').textContent   = d.data.rango;
+    document.getElementById('panel-email').textContent   = d.data.email||'—';
+    document.getElementById('panel-estado').textContent  = d.data.estado;
+    document.getElementById('panel-rango').textContent   = d.data.rango;
+    document.getElementById('panel-ciclos').textContent  = d.data.ciclos??0;
+    document.getElementById('panel-saldo').textContent   =
+      '$' + (d.data.saldo||0).toLocaleString('es-AR',{minimumFractionDigits:2});
+    document.getElementById('panel-puntos').textContent  = d.data.comision??0;
+    const uid = d.id.replace('U_','');
+    document.getElementById('panel-link').href = '/Administrador/DetalleUsuario/' + uid;
+    panelNodo.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
+  // ── Centrar ───────────────────────────────────────────────────────
+  function centrar() {
+    if (!svgEl||!root) return;
+    const W = wrap.clientWidth||800;
+    svgEl.transition().duration(400)
+      .call(zoomBeh.transform, d3.zoomIdentity.translate(W/2-root.x, 60));
+  }
+
+  // ── Tooltip — idéntico a Genealogía + campos extra ────────────────
+  function showTooltip(e,d) {
+    const color = RANGO_COLOR[d.data.rango]||'#475569';
+    const hijosCnt = (d.children?.length||0) + (d._children?.length||0);
+
+    tooltip.innerHTML = `
+      <div class="tt-name">${d.data.nombre}</div>
+      <div class="tt-row"><span>Rango</span><span class="tt-val" style="color:${color}">${d.data.rango}</span></div>
+      <div class="tt-row"><span>Estado</span><span class="tt-val">${d.data.estado||'—'}</span></div>
+      <div class="tt-row"><span>Puntos</span><span class="tt-val" style="color:#38BDF8">${d.data.comision||0}</span></div>
+      ${d.data.tipo==='usuario' ? `
+        <div class="tt-row"><span>Ciclos</span><span class="tt-val" style="color:#A855F7">${d.data.ciclos||0}</span></div>
+        <div class="tt-row"><span>Saldo</span><span class="tt-val" style="color:#22C55E">$${(d.data.saldo||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</span></div>
+      ` : ''}
+      ${hijosCnt>0 ? `<div class="tt-row"><span>Referidos</span><span class="tt-val">${hijosCnt}</span></div>` : ''}
+    `;
+    tooltip.style.left = (e.clientX+14)+'px';
+    tooltip.style.top  = (e.clientY+14)+'px';
+    tooltip.classList.add('show');
+  }
+
+  function hideTooltip() { tooltip.classList.remove('show'); }
+
+  // ── Búsqueda — idéntica a Genealogía + busca por email ────────────
+  document.getElementById('arbol-buscar').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => buscar(this.value.trim()), 300);
+  });
+
+  function buscar(q) {
+    if (!root) return;
+
+    gEl.selectAll('.nodo-circle').attr('fill','#0F172A').style('filter',null);
+    gEl.selectAll('.nodo-border').attr('opacity',0.6).attr('stroke-width',2);
+
+    if (!q) return;
+
+    const ql = q.toLowerCase();
+    const encontrados = [];
+
+    root.each(d => {
+      const matchNombre = d.data.nombre && d.data.nombre.toLowerCase().includes(ql);
+      const matchEmail  = d.data.email  && d.data.email.toLowerCase().includes(ql);
+      if (matchNombre || matchEmail) {
+        let anc = d.parent;
+        while (anc) {
+          if (anc._children) { anc.children=anc._children; anc._children=null; }
+          anc = anc.parent;
+        }
+        encontrados.push(d);
+      }
+    });
+
+    if (!encontrados.length) return;
+
+    update(root);
+
+    const primero = encontrados[0];
+    const W = wrap.clientWidth||800, H = wrap.clientHeight||460;
+    svgEl.transition().duration(500)
+      .call(zoomBeh.transform,
+        d3.zoomIdentity.translate(W/2-primero.x, H/2-primero.y).scale(1));
+
+    setTimeout(() => {
+      gEl.selectAll('g.nodo-g')
+        .filter(d => (d.data.nombre && d.data.nombre.toLowerCase().includes(ql)) ||
+                     (d.data.email  && d.data.email.toLowerCase().includes(ql)))
+        .each(function(d) {
+          const color = RANGO_COLOR[d.data.rango]||'#38BDF8';
+          d3.select(this).select('.nodo-circle')
+            .attr('fill','#1A3A5C').style('filter',`drop-shadow(0 0 8px ${color}88)`);
+          d3.select(this).select('.nodo-border')
+            .attr('opacity',1).attr('stroke-width',3);
+        });
+    }, 560);
+  }
+
+  // ── Toolbar — idéntico a Genealogía ──────────────────────────────
+  document.getElementById('btn-expandir').addEventListener('click', () => {
+    if (!root) return;
+    expandirTodo(root);
+    update(root);
+    setTimeout(centrar, DUR+50);
+  });
+
+  document.getElementById('btn-colapsar').addEventListener('click', () => {
+    if (!root) return;
+    colapsar(root);
+    update(root);
+    setTimeout(centrar, DUR+50);
+  });
+
+  document.getElementById('btn-centrar').addEventListener('click', centrar);
+
+  function syncFullscreenUI() {
+    const isFull = !!document.fullscreenElement;
+    btnFullscreen.textContent = isFull ? '✕ Salir' : '⛶ Full';
+    btnFullscreen.classList.toggle('active', isFull);
+    treeHost.style.height = isFull ? 'calc(100vh - 170px)' : DEFAULT_TREE_HEIGHT;
+    if (root) setTimeout(centrar, 180);
+  }
+
+  btnFullscreen.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) await arbolWrap.requestFullscreen();
+      else await document.exitFullscreen();
+    } catch(err) {}
+  });
+
+  document.addEventListener('fullscreenchange', syncFullscreenUI);
+
+  if ('ResizeObserver' in window)
+    new ResizeObserver(() => { if (root) centrar(); }).observe(wrap);
+
+  let pinchDist = 0;
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length!==2) return;
+    e.preventDefault();
+    const d = Math.hypot(
+      e.touches[0].clientX-e.touches[1].clientX,
+      e.touches[0].clientY-e.touches[1].clientY);
+    if (pinchDist>0) svgEl.call(zoomBeh.scaleBy, d/pinchDist);
+    pinchDist = d;
+  }, {passive:false});
+  wrap.addEventListener('touchend', () => { pinchDist=0; });
+
+  function truncar(s,max) {
+    return s&&s.length>max ? s.slice(0,max)+'…' : (s||'');
+  }
+
+})();
+</script>

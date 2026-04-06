@@ -430,4 +430,35 @@ public class AdministradorController : Controller
 
         return RedirectToAction("DetalleUsuario", "Administrador", new { id });
     }
+
+    // ================================================================
+    // ÁRBOL GLOBAL
+    // ================================================================
+
+    [HttpGet]
+    public async Task<IActionResult> Arbol()
+    {
+        // Estadísticas globales para el panel de control
+        var totalUsuarios   = await _contexto.Users.CountAsync();
+        var totalActivos    = await _contexto.Users
+            .CountAsync(u => u.EstadoUsuario == EstadoUsuario.Activo);
+        var totalPagos      = await _contexto.Pagos
+            .CountAsync(p => p.Confirmado);
+        var totalPremios    = await _contexto.Users
+            .SumAsync(u => u.SaldoDisponible + u.SaldoPendienteRetiro);
+        var totalCiclos     = await _contexto.Users
+            .SumAsync(u => u.CiclosCompletados);
+        var pendientesRetiro = await _contexto.SolicitudesRetiro
+            .CountAsync(s => s.Estado == EstadoRetiro.Pendiente);
+
+        ViewBag.TotalUsuarios     = totalUsuarios;
+        ViewBag.TotalActivos      = totalActivos;
+        ViewBag.TotalPagos        = totalPagos;
+        ViewBag.TotalPremios      = totalPremios;
+        ViewBag.TotalCiclos       = totalCiclos;
+        ViewBag.PendientesRetiro  = pendientesRetiro;
+
+        return View();
+    }
+
 }
