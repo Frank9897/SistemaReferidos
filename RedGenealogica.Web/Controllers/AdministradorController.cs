@@ -45,6 +45,92 @@ public class AdministradorController : Controller
     }
 
     // ================================================================
+    // DASHBOARD (página principal del admin)
+    // ================================================================
+
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        // Usuarios
+        var totalUsuarios   = await _contexto.Users.CountAsync();
+        var totalActivos    = await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Activo);
+        var totalPendientes = await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Pendiente);
+        var totalSuspendidos= await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Suspendido);
+
+        // Referidos
+        var totalReferidos  = await _contexto.Referidos.CountAsync();
+        var referidosPagados= await _contexto.Referidos.CountAsync(r => r.PagoConfirmado);
+
+        // Pagos
+        var totalPagos      = await _contexto.Pagos.CountAsync(p => p.Confirmado);
+        var ingresoBruto    = await _contexto.Pagos
+            .Where(p => p.Confirmado)
+            .SumAsync(p => (decimal?)p.Monto) ?? 0m;
+
+        // Ciclos y premios
+        var totalCiclos     = await _contexto.Users.SumAsync(u => u.CiclosCompletados);
+        var totalPremios    = await _contexto.MovimientosPuntos
+            .Where(m => m.Monto > 0 && m.Nivel == 0)
+            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
+        var totalBonosAbuelo= await _contexto.MovimientosPuntos
+            .Where(m => m.Monto > 0 && m.Nivel == 1)
+            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
+
+        // Retiros
+        var pendientesRetiro   = await _contexto.SolicitudesRetiro.CountAsync(s => s.Estado == EstadoRetiro.Pendiente);
+        var totalRetirado      = await _contexto.SolicitudesRetiro
+            .Where(s => s.Estado == EstadoRetiro.Completado)
+            .SumAsync(s => (decimal?)s.Monto) ?? 0m;
+        var saldoEnCirculacion = await _contexto.Users
+            .SumAsync(u => u.SaldoDisponible + u.SaldoPendienteRetiro);
+
+        // Productos
+        var totalProductos     = await _contexto.Productos.CountAsync(p => p.Activo);
+
+        // Distribución por rango
+        var distribRangos = await _contexto.Users
+            .GroupBy(u => u.TipoRangoActual)
+            .Select(g => new { Rango = g.Key.ToString(), Cantidad = g.Count() })
+            .ToListAsync();
+
+        // Últimos 5 usuarios registrados
+        var ultimosUsuarios = await _contexto.Users
+            .OrderByDescending(u => u.FechaRegistro)
+            .Take(5)
+            .ToListAsync();
+
+        // Últimos 5 pagos
+        var ultimosPagos = await _contexto.Pagos
+            .Where(p => p.Confirmado)
+            .Include(p => p.Usuario)
+            .Include(p => p.Producto)
+            .OrderByDescending(p => p.FechaConfirmacion)
+            .Take(5)
+            .ToListAsync();
+
+        ViewBag.TotalUsuarios      = totalUsuarios;
+        ViewBag.TotalActivos       = totalActivos;
+        ViewBag.TotalPendientes    = totalPendientes;
+        ViewBag.TotalSuspendidos   = totalSuspendidos;
+        ViewBag.TotalReferidos     = totalReferidos;
+        ViewBag.ReferidosPagados   = referidosPagados;
+        ViewBag.TotalPagos         = totalPagos;
+        ViewBag.IngresoBruto       = ingresoBruto;
+        ViewBag.TotalCiclos        = totalCiclos;
+        ViewBag.TotalPremios       = totalPremios;
+        ViewBag.TotalBonosAbuelo   = totalBonosAbuelo;
+        ViewBag.PendientesRetiro   = pendientesRetiro;
+        ViewBag.TotalRetirado      = totalRetirado;
+        ViewBag.SaldoEnCirculacion = saldoEnCirculacion;
+        ViewBag.TotalProductos     = totalProductos;
+        ViewBag.DistribRangos      = distribRangos;
+        ViewBag.UltimosUsuarios    = ultimosUsuarios;
+        ViewBag.UltimosPagos       = ultimosPagos;
+
+        return View();
+    }
+
+    // ================================================================
     // USUARIOS
     // ================================================================
 

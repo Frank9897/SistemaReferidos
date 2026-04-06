@@ -1,39 +1,275 @@
 @* Index.cshtml — Views/Ranking/Index.cshtml *@
 @model List<RedGenealogica.Web.Models.Usuario>
 @using System.Security.Claims
-@{ ViewData["Title"] = "Ranking"; var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); }
+@using RedGenealogica.Web.Enumeraciones
+@using RedGenealogica.Web.Models
+
+@{
+    ViewData["Title"] = "Ranking y Rangos";
+    var userId        = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var usuario       = (Usuario?)ViewBag.UsuarioActual;
+    var rangos        = (List<RangoUsuario>)ViewBag.Rangos;
+    var rangoActual   = (RangoUsuario?)ViewBag.RangoActual;
+    var rangoSig      = (RangoUsuario?)ViewBag.RangoSiguiente;
+    int puntosFalt    = (int)ViewBag.PuntosFaltantes;
+    int progresoRango = (int)ViewBag.ProgresoEnRango;
+}
+
+@functions {
+    static string Color(TipoRango r) => r switch {
+        TipoRango.Cobre    => "#A0522D",
+        TipoRango.Bronce   => "#F97316",
+        TipoRango.Plata    => "#BFC1C2",
+        TipoRango.Oro      => "#D4AF37",
+        TipoRango.Platino  => "#22D3EE",
+        TipoRango.Diamante => "#60A5FA",
+        _                  => "#475569"
+    };
+    static string Emoji(TipoRango r) => r switch {
+        TipoRango.Cobre    => "🟤",
+        TipoRango.Bronce   => "🟠",
+        TipoRango.Plata    => "⚪",
+        TipoRango.Oro      => "🟡",
+        TipoRango.Platino  => "🔵",
+        TipoRango.Diamante => "💎",
+        _                  => "⬜"
+    };
+    static string RgbOf(TipoRango r) => r switch {
+        TipoRango.Cobre    => "160,82,45",
+        TipoRango.Bronce   => "249,115,22",
+        TipoRango.Plata    => "191,193,194",
+        TipoRango.Oro      => "212,175,55",
+        TipoRango.Platino  => "34,211,238",
+        TipoRango.Diamante => "96,165,250",
+        _                  => "71,85,105"
+    };
+}
 
 <div style="margin-bottom:22px;">
-    <div class="section-title">🏆 Ranking global</div>
-    <div class="section-subtitle">Los usuarios con más puntos acumulados</div>
+    <div class="section-title">🏆 Ranking y Sistema de Rangos</div>
+    <div class="section-subtitle">Acumulá puntos con cada referido pagado y desbloqueá beneficios reales</div>
 </div>
 
-<div class="ranking-list">
-    @for (int i = 0; i < Model.Count; i++)
-    {
-        var u = Model[i];
-        var esYo = u.Id.ToString() == userId;
-        var rangoClass = "rango-" + u.TipoRangoActual.ToString().ToLower();
-        var itemClass = i == 0 ? "top1" : i == 1 ? "top2" : i == 2 ? "top3" : "";
-        if (esYo) itemClass += " yo";
+@* ── Progreso del usuario actual ─────────────────────────────────── *@
+@if (usuario != null && rangoActual != null)
+{
+    <div class="card" style="margin-bottom:18px; border-left:3px solid @Color(usuario.TipoRangoActual);">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
 
-        <div class="ranking-item @itemClass">
-            <div class="ranking-pos">#@(i+1)</div>
-            <div style="flex:1;">
-                <div class="ranking-name">
-                    @u.Nombres @u.Apellidos
-                    @if (esYo) { <span class="badge badge-success" style="margin-left:6px; font-size:10px;">Vos</span> }
-                </div>
-                <div style="display:flex; align-items:center; gap:8px; margin-top:3px;">
-                    <span class="badge-rango @rangoClass" style="font-size:11px; padding:2px 8px;">@u.TipoRangoActual</span>
-                    <span class="ranking-pts">@u.PuntosAcumulados pts</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-size:36px;">@Emoji(usuario.TipoRangoActual)</span>
+                <div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:2px;">Tu rango actual</div>
+                    <div style="font-size:22px; font-weight:700; color:@Color(usuario.TipoRangoActual); font-family:'Space Grotesk',sans-serif;">
+                        @usuario.TipoRangoActual
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted);">@usuario.PuntosAcumulados puntos acumulados</div>
                 </div>
             </div>
-            <div class="ranking-icon">
-                @if (i == 0) { <text>👑</text> }
-                else if (i == 1) { <text>🥈</text> }
-                else if (i == 2) { <text>🥉</text> }
+
+            <div style="flex:1; min-width:200px;">
+                @if (rangoSig != null)
+                {
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:6px;">
+                        <span>Hacia <strong style="color:@Color(rangoSig.TipoRango);">@Emoji(rangoSig.TipoRango) @rangoSig.NombreVisible</strong></span>
+                        <span>@puntosFalt pts restantes</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:@progresoRango%; background:@Color(usuario.TipoRangoActual);"></div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:5px;">
+                        Bonus bono abuelo actual: <strong style="color:var(--green);">+@rangoActual.BonusComisionPorcentaje%</strong>
+                        @if (rangoSig.BonusComisionPorcentaje > rangoActual.BonusComisionPorcentaje)
+                        {
+                            <span> · con @rangoSig.NombreVisible:
+                                <strong style="color:@Color(rangoSig.TipoRango);">+@rangoSig.BonusComisionPorcentaje%</strong>
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="font-size:13px; color:var(--green); font-weight:600;">
+                        💎 Rango máximo — bonus bono abuelo: +@rangoActual.BonusComisionPorcentaje%
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                        Estás en el nivel más alto del sistema.
+                    </div>
+                }
             </div>
+
+            <div style="text-align:center; padding:12px 20px; background:var(--bg3);
+                        border-radius:var(--radius); border:1px solid var(--border); min-width:110px;">
+                <div style="font-size:11px; color:var(--text-muted);">Bonus activo</div>
+                <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">
+                    +@rangoActual.BonusComisionPorcentaje%
+                </div>
+                <div style="font-size:10px; color:var(--text-dim);">sobre comisión base</div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@* ── Tabla de rangos ─────────────────────────────────────────────── *@
+<div class="card" style="margin-bottom:18px;">
+    <div class="card-header">
+        <span class="card-title">📊 Tabla de rangos y beneficios</span>
+        <span style="font-size:12px; color:var(--text-muted);">Cada referido pagado suma 100 puntos</span>
+    </div>
+
+    <table class="table" style="margin-bottom:0;">
+        <thead>
+            <tr>
+                <th>Rango</th>
+                <th>Puntos</th>
+                <th>Referidos aprox.</th>
+                <th style="color:var(--green);">Bonus bono abuelo</th>
+                <th>Ejemplo con 10% base</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rango in rangos)
+            {
+                bool esActual  = usuario != null && usuario.TipoRangoActual == rango.TipoRango;
+                bool esSup     = usuario != null && (int)rango.TipoRango > (int)usuario.TipoRangoActual;
+                int  refMin    = rango.PuntosMinimos / 100;
+                string ptsTxt  = rango.TipoRango == TipoRango.Diamante
+                    ? $"+{rango.PuntosMinimos:N0}"
+                    : $"{rango.PuntosMinimos:N0} – {rango.PuntosMaximos:N0}";
+                decimal ejemplo = Math.Round(10m * (1m + rango.BonusComisionPorcentaje / 100m), 1);
+
+                <tr style="@(esActual ? $"background:rgba({RgbOf(rango.TipoRango)},0.07); border-left:3px solid {Color(rango.TipoRango)};" : "")">
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:18px;">@Emoji(rango.TipoRango)</span>
+                            <div>
+                                <div style="font-weight:700; color:@Color(rango.TipoRango); font-size:14px;">
+                                    @rango.NombreVisible
+                                </div>
+                                @if (esActual)
+                                {
+                                    <span class="badge badge-success" style="font-size:9px; padding:1px 5px;">Tu rango</span>
+                                }
+                            </div>
+                        </div>
+                    </td>
+                    <td style="font-size:12px; color:var(--text-muted);">@ptsTxt</td>
+                    <td style="font-size:12px; color:var(--text-muted);">
+                        @if (rango.TipoRango == TipoRango.Diamante)
+                        {
+                            <span>@refMin+</span>
+                        }
+                        else
+                        {
+                            <span>@refMin – @(rango.PuntosMaximos / 100)</span>
+                        }
+                    </td>
+                    <td>
+                        @if (rango.BonusComisionPorcentaje == 0)
+                        {
+                            <span style="font-size:12px; color:var(--text-muted);">Sin bonus</span>
+                        }
+                        else
+                        {
+                            <span style="font-weight:700; font-size:16px; color:var(--green);">
+                                +@rango.BonusComisionPorcentaje%
+                            </span>
+                        }
+                    </td>
+                    <td style="font-size:12px; color:var(--text-muted);">
+                        @if (rango.BonusComisionPorcentaje == 0)
+                        {
+                            <span>Cobrás el 10%</span>
+                        }
+                        else
+                        {
+                            <span>Cobrás el <strong style="color:var(--sky);">@ejemplo%</strong></span>
+                        }
+                    </td>
+                    <td style="font-size:11px;">
+                        @if (esActual)
+                        {
+                            <span style="color:var(--green);">● Actual</span>
+                        }
+                        else if (esSup)
+                        {
+                            <span style="color:var(--text-dim);">🔒 Por alcanzar</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--text-dim);">✓ Superado</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div style="padding:12px 0 2px; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border); margin-top:8px;">
+        ℹ️ <strong>Cómo funciona el bonus:</strong> cuando tu referido directo completa 3 referidos pagos,
+        vos cobrás un bono sobre el precio del producto. Tu rango amplifica ese bono.
+        Ejemplo: producto con 10% de bono base → Diamante cobra <strong style="color:var(--green);">18%</strong>
+        (10% × 1.80).
+    </div>
+</div>
+
+@* ── Ranking top 20 ──────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">🥇 Top 20 por puntos</span>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <p>Aún no hay usuarios con puntos</p>
+        </div>
+    }
+    else
+    {
+        <div class="ranking-list">
+            @for (int i = 0; i < Model.Count; i++)
+            {
+                var u = Model[i];
+                bool esYo       = u.Id.ToString() == userId;
+                string rClass   = "rango-" + u.TipoRangoActual.ToString().ToLower();
+                string iClass   = i == 0 ? "top1" : i == 1 ? "top2" : i == 2 ? "top3" : "";
+                if (esYo) iClass += " yo";
+
+                <div class="ranking-item @iClass">
+                    <div class="ranking-pos">#@(i + 1)</div>
+
+                    <div style="flex:1; min-width:0;">
+                        <div class="ranking-name" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span>@u.Nombres @u.Apellidos</span>
+                            @if (esYo)
+                            {
+                                <span class="badge badge-success" style="font-size:10px;">Vos</span>
+                            }
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:3px; flex-wrap:wrap;">
+                            <span class="badge-rango @rClass" style="font-size:11px; padding:2px 8px;">
+                                @Emoji(u.TipoRangoActual) @u.TipoRangoActual
+                            </span>
+                            <span class="ranking-pts" style="color:var(--sky);">@u.PuntosAcumulados pts</span>
+                            @if (u.CiclosCompletados > 0)
+                            {
+                                <span style="font-size:11px; color:var(--purple);">🔁 @u.CiclosCompletados ciclos</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="ranking-icon">
+                        @if (i == 0)     { <text>👑</text> }
+                        else if (i == 1) { <text>🥈</text> }
+                        else if (i == 2) { <text>🥉</text> }
+                        else             { <span style="font-size:18px;">@Emoji(u.TipoRangoActual)</span> }
+                    </div>
+                </div>
+            }
         </div>
     }
 </div>

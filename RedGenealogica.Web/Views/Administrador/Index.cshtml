@@ -1,0 +1,276 @@
+@* Index.cshtml — Views/Administrador/Index.cshtml *@
+@using RedGenealogica.Web.Models
+@using RedGenealogica.Web.Enumeraciones
+@{ ViewData["Title"] = "Dashboard Admin"; }
+
+<div class="section-title">⚙️ Panel de administración</div>
+<div class="section-subtitle">Resumen del sistema en tiempo real</div>
+
+<div class="admin-tabs">
+    <a href="/Administrador" class="admin-tab active">Dashboard</a>
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+    <a href="/Administrador/Arbol" class="admin-tab">Árbol global</a>
+</div>
+
+@* ── Alerta retiros pendientes ──────────────────────────────────── *@
+@if ((int)ViewBag.PendientesRetiro > 0)
+{
+    <div class="alert alert-warning" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <span>⏳ Hay <strong>@ViewBag.PendientesRetiro</strong> solicitud(es) de retiro pendiente(s) de revisión.</span>
+        <a href="/Administrador/Retiros" class="btn btn-warning btn-sm">Revisar retiros →</a>
+    </div>
+}
+
+@* ── KPIs principales ───────────────────────────────────────────── *@
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:12px; margin-bottom:18px;">
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
+        <div style="font-size:24px; margin-bottom:6px;">💰</div>
+        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.IngresoBruto)
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Ingreso bruto (pagos)</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
+        <div style="font-size:24px; margin-bottom:6px;">💵</div>
+        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--sky);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.SaldoEnCirculacion)
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Saldo en circulación</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
+        <div style="font-size:24px; margin-bottom:6px;">🏅</div>
+        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--amber);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.TotalPremios)
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Premios otorgados</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
+        <div style="font-size:24px; margin-bottom:6px;">🌿</div>
+        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--purple);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.TotalBonosAbuelo)
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Bonos abuelo pagados</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
+        <div style="font-size:24px; margin-bottom:6px;">💸</div>
+        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--red);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.TotalRetirado)
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Total retirado</div>
+    </div>
+
+</div>
+
+@* ── Contadores secundarios ─────────────────────────────────────── *@
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:20px;">
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">👥 Usuarios totales</div>
+        <div style="font-size:22px; font-weight:700; color:var(--text);">@ViewBag.TotalUsuarios</div>
+        <div style="font-size:11px; margin-top:6px; display:flex; gap:8px; flex-wrap:wrap;">
+            <span style="color:var(--green);">✅ @ViewBag.TotalActivos activos</span>
+            <span style="color:var(--amber);">⏳ @ViewBag.TotalPendientes pend.</span>
+            @if ((int)ViewBag.TotalSuspendidos > 0)
+            {
+                <span style="color:var(--red);">🚫 @ViewBag.TotalSuspendidos susp.</span>
+            }
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">🤝 Referidos</div>
+        <div style="font-size:22px; font-weight:700; color:var(--text);">@ViewBag.TotalReferidos</div>
+        <div style="font-size:11px; margin-top:6px; color:var(--sky);">
+            💳 @ViewBag.ReferidosPagados pagados
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">💳 Pagos confirmados</div>
+        <div style="font-size:22px; font-weight:700; color:var(--indigo);">@ViewBag.TotalPagos</div>
+        <div style="font-size:11px; margin-top:6px; color:var(--text-muted);">vía MercadoPago</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">🔁 Ciclos completados</div>
+        <div style="font-size:22px; font-weight:700; color:var(--purple);">@ViewBag.TotalCiclos</div>
+        <div style="font-size:11px; margin-top:6px; color:var(--text-muted);">en toda la red</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">📦 Productos activos</div>
+        <div style="font-size:22px; font-weight:700; color:var(--text);">@ViewBag.TotalProductos</div>
+        <div style="font-size:11px; margin-top:6px;">
+            <a href="/Administrador/Productos" style="color:var(--sky); font-size:11px;">Gestionar →</a>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; padding:14px 12px;">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">⏳ Retiros pendientes</div>
+        <div style="font-size:22px; font-weight:700; color:@((int)ViewBag.PendientesRetiro > 0 ? "var(--amber)" : "var(--text)");">
+            @ViewBag.PendientesRetiro
+        </div>
+        <div style="font-size:11px; margin-top:6px;">
+            <a href="/Administrador/Retiros" style="color:var(--sky); font-size:11px;">Revisar →</a>
+        </div>
+    </div>
+
+</div>
+
+@* ── Dos columnas: distribución rangos + últimos usuarios ────────── *@
+<div style="display:grid; grid-template-columns:1fr 1.5fr; gap:14px; margin-bottom:14px;">
+
+    @* Distribución por rango *@
+    <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+            <span class="card-title">🏅 Distribución por rango</span>
+        </div>
+
+        @{
+            var rangos = (dynamic)ViewBag.DistribRangos;
+            var colores = new Dictionary<string, string> {
+                {"Cobre","#A0522D"}, {"Bronce","#F97316"}, {"Plata","#C0C0C0"},
+                {"Oro","#FFD700"},   {"Platino","#22D3EE"},{"Diamante","#60A5FA"}
+            };
+            int totalU = (int)ViewBag.TotalUsuarios;
+        }
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            @foreach (var r in rangos)
+            {
+                string rNombre = r.Rango;
+                int rCantidad = r.Cantidad;
+                string rColor = colores.ContainsKey(rNombre) ? colores[rNombre] : "#475569";
+                int pct = totalU > 0 ? (int)Math.Round(rCantidad * 100.0 / totalU) : 0;
+
+                <div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span style="color:@rColor; font-weight:600;">@rNombre</span>
+                        <span style="color:var(--text-muted);">@rCantidad usuarios (@pct%)</span>
+                    </div>
+                    <div style="height:6px; border-radius:4px; background:var(--bg3); overflow:hidden;">
+                        <div style="height:100%; width:@(pct)%; background:@rColor; border-radius:4px; transition:width .4s;"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Últimos usuarios registrados *@
+    <div class="card" style="margin-bottom:0;">
+        <div class="card-header">
+            <span class="card-title">🆕 Últimos usuarios</span>
+            <a href="/Administrador/Usuarios" style="font-size:12px; color:var(--sky);">Ver todos →</a>
+        </div>
+
+        <table class="table" style="margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Rango</th>
+                    <th>Registro</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in (List<RedGenealogica.Web.Models.Usuario>)ViewBag.UltimosUsuarios)
+                {
+                    var badgeClass = u.EstadoUsuario switch {
+                        EstadoUsuario.Activo => "badge-success",
+                        EstadoUsuario.Suspendido => "badge-danger",
+                        _ => "badge-warning"
+                    };
+                    var estadoLabel = u.EstadoUsuario switch {
+                        EstadoUsuario.Activo => "Activo",
+                        EstadoUsuario.Suspendido => "Suspendido",
+                        _ => "Pendiente"
+                    };
+                    <tr>
+                        <td>
+                            <a href="/Administrador/DetalleUsuario/@u.Id"
+                               style="color:var(--text); font-weight:600; font-size:13px;">
+                                @u.Nombres @u.Apellidos
+                            </a>
+                            <div style="font-size:11px; color:var(--text-muted);">@u.Email</div>
+                        </td>
+                        <td><span class="badge @badgeClass">@estadoLabel</span></td>
+                        <td>
+                            <span style="font-size:12px; color:var(--text-muted);">@u.TipoRangoActual</span>
+                        </td>
+                        <td style="font-size:12px; color:var(--text-muted);">
+                            @u.FechaRegistro.ToString("dd/MM/yy")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+@* ── Últimos pagos ───────────────────────────────────────────────── *@
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">💳 Últimos pagos confirmados</span>
+    </div>
+
+    @{
+        var ultimosPagos = (List<RedGenealogica.Web.Models.Pago>)ViewBag.UltimosPagos;
+    }
+
+    @if (!ultimosPagos.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">💳</div>
+            <p>Aún no hay pagos confirmados</p>
+        </div>
+    }
+    else
+    {
+        <table class="table" style="margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Producto</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                    <th>Referencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in ultimosPagos)
+                {
+                    <tr>
+                        <td>
+                            <a href="/Administrador/DetalleUsuario/@p.UsuarioId"
+                               style="color:var(--text); font-weight:600; font-size:13px;">
+                                @(p.Usuario != null ? $"{p.Usuario.Nombres} {p.Usuario.Apellidos}" : $"#{p.UsuarioId}")
+                            </a>
+                        </td>
+                        <td style="font-size:13px; color:var(--text-muted);">
+                            @(p.Producto?.Nombre ?? "—")
+                        </td>
+                        <td style="font-weight:700; color:var(--green);">
+                            $@p.Monto.ToString("N2")
+                        </td>
+                        <td style="font-size:12px; color:var(--text-muted);">
+                            @(p.FechaConfirmacion?.ToString("dd/MM/yy HH:mm") ?? "—")
+                        </td>
+                        <td style="font-size:11px; color:var(--text-dim); font-family:monospace;">
+                            @(p.ReferenciaExterna?.Length > 12
+                                ? p.ReferenciaExterna[..12] + "…"
+                                : p.ReferenciaExterna ?? "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
