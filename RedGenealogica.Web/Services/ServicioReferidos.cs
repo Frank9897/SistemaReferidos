@@ -128,6 +128,31 @@ public class ServicioReferidos
                 referido.UsuarioConvertidoId = usuarioExistente.Id;
                 referido.Estado = EstadoReferido.Convertido;
                 referido.FechaActivacion = DateTime.UtcNow;
+
+                // Desbloquear contenido para el usuario existente
+                var prod = await _contexto.Productos.FindAsync(referido.ProductoId);
+                if (prod != null)
+                {
+                    bool yaTiene = await _contexto.Pagos.AnyAsync(p =>
+                        p.UsuarioId == usuarioExistente.Id &&
+                        p.ProductoId == referido.ProductoId && p.Confirmado);
+                    if (!yaTiene)
+                    {
+                        _contexto.Pagos.Add(new Pago
+                        {
+                            UsuarioId     = usuarioExistente.Id,
+                            ProductoId    = referido.ProductoId,
+                            Monto         = prod.Precio,
+                            EstadoPago    = EstadoPago.Aprobado,
+                            PlataformaPago = "MercadoPago",
+                            Confirmado    = true,
+                            EsSimulado    = false,
+                            FechaSolicitud    = DateTime.UtcNow,
+                            FechaConfirmacion = DateTime.UtcNow
+                        });
+                    }
+                }
+
                 await _contexto.SaveChangesAsync();
                 return (true, $"Referido vinculado al usuario existente: {usuarioExistente.Email}");
             }
@@ -167,6 +192,32 @@ public class ServicioReferidos
         referido.UsuarioConvertidoId = nuevoUsuario.Id;
         referido.Estado = EstadoReferido.Convertido;
         referido.FechaActivacion = DateTime.UtcNow;
+
+        // Crear pago confirmado para el nuevo usuario — desbloquea el contenido digital
+        var productoId = referido.ProductoId;
+        var producto   = await _contexto.Productos.FindAsync(productoId);
+        if (producto != null)
+        {
+            bool yaTimePago = await _contexto.Pagos.AnyAsync(p =>
+                p.UsuarioId == nuevoUsuario.Id &&
+                p.ProductoId == productoId && p.Confirmado);
+
+            if (!yaTimePago)
+            {
+                _contexto.Pagos.Add(new Pago
+                {
+                    UsuarioId     = nuevoUsuario.Id,
+                    ProductoId    = productoId,
+                    Monto         = producto.Precio,
+                    EstadoPago    = EstadoPago.Aprobado,
+                    PlataformaPago = "MercadoPago",
+                    Confirmado    = true,
+                    EsSimulado    = false,
+                    FechaSolicitud    = DateTime.UtcNow,
+                    FechaConfirmacion = DateTime.UtcNow
+                });
+            }
+        }
 
         await _contexto.SaveChangesAsync();
 

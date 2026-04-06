@@ -1,11 +1,107 @@
 @* VerProducto.cshtml *@
 @model RedGenealogica.Web.Models.Producto
-@{ 
+@{
     ViewData["Title"] = Model.Nombre;
     var pdfs = Model.Pdfs.OrderBy(p => p.Orden).ToList();
 }
 
-<div style="max-width:900px; margin:0 auto;">
+<style>
+.pdf-visor-wrap {
+    background: #111827;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+/* ── Toolbar superior ── */
+.pdf-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+.pdf-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+.pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.pdf-btn:hover { background: var(--surface); border-color: var(--border-hover); color: var(--sky); }
+.pdf-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pdf-btn.active { background: rgba(56,189,248,0.12); border-color: var(--sky); color: var(--sky); }
+
+.pdf-page-input {
+    width: 44px;
+    text-align: center;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 12px;
+    padding: 4px 6px;
+}
+.pdf-page-input:focus { outline: none; border-color: var(--sky); }
+
+/* ── Área de render ── */
+.pdf-canvas-area {
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+    min-height: 500px;
+    background: #1a1a2e;
+    gap: 12px;
+    transition: background 0.2s;
+}
+.pdf-canvas-area.fullscreen-bg { background: #111; }
+
+.pdf-canvas-wrap {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.pdf-canvas-wrap canvas { display: block; }
+
+/* ── Status bar inferior ── */
+.pdf-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ── Fullscreen override ── */
+.pdf-visor-wrap:fullscreen .pdf-canvas-area {
+    min-height: calc(100vh - 90px);
+    max-height: calc(100vh - 90px);
+}
+</style>
+
+<div style="max-width:960px; margin:0 auto;">
 
     <div style="margin-bottom:20px; display:flex; align-items:center; gap:12px;">
         <a href="/Contento/MiContenido" style="color:var(--text-muted); font-size:13px;">← Mi contenido</a>
@@ -24,22 +120,22 @@
         <div class="card">
             <div class="empty-state">
                 <div class="empty-icon">🔧</div>
-                <p style="color:var(--text-muted);">El administrador aún no subió los documentos de este producto.</p>
+                <p style="color:var(--text-muted);">El administrador aún no subió los documentos.</p>
             </div>
         </div>
     }
     else
     {
-        @* Índice de documentos *@
+        @* Índice *@
         <div class="card" style="margin-bottom:20px;">
-            <div class="card-header">
-                <span class="card-title">📚 Documentos disponibles (@pdfs.Count)</span>
-            </div>
+            <div class="card-header"><span class="card-title">📚 Documentos (@pdfs.Count)</span></div>
             <div style="display:flex; flex-direction:column; gap:6px;">
                 @foreach (var pdf in pdfs)
                 {
                     <a href="#pdf-@pdf.Id"
-                       style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; color:var(--text); text-decoration:none; transition:border-color 0.15s;"
+                       style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px;
+                              background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+                              font-size:13px; color:var(--text); text-decoration:none; transition:border-color 0.15s;"
                        onmouseover="this.style.borderColor='var(--border-hover)'"
                        onmouseout="this.style.borderColor='var(--border)'">
                         <span>
@@ -56,26 +152,71 @@
         @for (int i = 0; i < pdfs.Count; i++)
         {
             var pdf = pdfs[i];
-            var visorIdx = i + 1;
-            <div class="card" style="margin-bottom:20px;" id="pdf-@pdf.Id">
+            var idx = i + 1;
+
+            <div class="card" style="margin-bottom:24px;" id="pdf-@pdf.Id">
                 <div class="card-header">
                     <span class="card-title">
                         <span style="color:var(--sky);">@pdf.Orden.</span> @pdf.Nombre
                     </span>
-                    <a href="/Contento/DescargarPdf/@pdf.Id"
-                       class="btn btn-secondary btn-sm" download>
-                        ⬇️ Descargar
+                    <a href="/Contento/DescargarPdf/@pdf.Id" class="btn btn-primary btn-sm" download>
+                        ⬇️ Descargar PDF
                     </a>
                 </div>
-                <div style="background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden;">
-                    <div id="loading-@visorIdx" style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">
-                        Cargando documento...
+
+                <div class="pdf-visor-wrap" id="visor-wrap-@idx">
+
+                    @* ── Toolbar ── *@
+                    <div class="pdf-toolbar">
+
+                        @* Navegación *@
+                        <button class="pdf-btn" onclick="irPrimeraPag(@idx)" title="Primera página">⏮</button>
+                        <button class="pdf-btn" onclick="cambiarPag(@idx, -1)" title="Página anterior">◀</button>
+
+                        <span style="font-size:12px; color:var(--text-muted); white-space:nowrap;">Pág.</span>
+                        <input class="pdf-page-input" id="pag-input-@idx" type="number" min="1" value="1"
+                               onchange="irAPagina(@idx, this.value)"
+                               onkeydown="if(event.key==='Enter') irAPagina(@idx, this.value)" />
+                        <span class="pdf-page-total" id="pag-total-@idx" style="font-size:12px; color:var(--text-muted); white-space:nowrap;">de —</span>
+
+                        <button class="pdf-btn" onclick="cambiarPag(@idx, 1)" title="Página siguiente">▶</button>
+                        <button class="pdf-btn" onclick="irUltimaPag(@idx)" title="Última página">⏭</button>
+
+                        <div class="pdf-toolbar-sep"></div>
+
+                        @* Zoom *@
+                        <button class="pdf-btn" onclick="cambiarZoom(@idx, -0.25)" title="Alejar">🔍−</button>
+                        <span id="zoom-label-@idx" style="font-size:12px; color:var(--text-muted); min-width:38px; text-align:center;">100%</span>
+                        <button class="pdf-btn" onclick="cambiarZoom(@idx, 0.25)" title="Acercar">🔍+</button>
+                        <button class="pdf-btn" onclick="ajustarAncho(@idx)" title="Ajustar al ancho">↔</button>
+                        <button class="pdf-btn" onclick="ajustarPagina(@idx)" title="Ver página completa">⊡</button>
+
+                        <div class="pdf-toolbar-sep"></div>
+
+                        @* Vista *@
+                        <button class="pdf-btn" id="btn-doble-@idx" onclick="toggleDoble(@idx)" title="Vista de dos páginas">⊞ 2 págs</button>
+                        <button class="pdf-btn" id="btn-full-@idx" onclick="toggleFullscreen(@idx)" title="Pantalla completa">⛶ Full</button>
+
                     </div>
-                    <canvas id="canvas-@visorIdx" style="width:100%; display:none;"></canvas>
-                    <div id="controls-@visorIdx" style="display:none; align-items:center; justify-content:center; gap:16px; padding:12px; background:var(--surface); border-top:1px solid var(--border);">
-                        <button onclick="cambiarPag(@visorIdx, -1)" class="btn btn-secondary btn-sm">← Anterior</button>
-                        <span id="info-@visorIdx" style="font-size:13px; color:var(--text-muted);"></span>
-                        <button onclick="cambiarPag(@visorIdx, 1)" class="btn btn-secondary btn-sm">Siguiente →</button>
+
+                    @* ── Área de render ── *@
+                    <div class="pdf-canvas-area" id="canvas-area-@idx">
+                        <div id="loading-@idx" style="display:flex; flex-direction:column; align-items:center; gap:12px; padding:60px; color:var(--text-muted); font-size:13px;">
+                            <div style="width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--sky); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+                            Cargando documento...
+                        </div>
+                        <div class="pdf-canvas-wrap" id="canvas-wrap-a-@idx" style="display:none;">
+                            <canvas id="canvas-a-@idx"></canvas>
+                        </div>
+                        <div class="pdf-canvas-wrap" id="canvas-wrap-b-@idx" style="display:none;">
+                            <canvas id="canvas-b-@idx"></canvas>
+                        </div>
+                    </div>
+
+                    @* ── Status bar ── *@
+                    <div class="pdf-statusbar">
+                        <span id="status-@idx">—</span>
+                        <span id="status-zoom-@idx" style="color:var(--text-dim);">—</span>
                     </div>
                 </div>
             </div>
@@ -83,48 +224,242 @@
     }
 </div>
 
+<style>
+@@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const visorState = {};
+// Estado por visor: { pdf, pagina, zoom, doble, renderizando }
+const VS = {};
 
+// ── Inicializar visor ─────────────────────────────────────────────
 async function cargarPdf(idx, url) {
     try {
         const pdf = await pdfjsLib.getDocument('/' + url).promise;
-        visorState[idx] = { pdf, pagina: 1, total: pdf.numPages };
-        await renderPag(idx);
-        document.getElementById('canvas-' + idx).style.display = 'block';
-        document.getElementById('controls-' + idx).style.display = 'flex';
+        VS[idx] = { pdf, pagina: 1, zoom: 1.0, doble: false, renderizando: false };
+
         document.getElementById('loading-' + idx).style.display = 'none';
+        document.getElementById('canvas-wrap-a-' + idx).style.display = 'block';
+        document.getElementById('pag-total-' + idx).textContent = 'de ' + pdf.numPages;
+        document.getElementById('pag-input-' + idx).max = pdf.numPages;
+
+        // Calcular zoom inicial para que ajuste al ancho del contenedor
+        await calcularZoomAncho(idx);
+        await render(idx);
     } catch(e) {
         document.getElementById('loading-' + idx).textContent = 'Error al cargar el documento.';
+        console.error(e);
     }
 }
 
-async function renderPag(idx) {
-    const { pdf, pagina } = visorState[idx];
-    const canvas = document.getElementById('canvas-' + idx);
+// ── Render principal ──────────────────────────────────────────────
+async function render(idx) {
+    const s = VS[idx];
+    if (!s || s.renderizando) return;
+    s.renderizando = true;
+
+    try {
+        await renderCanvas(idx, 'a', s.pagina);
+
+        if (s.doble && s.pagina + 1 <= s.pdf.numPages) {
+            document.getElementById('canvas-wrap-b-' + idx).style.display = 'block';
+            await renderCanvas(idx, 'b', s.pagina + 1);
+        } else {
+            document.getElementById('canvas-wrap-b-' + idx).style.display = 'none';
+        }
+
+        // Actualizar controles
+        const input = document.getElementById('pag-input-' + idx);
+        if (input) input.value = s.pagina;
+
+        const pct = Math.round(s.zoom * 100);
+        document.getElementById('zoom-label-' + idx).textContent = pct + '%';
+
+        const total = s.pdf.numPages;
+        const paginaFin = s.doble ? Math.min(s.pagina + 1, total) : s.pagina;
+        document.getElementById('status-' + idx).textContent =
+            s.doble && paginaFin > s.pagina
+                ? `Páginas ${s.pagina}–${paginaFin} de ${total}`
+                : `Página ${s.pagina} de ${total}`;
+        document.getElementById('status-zoom-' + idx).textContent = pct + '%';
+
+    } finally {
+        s.renderizando = false;
+    }
+}
+
+async function renderCanvas(idx, lado, numeroPag) {
+    const s = VS[idx];
+    const canvas = document.getElementById('canvas-' + lado + '-' + idx);
     const ctx = canvas.getContext('2d');
-    const page = await pdf.getPage(pagina);
-    const scale = canvas.parentElement.clientWidth / page.getViewport({ scale: 1 }).width;
-    const vp = page.getViewport({ scale });
-    canvas.width = vp.width;
+    const page = await s.pdf.getPage(numeroPag);
+
+    // DPR para nitidez en pantallas retina
+    const dpr = window.devicePixelRatio || 1;
+    const vp = page.getViewport({ scale: s.zoom * dpr });
+
+    canvas.width  = vp.width;
     canvas.height = vp.height;
+    canvas.style.width  = (vp.width  / dpr) + 'px';
+    canvas.style.height = (vp.height / dpr) + 'px';
+
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
-    document.getElementById('info-' + idx).textContent =
-        'Página ' + pagina + ' de ' + visorState[idx].total;
 }
 
+// ── Navegación ────────────────────────────────────────────────────
 async function cambiarPag(idx, delta) {
-    const s = visorState[idx];
-    const nueva = s.pagina + delta;
-    if (nueva < 1 || nueva > s.total) return;
+    const s = VS[idx];
+    const paso = s.doble ? 2 : 1;
+    const nueva = s.pagina + delta * paso;
+    if (nueva < 1 || nueva > s.pdf.numPages) return;
     s.pagina = nueva;
-    await renderPag(idx);
+    await render(idx);
 }
 
+async function irAPagina(idx, valor) {
+    const s = VS[idx];
+    const nueva = Math.max(1, Math.min(parseInt(valor) || 1, s.pdf.numPages));
+    s.pagina = nueva;
+    await render(idx);
+}
+
+async function irPrimeraPag(idx) {
+    VS[idx].pagina = 1;
+    await render(idx);
+}
+
+async function irUltimaPag(idx) {
+    const s = VS[idx];
+    s.pagina = s.pdf.numPages;
+    await render(idx);
+}
+
+// ── Zoom ──────────────────────────────────────────────────────────
+async function cambiarZoom(idx, delta) {
+    const s = VS[idx];
+    s.zoom = Math.max(0.25, Math.min(4.0, s.zoom + delta));
+    await render(idx);
+}
+
+async function calcularZoomAncho(idx) {
+    const s = VS[idx];
+    const area = document.getElementById('canvas-area-' + idx);
+    const page = await s.pdf.getPage(1);
+    const vp1  = page.getViewport({ scale: 1 });
+    const ancho = s.doble ? (area.clientWidth - 60) / 2 : area.clientWidth - 32;
+    s.zoom = Math.max(0.25, ancho / vp1.width);
+}
+
+async function ajustarAncho(idx) {
+    await calcularZoomAncho(idx);
+    await render(idx);
+}
+
+async function ajustarPagina(idx) {
+    const s = VS[idx];
+    const area = document.getElementById('canvas-area-' + idx);
+    const page = await s.pdf.getPage(s.pagina);
+    const vp1  = page.getViewport({ scale: 1 });
+    const zoomX = (area.clientWidth - 32) / vp1.width;
+    const zoomY = (area.clientHeight - 32) / vp1.height;
+    s.zoom = Math.max(0.25, Math.min(zoomX, zoomY));
+    await render(idx);
+}
+
+// ── Vista doble página ────────────────────────────────────────────
+async function toggleDoble(idx) {
+    const s = VS[idx];
+    s.doble = !s.doble;
+    const btn = document.getElementById('btn-doble-' + idx);
+    btn.classList.toggle('active', s.doble);
+
+    // Si va a doble y estaba en página par, retroceder para empezar en impar
+    if (s.doble && s.pagina % 2 === 0 && s.pagina > 1) s.pagina--;
+
+    await calcularZoomAncho(idx);
+    await render(idx);
+}
+
+// ── Pantalla completa ─────────────────────────────────────────────
+function toggleFullscreen(idx) {
+    const wrap = document.getElementById('visor-wrap-' + idx);
+    const btn  = document.getElementById('btn-full-' + idx);
+
+    if (!document.fullscreenElement) {
+        wrap.requestFullscreen().then(() => {
+            btn.textContent = '✕ Salir';
+            btn.classList.add('active');
+            wrap.querySelector('.pdf-canvas-area').classList.add('fullscreen-bg');
+            calcularZoomAncho(idx).then(() => render(idx));
+        }).catch(() => {});
+    } else {
+        document.exitFullscreen().then(() => {
+            btn.textContent = '⛶ Full';
+            btn.classList.remove('active');
+            wrap.querySelector('.pdf-canvas-area').classList.remove('fullscreen-bg');
+            calcularZoomAncho(idx).then(() => render(idx));
+        }).catch(() => {});
+    }
+}
+
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+        // Restaurar todos los botones full al salir con ESC
+        document.querySelectorAll('[id^="btn-full-"]').forEach(btn => {
+            btn.textContent = '⛶ Full';
+            btn.classList.remove('active');
+        });
+        // Re-render con zoom ajustado
+        Object.keys(VS).forEach(idx => {
+            calcularZoomAncho(parseInt(idx)).then(() => render(parseInt(idx)));
+        });
+    }
+});
+
+// ── Teclado ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    // Solo si hay un visor cargado y no estamos en un input
+    if (e.target.tagName === 'INPUT') return;
+    const idxs = Object.keys(VS);
+    if (!idxs.length) return;
+
+    // Usar el visor visible (el más cercano al viewport)
+    const idx = parseInt(idxs[0]);
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault(); cambiarPag(idx, 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault(); cambiarPag(idx, -1);
+    } else if (e.key === '+' || e.key === '=') {
+        cambiarZoom(idx, 0.25);
+    } else if (e.key === '-') {
+        cambiarZoom(idx, -0.25);
+    } else if (e.key === 'Home') {
+        irPrimeraPag(idx);
+    } else if (e.key === 'End') {
+        irUltimaPag(idx);
+    }
+});
+
+// ── Scroll con rueda sobre el canvas para cambiar página ──────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[id^="canvas-area-"]').forEach(area => {
+        const idx = parseInt(area.id.replace('canvas-area-', ''));
+        area.addEventListener('wheel', e => {
+            if (e.ctrlKey) {
+                // Ctrl + rueda = zoom
+                e.preventDefault();
+                cambiarZoom(idx, e.deltaY < 0 ? 0.25 : -0.25);
+            }
+        }, { passive: false });
+    });
+});
+
+// ── Cargar PDFs ───────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
 @{ int _i = 0; }
 @foreach (var pdf in pdfs)

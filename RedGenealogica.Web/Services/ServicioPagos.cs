@@ -89,6 +89,7 @@ public class ServicioPagos
             // ── Crear registro de Pago confirmado ────────────────────
             // Este registro es lo que desbloquea el acceso al contenido
             // digital del producto para el referidor (sponsor).
+            // Pago para el referidor (sponsor) — desbloquea su contenido
             var pagoConfirmado = new Pago
             {
                 UsuarioId    = referidor.Id,
@@ -102,6 +103,31 @@ public class ServicioPagos
                 FechaConfirmacion = DateTime.UtcNow
             };
             _contexto.Pagos.Add(pagoConfirmado);
+
+            // Pago para el usuario convertido — si el referido ya es usuario,
+            // también desbloquea el contenido para él.
+            if (referido.UsuarioConvertidoId.HasValue)
+            {
+                bool yaTimePago = await _contexto.Pagos.AnyAsync(p =>
+                    p.UsuarioId == referido.UsuarioConvertidoId.Value &&
+                    p.ProductoId == referido.ProductoId && p.Confirmado);
+
+                if (!yaTimePago)
+                {
+                    _contexto.Pagos.Add(new Pago
+                    {
+                        UsuarioId    = referido.UsuarioConvertidoId.Value,
+                        ProductoId   = referido.ProductoId,
+                        Monto        = referido.Producto!.Precio,
+                        EstadoPago   = EstadoPago.Aprobado,
+                        PlataformaPago = "MercadoPago",
+                        Confirmado   = true,
+                        EsSimulado   = false,
+                        FechaSolicitud   = DateTime.UtcNow,
+                        FechaConfirmacion = DateTime.UtcNow
+                    });
+                }
+            }
 
             // Mantener la lógica de puntos del referidor.
             referidor.PuntosAcumulados += 100;
