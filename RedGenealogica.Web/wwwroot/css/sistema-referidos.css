@@ -62,6 +62,16 @@ img { max-width: 100%; }
   width: 100%;
 }
 
+.page-narrow {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.page-wide {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
 .centered-page {
   min-height: calc(100vh - 120px);
   display: flex;
@@ -137,11 +147,12 @@ img { max-width: 100%; }
   font-weight: 500;
   transition: all 0.18s;
   white-space: nowrap;
+  color: var(--text);
 }
 
 .btn-primary {
   background: linear-gradient(90deg, var(--sky), var(--indigo));
-  color: white;
+  color: white !important;
 }
 .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 

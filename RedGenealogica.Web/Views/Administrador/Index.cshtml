@@ -23,52 +23,69 @@
     </div>
 }
 
-@* ── KPIs principales ───────────────────────────────────────────── *@
-<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:12px; margin-bottom:18px;">
+@* ── KPIs: fila 1 (financieros) ─────────────────────────────────── *@
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px;">
 
-    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
-        <div style="font-size:24px; margin-bottom:6px;">💰</div>
-        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">
+        <div style="font-size:22px; margin-bottom:6px;">💰</div>
+        <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--green);">
             $@string.Format("{0:N0}", (decimal)ViewBag.IngresoBruto)
         </div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Ingreso bruto (pagos)</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Ingreso bruto (pagos)</div>
     </div>
 
-    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
-        <div style="font-size:24px; margin-bottom:6px;">💵</div>
-        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--sky);">
-            $@string.Format("{0:N0}", (decimal)ViewBag.SaldoEnCirculacion)
-        </div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Saldo en circulación</div>
-    </div>
-
-    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
-        <div style="font-size:24px; margin-bottom:6px;">🏅</div>
-        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--amber);">
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">
+        <div style="font-size:22px; margin-bottom:6px;">🏅</div>
+        <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--amber);">
             $@string.Format("{0:N0}", (decimal)ViewBag.TotalPremios)
         </div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Premios otorgados</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Premios otorgados</div>
     </div>
 
-    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
-        <div style="font-size:24px; margin-bottom:6px;">🌿</div>
-        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--purple);">
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">
+        <div style="font-size:22px; margin-bottom:6px;">🌿</div>
+        <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--purple);">
             $@string.Format("{0:N0}", (decimal)ViewBag.TotalBonosAbuelo)
         </div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Bonos abuelo pagados</div>
-    </div>
-
-    <div class="card" style="margin-bottom:0; text-align:center; padding:18px 12px;">
-        <div style="font-size:24px; margin-bottom:6px;">💸</div>
-        <div style="font-size:26px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--red);">
-            $@string.Format("{0:N0}", (decimal)ViewBag.TotalRetirado)
-        </div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Total retirado</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Bonos pagados</div>
     </div>
 
 </div>
 
-@* ── Contadores secundarios ─────────────────────────────────────── *@
+@* ── KPIs: fila 2 (operativos) ──────────────────────────────────── *@
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px;">
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">
+        <div style="font-size:22px; margin-bottom:6px;">💵</div>
+        <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--sky);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.SaldoEnCirculacion)
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Saldo en circulación</div>
+    </div>
+
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">
+        <div style="font-size:22px; margin-bottom:6px;">💸</div>
+        <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--red);">
+            $@string.Format("{0:N0}", (decimal)ViewBag.TotalRetirado)
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Total retirado</div>
+    </div>
+
+    @* Card MercadoPago — en la misma fila operativa *@
+    <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;">
+        <div style="font-size:22px;">🏦</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text);">Cuenta MercadoPago</div>
+        <div style="font-size:11px; color:var(--text-muted);">Ver movimientos y saldo real</div>
+        <a href="https://www.mercadopago.com.ar/activities"
+           target="_blank" rel="noopener noreferrer"
+           class="btn btn-primary btn-sm" style="margin-top:2px;">
+            Ver en MP →
+        </a>
+    </div>
+
+</div>
+
+@* ── Contadores operativos ───────────────────────────────────────── *@
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:20px;">
 
     <div class="card" style="margin-bottom:0; padding:14px 12px;">
@@ -114,7 +131,7 @@
 
     <div class="card" style="margin-bottom:0; padding:14px 12px;">
         <div style="font-size:11px; color:var(--text-muted); margin-bottom:4px;">⏳ Retiros pendientes</div>
-        <div style="font-size:22px; font-weight:700; color:@((int)ViewBag.PendientesRetiro > 0 ? "var(--amber)" : "var(--text)");">
+        <div style="font-size:22px; font-weight:700; color:@((int)ViewBag.PendientesRetiro > 0 ? "var(--amber)" : "var(--text)");)">
             @ViewBag.PendientesRetiro
         </div>
         <div style="font-size:11px; margin-top:6px;">

@@ -1,6 +1,6 @@
 @* Index.cshtml — Views/Genealogia/Index.cshtml *@
 @{ ViewData["Title"] = "Árbol genealógico"; }
-
+<div class="page-wide">
 <div class="arbol-wrap">
 
   @* ============================================================
@@ -49,7 +49,7 @@
 </div>
 
 <div id="arbol-tooltip"></div>
-
+</div>
 @await Html.PartialAsync("_BotonVolver")
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>

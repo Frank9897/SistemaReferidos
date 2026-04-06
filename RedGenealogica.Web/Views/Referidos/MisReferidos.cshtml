@@ -8,7 +8,7 @@
     var linkRegistro = $"{baseUrl}/Autenticacion/Registro?codigo={codigoRef}";
     var mensajeWa    = Uri.EscapeDataString($"Hola! Te invito a unirte a mi red. Registrate desde: {linkRegistro}");
 }
-
+<div class="page-narrow">
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px;">
     <div>
         <div class="section-title">👥 Mis referidos</div>
@@ -129,5 +129,5 @@ function copiarRefLink() {
         </table>
     }
 </div>
-
+</div>
 @await Html.PartialAsync("_BotonVolver")

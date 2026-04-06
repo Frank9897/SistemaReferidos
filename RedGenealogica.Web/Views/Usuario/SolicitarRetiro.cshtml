@@ -5,7 +5,7 @@
     var historial = ViewBag.Historial as List<RedGenealogica.Web.Models.SolicitudRetiro> ?? new();
     var tienePendiente = historial.Any(s => s.Estado == EstadoRetiro.Pendiente);
 }
-
+<div class="page-narrow">
 <div style="max-width:560px;">
 
     <div style="margin-bottom:22px;">
@@ -212,6 +212,7 @@
     }
 
     @await Html.PartialAsync("_BotonVolver")
+    </div>
 </div>
 
 <script>

@@ -45,10 +45,101 @@
     };
 }
 
-<div style="margin-bottom:22px;">
+<div style="margin-bottom:16px;">
     <div class="section-title">🏆 Ranking y Sistema de Rangos</div>
     <div class="section-subtitle">Acumulá puntos con cada referido pagado y desbloqueá beneficios reales</div>
 </div>
+
+@* ── Carrusel top ranking ─────────────────────────────────────────── *@
+@if (Model.Any())
+{
+    <div class="ranking-ticker-wrap" style="margin-bottom:22px;">
+        <div class="ranking-ticker-label">🏅 Top</div>
+        <div class="ranking-ticker-viewport">
+            <div class="ranking-ticker-track">
+                @* Duplicamos la lista para el loop infinito *@
+                @foreach (var loop in Enumerable.Range(0, 2))
+                {
+                    @for (int i = 0; i < Math.Min(Model.Count, 10); i++)
+                    {
+                        var u = Model[i];
+                        bool esYo = u.Id.ToString() == userId;
+                        string medal = i == 0 ? "👑" : i == 1 ? "🥈" : i == 2 ? "🥉" : $"#{i+1}";
+                        string col = u.TipoRangoActual switch {
+                            TipoRango.Diamante => "#60A5FA",
+                            TipoRango.Platino  => "#22D3EE",
+                            TipoRango.Oro      => "#D4AF37",
+                            TipoRango.Plata    => "#BFC1C2",
+                            TipoRango.Bronce   => "#F97316",
+                            _                  => "#A0522D"
+                        };
+                        <div class="ranking-ticker-item">
+                            <span class="ticker-pos">@medal</span>
+                            <span class="ticker-name" style="@(esYo ? "color:var(--green); font-weight:700;" : "")">
+                                @u.Nombres @(u.Apellidos.Length > 0 ? u.Apellidos[0] + "." : "")
+                                @if (esYo) { <text>⭐</text> }
+                            </span>
+                            <span class="ticker-pts" style="color:@col;">@u.PuntosAcumulados pts</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+.ranking-ticker-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    overflow: hidden;
+}
+.ranking-ticker-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--amber);
+    white-space: nowrap;
+    letter-spacing: .04em;
+    padding-right: 12px;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.ranking-ticker-viewport {
+    overflow: hidden;
+    flex: 1;
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+.ranking-ticker-track {
+    display: flex;
+    gap: 0;
+    animation: ticker-scroll 30s linear infinite;
+    width: max-content;
+}
+.ranking-ticker-track:hover { animation-play-state: paused; }
+@@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+.ranking-ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 20px;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.ranking-ticker-item:last-child { border-right: none; }
+.ticker-pos  { font-size: 14px; }
+.ticker-name { font-size: 13px; color: var(--text); }
+.ticker-pts  { font-size: 11px; font-weight: 600; }
+</style>
 
 @* ── Progreso del usuario actual ─────────────────────────────────── *@
 @if (usuario != null && rangoActual != null)

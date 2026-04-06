@@ -12,7 +12,7 @@
     var mensajeEmail = Uri.EscapeDataString($"Link de pago para {nombreReferido}");
     var cuerpoEmail  = Uri.EscapeDataString($"Hola {nombreReferido},\n\nAcá tenés el link para completar tu pago:\n\n{urlPago}\n\nSaludos!");
 }
-
+<div class="page-wide">
 <div class="centered-page">
     <div class="center-box" style="max-width:520px;">
         <div class="section-title">💳 Link de pago</div>
@@ -122,7 +122,7 @@
         @await Html.PartialAsync("_BotonVolver")
     </div>
 </div>
-
+</div>
 <script>
 const urlPago = @Json.Serialize(urlPago);
 

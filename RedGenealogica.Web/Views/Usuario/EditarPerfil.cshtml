@@ -2,55 +2,56 @@
 @{
     ViewData["Title"] = "Editar perfil";
 }
-
-<div class="card" style="margin-bottom:18px;">
-    <div class="card-header">
-        <span class="card-title">👤 Editar perfil</span>
-    </div>
-
-    @if (TempData["Exito"] != null)
-    {
-        <div class="alert alert-success" style="margin-bottom:14px;">
-            @TempData["Exito"]
-        </div>
-    }
-
-    <form method="post">
-
-        <!-- NOMBRE -->
-        <div style="margin-bottom:14px;">
-            <label style="font-size:13px; color:var(--text-muted);">Nombres</label>
-            <input asp-for="Nombres" class="input" />
+<div class="page-narrow">
+    <div class="card" style="margin-bottom:18px;">
+        <div class="card-header">
+            <span class="card-title">👤 Editar perfil</span>
         </div>
 
-        <!-- APELLIDO -->
-        <div style="margin-bottom:14px;">
-            <label style="font-size:13px; color:var(--text-muted);">Apellidos</label>
-            <input asp-for="Apellidos" class="input" />
-        </div>
-
-        <!-- CBU -->
-        <div style="margin-bottom:14px;">
-            <label style="font-size:13px; color:var(--text-muted);">
-                CBU / Alias
-            </label>
-            <input asp-for="CbuAlias" class="input" />
-
-            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-                💡 Usado para recibir tus retiros
+        @if (TempData["Exito"] != null)
+        {
+            <div class="alert alert-success" style="margin-bottom:14px;">
+                @TempData["Exito"]
             </div>
-        </div>
+        }
 
-        <!-- BOTONES -->
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button type="submit" class="btn btn-primary">
-                💾 Guardar cambios
-            </button>
+        <form method="post">
 
-            <a href="/Usuario/Panel" class="btn btn-secondary">
-                Cancelar
-            </a>
-        </div>
+            <!-- NOMBRE -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px; color:var(--text-muted);">Nombres</label>
+                <input asp-for="Nombres" class="input" />
+            </div>
 
-    </form>
+            <!-- APELLIDO -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px; color:var(--text-muted);">Apellidos</label>
+                <input asp-for="Apellidos" class="input" />
+            </div>
+
+            <!-- CBU -->
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px; color:var(--text-muted);">
+                    CBU / Alias
+                </label>
+                <input asp-for="CbuAlias" class="input" />
+
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                    💡 Usado para recibir tus retiros
+                </div>
+            </div>
+
+            <!-- BOTONES -->
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button type="submit" class="btn btn-primary">
+                    💾 Guardar cambios
+                </button>
+
+                <a href="/Usuario/Panel" class="btn btn-secondary">
+                    Cancelar
+                </a>
+            </div>
+
+        </form>
+    </div>
 </div>
