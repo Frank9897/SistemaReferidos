@@ -91,7 +91,12 @@ public class ContentoController : Controller
 
         if (!System.IO.File.Exists(rutaAbsoluta)) return NotFound();
 
-        var bytes = await System.IO.File.ReadAllBytesAsync(rutaAbsoluta);
-        return File(bytes, "application/pdf", pdf.Nombre + ".pdf");
+        var bytes        = await System.IO.File.ReadAllBytesAsync(rutaAbsoluta);
+        var nombreLimpio = pdf.Nombre.Replace("\"", "") + ".pdf";
+
+        Response.Headers["Content-Disposition"] = "attachment; filename=\"" + nombreLimpio + "\"";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+
+        return File(bytes, "application/pdf", nombreLimpio);
     }
 }
