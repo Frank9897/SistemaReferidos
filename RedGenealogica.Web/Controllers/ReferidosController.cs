@@ -141,6 +141,7 @@ public class ReferidosController : Controller
             .OrderByDescending(r => r.FechaRegistro)
             .ToListAsync();
 
+        ViewBag.CodigoReferido = usuario.CodigoReferido;
         return View(referidos);
     }
 }

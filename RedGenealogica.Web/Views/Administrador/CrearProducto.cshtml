@@ -8,29 +8,32 @@
     <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
 </div>
 
-<div style="max-width:620px;">
+<div style="max-width:780px;">
     <div class="section-title">📦 Nuevo producto</div>
-    <div class="section-subtitle">Completá los datos del producto y las comisiones por nivel</div>
+    <div class="section-subtitle">Completá los datos del producto digital</div>
 
-    <div class="card">
-        <form method="post">
-            <div asp-validation-summary="All" class="validation-summary-errors"></div>
+    <form method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="All" class="validation-summary-errors"></div>
+
+        @* ── Datos básicos ─────────────────────────────────────────── *@
+        <div class="card" style="margin-bottom:14px;">
+            <div class="card-header"><span class="card-title">📋 Datos generales</span></div>
 
             <div class="form-group">
                 <label asp-for="Nombre">Nombre del producto *</label>
-                <input asp-for="Nombre" placeholder="Ej: Switch TP-Link 8 puertos" />
+                <input asp-for="Nombre" placeholder="Ej: Pack Completo — Curso de Finanzas" />
                 <span asp-validation-for="Nombre" class="field-validation-error"></span>
             </div>
 
             <div class="form-group">
                 <label asp-for="Descripcion">Descripción</label>
-                <textarea asp-for="Descripcion" rows="3" placeholder="Descripción breve del producto..." style="resize:vertical;"></textarea>
+                <textarea asp-for="Descripcion" rows="3" placeholder="Descripción visible para los compradores..." style="resize:vertical;"></textarea>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <div class="form-group">
                     <label asp-for="Precio">Precio ($) *</label>
-                    <input asp-for="Precio" type="number" step="0.01" placeholder="50000" />
+                    <input asp-for="Precio" id="inputPrecio" type="number" step="0.01" placeholder="50000" oninput="actualizarCalculadora()" />
                     <span asp-validation-for="Precio" class="field-validation-error"></span>
                 </div>
                 <div class="form-group">
@@ -40,14 +43,227 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="ImagenUrl">URL de imagen (opcional)</label>
+                <label asp-for="ImagenUrl">URL de imagen del producto (opcional)</label>
                 <input asp-for="ImagenUrl" placeholder="https://..." />
             </div>
+        </div>
 
-            <div style="display:flex; gap:10px; margin-top:8px;">
-                <button type="submit" class="btn btn-primary">Crear producto</button>
-                <a href="/Administrador/Productos" class="btn btn-secondary">Cancelar</a>
+        @* ── Comisión al abuelo ────────────────────────────────────── *@
+        <div class="card" style="margin-bottom:14px;" id="card-comision">
+            <div class="card-header">
+                <span class="card-title">💰 Comisión al abuelo</span>
+                <span id="badge-zona" class="badge badge-success" style="font-size:11px;">Zona segura</span>
             </div>
-        </form>
-    </div>
+
+            <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:var(--radius-sm); padding:14px; margin-bottom:16px; font-size:13px; color:var(--text-muted); line-height:1.7;">
+                <strong style="color:var(--sky);">¿Qué es esto?</strong><br>
+                Cuando un usuario (el <em>hijo</em>) completa 3 referidos pagos, su padre recibe el <strong>precio del producto como premio</strong>.
+                Simultáneamente, el <em>abuelo</em> (el padre del padre) recibe este porcentaje del precio como <strong>bono</strong>.<br><br>
+                El bono efectivo puede ser mayor si el abuelo tiene un rango alto, ya que los rangos amplifican este porcentaje.
+            </div>
+
+            <div style="display:grid; grid-template-columns:220px 1fr; gap:20px; align-items:start;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label asp-for="PorcentajeAbueloComision">% base del precio *</label>
+                    <input asp-for="PorcentajeAbueloComision"
+                           id="inputPorcentaje"
+                           type="number" step="0.01" min="0" max="66"
+                           value="10"
+                           oninput="actualizarCalculadora()"
+                           style="font-size:18px; font-weight:600;" />
+                    <span asp-validation-for="PorcentajeAbueloComision" class="field-validation-error"></span>
+                    <div id="msg-advertencia" style="display:none; margin-top:6px; font-size:12px; color:var(--amber);">
+                        ⚠️ Zona agresiva — revisá la calculadora
+                    </div>
+                    <div id="msg-bloqueado" style="display:none; margin-top:6px; font-size:12px; color:var(--red);">
+                        🚫 Superaste el límite de 66%
+                    </div>
+                </div>
+
+                @* Calculadora en vivo *@
+                <div id="calculadora" style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px;">
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; text-transform:uppercase; letter-spacing:0.5px;">Simulación por ciclo (3 referidos)</div>
+
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--text-muted);">Ingreso del ciclo (3 × precio)</span>
+                            <span id="calc-ingreso" style="color:var(--text); font-weight:500;">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--text-muted);">Premio al sponsor (hijo)</span>
+                            <span id="calc-premio" style="color:var(--red);">−$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--text-muted);">Bono al abuelo (base, sin rango)</span>
+                            <span id="calc-bono" style="color:var(--amber);">−$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:13px;">
+                            <span style="color:var(--text-muted);">Bono máximo (abuelo Diamante +80%)</span>
+                            <span id="calc-bono-max" style="color:var(--amber);">−$0</span>
+                        </div>
+                        <div style="height:1px; background:var(--border); margin:4px 0;"></div>
+                        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:600;">
+                            <span style="color:var(--text-muted);">Margen mínimo del negocio</span>
+                            <span id="calc-margen" style="color:var(--green);">$0</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px;">
+                            <span style="color:var(--text-muted);">Margen en % sobre ingreso</span>
+                            <span id="calc-margen-pct" style="color:var(--text-muted);">0%</span>
+                        </div>
+                    </div>
+
+                    <div id="zona-info" style="margin-top:12px; padding:10px 12px; border-radius:var(--radius-sm); font-size:12px; line-height:1.5; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); color:#4ADE80;">
+                        ✅ Recomendado: entre 5% y 20%. El negocio retiene más del 80% del ingreso.
+                    </div>
+                </div>
+            </div>
+
+            @* Tabla de rangos *@
+            <div style="margin-top:16px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+                    Bono efectivo por rango del abuelo (sobre el % base que configures):
+                </div>
+                <table class="table" style="font-size:12px;">
+                    <thead>
+                        <tr>
+                            <th>Rango</th>
+                            <th>Bonus de rango</th>
+                            <th>Fórmula</th>
+                            <th id="th-bono-efectivo">Con 10% base y precio $100</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>🟤 Cobre</td><td>0%</td>   <td>base × 1.00</td><td class="fila-efectivo" data-mult="1.00">$10.00</td></tr>
+                        <tr><td>🟠 Bronce</td><td>+10%</td><td>base × 1.10</td><td class="fila-efectivo" data-mult="1.10">$11.00</td></tr>
+                        <tr><td>⚪ Plata</td><td>+20%</td> <td>base × 1.20</td><td class="fila-efectivo" data-mult="1.20">$12.00</td></tr>
+                        <tr><td>🟡 Oro</td><td>+40%</td>   <td>base × 1.40</td><td class="fila-efectivo" data-mult="1.40">$14.00</td></tr>
+                        <tr><td>🔵 Platino</td><td>+60%</td><td>base × 1.60</td><td class="fila-efectivo" data-mult="1.60">$16.00</td></tr>
+                        <tr><td>💎 Diamante</td><td>+80%</td><td>base × 1.80</td><td class="fila-efectivo" data-mult="1.80">$18.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @* ── PDFs del producto digital ─────────────────────────────── *@
+        <div class="card" style="margin-bottom:14px;">
+            <div class="card-header"><span class="card-title">📄 Contenido digital (PDFs)</span></div>
+            <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+                Los PDFs se desbloquean automáticamente cuando el comprador confirma el pago. Solo se aceptan archivos <strong>.pdf</strong>.
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div>
+                    <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">PDF 1</div>
+                    <div class="form-group">
+                        <label>Nombre visible del PDF 1</label>
+                        <input asp-for="PdfNombre1" placeholder="Ej: Módulo 1 — Introducción" />
+                    </div>
+                    <div class="form-group">
+                        <label>Archivo PDF 1</label>
+                        <input type="file" name="archivoPdf1" accept=".pdf"
+                               style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; width:100%; color:var(--text); font-size:13px;" />
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">PDF 2</div>
+                    <div class="form-group">
+                        <label>Nombre visible del PDF 2</label>
+                        <input asp-for="PdfNombre2" placeholder="Ej: Módulo 2 — Avanzado" />
+                    </div>
+                    <div class="form-group">
+                        <label>Archivo PDF 2</label>
+                        <input type="file" name="archivoPdf2" accept=".pdf"
+                               style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; width:100%; color:var(--text); font-size:13px;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <button type="submit" id="btn-submit" class="btn btn-primary">Crear producto</button>
+            <a href="/Administrador/Productos" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
 </div>
+
+<script>
+function fmt(n) {
+    return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function actualizarCalculadora() {
+    const precio = parseFloat(document.getElementById('inputPrecio')?.value) || 0;
+    const pct    = parseFloat(document.getElementById('inputPorcentaje')?.value) || 0;
+
+    const ingreso   = precio * 3;
+    const premio    = precio;
+    const bonoBase  = precio * pct / 100;
+    const bonoMax   = bonoBase * 1.80;
+    const margen    = ingreso - premio - bonoMax;
+    const margenPct = ingreso > 0 ? (margen / ingreso * 100) : 0;
+
+    document.getElementById('calc-ingreso').textContent   = fmt(ingreso);
+    document.getElementById('calc-premio').textContent    = '−' + fmt(premio);
+    document.getElementById('calc-bono').textContent      = '−' + fmt(bonoBase);
+    document.getElementById('calc-bono-max').textContent  = '−' + fmt(bonoMax);
+    document.getElementById('calc-margen').textContent    = fmt(margen);
+    document.getElementById('calc-margen-pct').textContent = margenPct.toFixed(1) + '%';
+
+    // Color del margen
+    const elMargen = document.getElementById('calc-margen');
+    elMargen.style.color = margen < 0 ? 'var(--red)' : margen < precio * 0.5 ? 'var(--amber)' : 'var(--green)';
+
+    // Actualizar tabla de rangos
+    document.querySelectorAll('.fila-efectivo').forEach(td => {
+        const mult = parseFloat(td.dataset.mult);
+        td.textContent = fmt(bonoBase * mult);
+    });
+
+    // Actualizar header de la tabla
+    const thEfectivo = document.getElementById('th-bono-efectivo');
+    if (thEfectivo) {
+        thEfectivo.textContent = `Con ${pct}% base y precio ${fmt(precio)}`;
+    }
+
+    // Zona de riesgo
+    const badge    = document.getElementById('badge-zona');
+    const msgAdv   = document.getElementById('msg-advertencia');
+    const msgBlock = document.getElementById('msg-bloqueado');
+    const zonaInfo = document.getElementById('zona-info');
+    const btnSubmit= document.getElementById('btn-submit');
+
+    msgAdv.style.display   = 'none';
+    msgBlock.style.display = 'none';
+
+    if (pct > 66) {
+        badge.className = 'badge badge-danger';
+        badge.textContent = '🚫 Bloqueado';
+        msgBlock.style.display = 'block';
+        zonaInfo.style.background  = 'rgba(239,68,68,0.08)';
+        zonaInfo.style.borderColor = 'rgba(239,68,68,0.3)';
+        zonaInfo.style.color       = '#FCA5A5';
+        zonaInfo.textContent = '🚫 Límite superado. Con este porcentaje el negocio puede tener pérdidas. Máximo permitido: 66%.';
+        if (btnSubmit) btnSubmit.disabled = true;
+    } else if (pct > 30) {
+        badge.className = 'badge badge-warning';
+        badge.textContent = '⚠️ Zona agresiva';
+        msgAdv.style.display = 'block';
+        zonaInfo.style.background  = 'rgba(245,158,11,0.08)';
+        zonaInfo.style.borderColor = 'rgba(245,158,11,0.3)';
+        zonaInfo.style.color       = '#FCD34D';
+        zonaInfo.textContent = `⚠️ Entre 30% y 66% es zona agresiva. El margen mínimo cae a ${margenPct.toFixed(0)}%. Asegurate de que el volumen de ventas lo justifique.`;
+        if (btnSubmit) btnSubmit.disabled = false;
+    } else {
+        badge.className = 'badge badge-success';
+        badge.textContent = '✅ Zona segura';
+        zonaInfo.style.background  = 'rgba(34,197,94,0.08)';
+        zonaInfo.style.borderColor = 'rgba(34,197,94,0.2)';
+        zonaInfo.style.color       = '#4ADE80';
+        zonaInfo.textContent = `✅ Recomendado: entre 5% y 20%. El negocio retiene el ${margenPct.toFixed(0)}% del ingreso como margen mínimo.`;
+        if (btnSubmit) btnSubmit.disabled = false;
+    }
+}
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', actualizarCalculadora);
+</script>

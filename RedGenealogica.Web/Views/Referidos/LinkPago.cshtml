@@ -1,15 +1,28 @@
-@* LinkPago.cshtml — Views/Referidos/LinkPago.cshtml — CORREGIDO *@
+@* LinkPago.cshtml — Views/Referidos/LinkPago.cshtml *@
 @using RedGenealogica.Web.Enumeraciones
-@{ ViewData["Title"] = "Link de pago"; var referido = ViewBag.Referido as RedGenealogica.Web.Models.Referido; var urlPago = ViewBag.UrlPago as string; var cuentaActiva = ViewBag.CuentaActiva as bool? ?? false; }
+@{
+    ViewData["Title"] = "Link de pago";
+    var referido    = ViewBag.Referido as RedGenealogica.Web.Models.Referido;
+    var urlPago     = ViewBag.UrlPago as string ?? "";
+    var cuentaActiva= ViewBag.CuentaActiva as bool? ?? false;
+
+    var nombreReferido = referido?.NombreCompleto ?? "tu referido";
+    var mensajeWa = Uri.EscapeDataString(
+        $"Hola {nombreReferido}! Te comparto el link para que puedas completar tu pago: {urlPago}");
+    var mensajeEmail = Uri.EscapeDataString($"Link de pago para {nombreReferido}");
+    var cuerpoEmail  = Uri.EscapeDataString($"Hola {nombreReferido},\n\nAcá tenés el link para completar tu pago:\n\n{urlPago}\n\nSaludos!");
+}
 
 <div class="centered-page">
-    <div class="center-box">
+    <div class="center-box" style="max-width:520px;">
         <div class="section-title">💳 Link de pago</div>
         <div class="section-subtitle">Compartí este link con tu referido para que complete el pago</div>
 
         <div class="card">
+
+            @* ── Info del referido ──────────────────────────────── *@
             <div style="margin-bottom:18px;">
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">REFERIDO</div>
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Referido</div>
                 <div style="font-weight:600; font-size:16px;">@referido?.NombreCompleto</div>
                 @if (!string.IsNullOrEmpty(referido?.CorreoElectronico))
                 {
@@ -19,30 +32,89 @@
 
             <div class="divider"></div>
 
+            @* ── Link de pago ───────────────────────────────────── *@
             <div style="margin:18px 0;">
-                <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">LINK DE PAGO DIRECTO</div>
-                <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--sky); word-break:break-all; font-family:monospace;">
+                <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Link de pago</div>
+                <div id="url-display"
+                     style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+                            padding:12px 14px; font-size:12px; color:var(--sky); word-break:break-all;
+                            font-family:monospace; user-select:all;">
                     @urlPago
                 </div>
-                <button onclick="navigator.clipboard.writeText('@urlPago'); this.textContent='¡Copiado!';" class="btn btn-secondary btn-sm" style="margin-top:8px;">
-                    Copiar link
+            </div>
+
+            @* ── Botones de acción ──────────────────────────────── *@
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+
+                @* Abrir en nueva pestaña *@
+                <a href="@urlPago" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-primary" style="justify-content:center;">
+                    🔗 Abrir link
+                </a>
+
+                @* Copiar al portapapeles *@
+                <button id="btn-copiar"
+                        onclick="copiarLink()"
+                        class="btn btn-secondary" style="justify-content:center;">
+                    📋 Copiar link
                 </button>
             </div>
 
-            <div class="divider"></div>
+            @* ── Compartir por plataforma ───────────────────────── *@
+            <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+                Compartir por
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
 
+                @* WhatsApp *@
+                <a href="https://wa.me/?text=@mensajeWa"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn"
+                   style="background:rgba(37,211,102,0.12); border:1px solid rgba(37,211,102,0.25);
+                          color:#25D366; padding:8px 16px; font-size:13px; flex:1; justify-content:center; min-width:130px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    WhatsApp
+                </a>
+
+                @* Email *@
+                <a href="mailto:@referido?.CorreoElectronico?subject=@mensajeEmail&body=@cuerpoEmail"
+                   class="btn"
+                   style="background:rgba(99,102,241,0.12); border:1px solid rgba(99,102,241,0.25);
+                          color:var(--indigo); padding:8px 16px; font-size:13px; flex:1; justify-content:center; min-width:130px;">
+                    ✉️ Email
+                </a>
+
+                @* Compartir nativo (Web Share API) *@
+                <button id="btn-share"
+                        onclick="compartirNativo()"
+                        class="btn"
+                        style="background:var(--surface); border:1px solid var(--border);
+                               color:var(--text-muted); padding:8px 16px; font-size:13px; flex:1; justify-content:center; min-width:130px; display:none;">
+                    ↗️ Compartir
+                </button>
+            </div>
+
+            <div class="divider" style="margin-top:18px;"></div>
+
+            @* ── Estado de cuenta ───────────────────────────────── *@
             @if (cuentaActiva)
             {
-                <div style="background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.2); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--text-muted); display:flex; gap:10px; align-items:flex-start;">
+                <div style="background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.2);
+                            border-radius:var(--radius-sm); padding:12px 14px; font-size:13px;
+                            color:var(--text-muted); display:flex; gap:10px; align-items:flex-start; margin-top:16px;">
                     <span style="color:var(--green); font-size:16px; flex-shrink:0;">✓</span>
-                    <span>Tu cuenta ya está <strong style="color:var(--green);">activa</strong>. Cuando tu referido pague, recibirás las comisiones automáticamente.</span>
+                    <span>Tu cuenta está <strong style="color:var(--green);">activa</strong>. Cuando tu referido pague, recibirás los premios automáticamente.</span>
                 </div>
             }
             else
             {
-                <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; color:var(--text-muted); display:flex; gap:10px; align-items:flex-start;">
+                <div style="background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15);
+                            border-radius:var(--radius-sm); padding:12px 14px; font-size:13px;
+                            color:var(--text-muted); display:flex; gap:10px; align-items:flex-start; margin-top:16px;">
                     <span style="font-size:16px; flex-shrink:0;">💡</span>
-                    <span>Una vez que tu referido complete el pago, tu cuenta se <strong style="color:var(--sky);">activará automáticamente</strong> y comenzarás a ganar comisiones.</span>
+                    <span>Una vez que tu referido complete el pago, tu cuenta se <strong style="color:var(--sky);">activará automáticamente</strong>.</span>
                 </div>
             }
         </div>
@@ -50,3 +122,48 @@
         @await Html.PartialAsync("_BotonVolver")
     </div>
 </div>
+
+<script>
+const urlPago = @Json.Serialize(urlPago);
+
+function copiarLink() {
+    navigator.clipboard.writeText(urlPago).then(() => {
+        const btn = document.getElementById('btn-copiar');
+        const original = btn.textContent;
+        btn.textContent = '✅ ¡Copiado!';
+        btn.style.color = 'var(--green)';
+        setTimeout(() => {
+            btn.textContent = original;
+            btn.style.color = '';
+        }, 2500);
+    }).catch(() => {
+        // Fallback para navegadores sin clipboard API
+        const el = document.getElementById('url-display');
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        window.getSelection()?.removeAllRanges();
+        window.getSelection()?.addRange(range);
+        document.execCommand('copy');
+        window.getSelection()?.removeAllRanges();
+    });
+}
+
+async function compartirNativo() {
+    try {
+        await navigator.share({
+            title: 'Link de pago',
+            text: 'Completá tu pago desde este link:',
+            url: urlPago
+        });
+    } catch (e) {
+        // Usuario canceló o no soportado
+    }
+}
+
+// Mostrar botón compartir nativo solo si está soportado
+document.addEventListener('DOMContentLoaded', () => {
+    if (navigator.share) {
+        document.getElementById('btn-share').style.display = 'flex';
+    }
+});
+</script>

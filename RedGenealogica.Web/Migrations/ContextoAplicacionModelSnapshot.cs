@@ -302,18 +302,6 @@ namespace RedGenealogica.Web.Migrations
                     b.Property<bool>("Activo")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal>("ComisionNivel1Porcentaje")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<decimal>("ComisionNivel2Porcentaje")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<decimal>("ComisionNivel3Porcentaje")
-                        .HasPrecision(5, 2)
-                        .HasColumnType("numeric(5,2)");
-
                     b.Property<string>("Descripcion")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -329,6 +317,27 @@ namespace RedGenealogica.Web.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PdfNombre1")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PdfNombre2")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("PdfUrl1")
+                        .HasMaxLength(350)
+                        .HasColumnType("character varying(350)");
+
+                    b.Property<string>("PdfUrl2")
+                        .HasMaxLength(350)
+                        .HasColumnType("character varying(350)");
+
+                    b.Property<decimal>("PorcentajeAbueloComision")
+                        .HasPrecision(5, 2)
+                        .HasDefaultValue(10m)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<decimal>("Precio")
                         .HasPrecision(18, 2)

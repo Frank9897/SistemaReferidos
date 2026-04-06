@@ -86,6 +86,23 @@ public class ServicioPagos
                 referidor.FechaActivacion = DateTime.UtcNow;
             }
 
+            // ── Crear registro de Pago confirmado ────────────────────
+            // Este registro es lo que desbloquea el acceso al contenido
+            // digital del producto para el referidor (sponsor).
+            var pagoConfirmado = new Pago
+            {
+                UsuarioId    = referidor.Id,
+                ProductoId   = referido.ProductoId,
+                Monto        = referido.Producto!.Precio,
+                EstadoPago   = EstadoPago.Aprobado,
+                PlataformaPago = "MercadoPago",
+                Confirmado   = true,
+                EsSimulado   = false,
+                FechaSolicitud   = DateTime.UtcNow,
+                FechaConfirmacion = DateTime.UtcNow
+            };
+            _contexto.Pagos.Add(pagoConfirmado);
+
             // Mantener la lógica de puntos del referidor.
             referidor.PuntosAcumulados += 100;
             referidor.TipoRangoActual = await ObtenerRangoActualAsync(referidor.PuntosAcumulados);

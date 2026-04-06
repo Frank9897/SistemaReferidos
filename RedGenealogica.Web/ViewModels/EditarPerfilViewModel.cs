@@ -5,11 +5,11 @@ public class EditarPerfilViewModel
 {
     [Required]
     [StringLength(100)]
-    public string Nombres { get; set; }
+    public string Nombres { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
-    public string Apellidos { get; set; }
+    public string Apellidos { get; set; } = string.Empty;
 
     [StringLength(100)]
     public string? CbuAlias { get; set; }

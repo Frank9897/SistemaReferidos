@@ -28,17 +28,20 @@ public class AdministradorController : Controller
     private readonly UserManager<Usuario> _userManager;
     private readonly ServicioReferidos _servicioReferidos;
     private readonly ServicioRetiros _servicioRetiros;
+    private readonly IWebHostEnvironment _env;
 
     public AdministradorController(
         ContextoAplicacion contexto,
         UserManager<Usuario> userManager,
         ServicioReferidos servicioReferidos,
-        ServicioRetiros servicioRetiros)
+        ServicioRetiros servicioRetiros,
+        IWebHostEnvironment env)
     {
         _contexto = contexto;
         _userManager = userManager;
         _servicioReferidos = servicioReferidos;
         _servicioRetiros = servicioRetiros;
+        _env = env;
     }
 
     // ================================================================
@@ -170,8 +173,17 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> CrearProducto(Producto modelo)
+    public async Task<IActionResult> CrearProducto(
+        Producto modelo,
+        IFormFile? archivoPdf1,
+        IFormFile? archivoPdf2)
     {
+        if (modelo.PorcentajeAbueloComision > 66)
+        {
+            ModelState.AddModelError("PorcentajeAbueloComision",
+                "El porcentaje máximo permitido es 66% para garantizar sostenibilidad.");
+        }
+
         if (!ModelState.IsValid)
             return View(modelo);
 
@@ -179,6 +191,9 @@ public class AdministradorController : Controller
         modelo.Activo = true;
 
         _contexto.Productos.Add(modelo);
+        await _contexto.SaveChangesAsync();
+
+        await GuardarPdfs(modelo, archivoPdf1, archivoPdf2);
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Producto '{modelo.Nombre}' creado correctamente.";
@@ -195,8 +210,17 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> EditarProducto(Producto modelo)
+    public async Task<IActionResult> EditarProducto(
+        Producto modelo,
+        IFormFile? archivoPdf1,
+        IFormFile? archivoPdf2)
     {
+        if (modelo.PorcentajeAbueloComision > 66)
+        {
+            ModelState.AddModelError("PorcentajeAbueloComision",
+                "El porcentaje máximo permitido es 66% para garantizar sostenibilidad.");
+        }
+
         if (!ModelState.IsValid)
             return View(modelo);
 
@@ -208,7 +232,13 @@ public class AdministradorController : Controller
         producto.Precio = modelo.Precio;
         producto.StockDisponible = modelo.StockDisponible;
         producto.ImagenUrl = modelo.ImagenUrl;
+        producto.PorcentajeAbueloComision = modelo.PorcentajeAbueloComision;
 
+        // Solo pisar PDF si se subió uno nuevo
+        if (archivoPdf1 != null) producto.PdfNombre1 = modelo.PdfNombre1;
+        if (archivoPdf2 != null) producto.PdfNombre2 = modelo.PdfNombre2;
+
+        await GuardarPdfs(producto, archivoPdf1, archivoPdf2);
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Producto '{producto.Nombre}' actualizado.";
@@ -227,6 +257,76 @@ public class AdministradorController : Controller
         var estado = producto.Activo ? "activado" : "desactivado";
         TempData["Exito"] = $"Producto '{producto.Nombre}' {estado}.";
         return RedirectToAction("Productos");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> EliminarProducto(int id)
+    {
+        var producto = await _contexto.Productos.FindAsync(id);
+        if (producto == null) return NotFound();
+
+        // Verificar que no tenga referidos o pagos asociados
+        bool tieneReferidos = await _contexto.Referidos.AnyAsync(r => r.ProductoId == id);
+        bool tienePagos     = await _contexto.Pagos.AnyAsync(p => p.ProductoId == id);
+
+        if (tieneReferidos || tienePagos)
+        {
+            TempData["Error"] = $"No se puede eliminar '{producto.Nombre}' porque tiene referidos o pagos asociados. Podés desactivarlo en su lugar.";
+            return RedirectToAction("Productos");
+        }
+
+        // Eliminar carpeta de PDFs si existe
+        var carpetaPdfs = Path.Combine(_env.WebRootPath, "pdfs", id.ToString());
+        if (Directory.Exists(carpetaPdfs))
+            Directory.Delete(carpetaPdfs, recursive: true);
+
+        _contexto.Productos.Remove(producto);
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Producto '{producto.Nombre}' eliminado correctamente.";
+        return RedirectToAction("Productos");
+    }
+
+    // ── Helper: guardar archivos PDF subidos ────────────────────
+    private static readonly string[] _extensionesPdfPermitidas = [".pdf"];
+
+    private async Task GuardarPdfs(
+        Producto producto,
+        IFormFile? pdf1,
+        IFormFile? pdf2)
+    {
+        var carpeta = Path.Combine(_env.WebRootPath, "pdfs", producto.Id.ToString());
+        Directory.CreateDirectory(carpeta);
+
+        if (pdf1 != null && pdf1.Length > 0)
+        {
+            var ext = Path.GetExtension(pdf1.FileName).ToLowerInvariant();
+            if (_extensionesPdfPermitidas.Contains(ext))
+            {
+                var nombre = $"pdf1_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                var ruta   = Path.Combine(carpeta, nombre);
+                await using var fs = new FileStream(ruta, FileMode.Create);
+                await pdf1.CopyToAsync(fs);
+                producto.PdfUrl1 = $"pdfs/{producto.Id}/{nombre}";
+                if (string.IsNullOrWhiteSpace(producto.PdfNombre1))
+                    producto.PdfNombre1 = Path.GetFileNameWithoutExtension(pdf1.FileName);
+            }
+        }
+
+        if (pdf2 != null && pdf2.Length > 0)
+        {
+            var ext = Path.GetExtension(pdf2.FileName).ToLowerInvariant();
+            if (_extensionesPdfPermitidas.Contains(ext))
+            {
+                var nombre = $"pdf2_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+                var ruta   = Path.Combine(carpeta, nombre);
+                await using var fs = new FileStream(ruta, FileMode.Create);
+                await pdf2.CopyToAsync(fs);
+                producto.PdfUrl2 = $"pdfs/{producto.Id}/{nombre}";
+                if (string.IsNullOrWhiteSpace(producto.PdfNombre2))
+                    producto.PdfNombre2 = Path.GetFileNameWithoutExtension(pdf2.FileName);
+            }
+        }
     }
 
     // ================================================================

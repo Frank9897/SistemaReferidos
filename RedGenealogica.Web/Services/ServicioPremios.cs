@@ -2,10 +2,27 @@
 // ServicioPremios.cs
 //
 // RESPONSABILIDAD:
-// - Gestionar premios por ciclos (3 referidos pagos).
-// - Otorgar premio al usuario.
-// - Otorgar bono al padre directo.
-// - Evitar duplicación de pagos.
+// - Procesar premios cuando un sponsor completa 3 referidos pagos.
+// - Premio al sponsor: 100% del precio del producto.
+// - Bono al abuelo: PorcentajeAbueloComision del producto,
+//   amplificado por el BonusComisionPorcentaje del rango del abuelo.
+//
+// FÓRMULA BONO ABUELO:
+//   bonoBase  = Precio × (PorcentajeAbueloComision / 100)
+//   bonoFinal = bonoBase × (1 + BonusRangoAbuelo / 100)
+//
+// EJEMPLO (precio $100, base 10%, abuelo en Diamante bonus 80%):
+//   bonoBase  = $10
+//   bonoFinal = $10 × 1.80 = $18
+//
+// LÍMITES DE SEGURIDAD (aplicados en el controller admin):
+//   - PorcentajeAbueloComision máximo: 66%
+//   - BonusRangoAbuelo máximo configurado: 80% (Diamante)
+//   - Bono máximo posible: 66% × 1.80 = 118.8% del precio
+//   - Ingreso por ciclo: 3 × precio = 300%
+//   - Premio sponsor: 100%
+//   - Bono abuelo máximo: ~119%
+//   - Margen mínimo garantizado: ~81% del precio
 // ============================================================
 
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +38,6 @@ public class ServicioPremios
     private readonly ServicioNotificaciones _notificaciones;
 
     private const int REFERIDOS_POR_CICLO = 3;
-    private const decimal BONO_PADRE = 10000m;
 
     public ServicioPremios(ContextoAplicacion contexto, ServicioNotificaciones notificaciones)
     {
@@ -29,9 +45,6 @@ public class ServicioPremios
         _notificaciones = notificaciones;
     }
 
-    // ============================================================
-    // Procesa pago de referido y valida si corresponde premio
-    // ============================================================
     public async Task ProcesarPagoReferidoAsync(int referidoId)
     {
         using var tx = await _contexto.Database.BeginTransactionAsync();
@@ -48,7 +61,9 @@ public class ServicioPremios
             var sponsor = referido.Usuario;
             if (sponsor == null) return;
 
-            // 🔢 Contar referidos pagos
+            var producto = referido.Producto;
+            if (producto == null) return;
+
             var cantidadPagados = await _contexto.Referidos
                 .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
 
@@ -64,7 +79,7 @@ public class ServicioPremios
 
             for (int i = 0; i < nuevosCiclos; i++)
             {
-                await OtorgarPremioAsync(sponsor, referido.Producto!.Precio);
+                await OtorgarPremioYBonoAsync(sponsor, producto);
             }
 
             sponsor.CiclosCompletados = ciclosCalculados;
@@ -79,40 +94,71 @@ public class ServicioPremios
         }
     }
 
-    // ============================================================
-    // Otorga premio + bono al padre directo
-    // ============================================================
-    private async Task OtorgarPremioAsync(Usuario usuario, decimal montoPremio)
+    private async Task OtorgarPremioYBonoAsync(Usuario sponsor, Producto producto)
     {
-        // 🎁 Premio principal
-        usuario.SaldoDisponible += montoPremio;
+        // Premio principal al sponsor: 100% del precio
+        sponsor.SaldoDisponible += producto.Precio;
+
+        _contexto.MovimientosPuntos.Add(new MovimientoPuntos
+        {
+            UsuarioId = sponsor.Id,
+            CantidadPuntos = 0,
+            Monto = producto.Precio,
+            Motivo = $"Premio ciclo completo — {producto.Nombre}",
+            Nivel = 0,
+            FechaMovimiento = DateTime.UtcNow
+        });
 
         await _notificaciones.CrearAsync(
-            usuario.Id,
+            sponsor.Id,
             TipoNotificacion.Sistema,
-            "🎉 Premio obtenido",
-            $"Ganaste ${montoPremio:N0} por completar 3 referidos.",
+            "🎉 ¡Premio obtenido!",
+            $"Ganaste ${producto.Precio:N0} por completar 3 referidos del producto «{producto.Nombre}».",
             "/Usuario/Panel"
         );
 
-        // 💰 Bono al padre directo
-        if (usuario.IdUsuarioPadre.HasValue)
+        // Bono al abuelo (padre del sponsor)
+        if (!sponsor.IdUsuarioPadre.HasValue) return;
+
+        var abuelo = await _contexto.Users
+            .FirstOrDefaultAsync(u => u.Id == sponsor.IdUsuarioPadre.Value);
+
+        if (abuelo == null) return;
+
+        // Bono base desde el producto
+        decimal porcentajeBase = producto.PorcentajeAbueloComision;
+        decimal bonoBase = producto.Precio * (porcentajeBase / 100m);
+
+        // Amplificar con bonus de rango del abuelo
+        var rangoAbuelo = await _contexto.RangosUsuario
+            .Where(r => r.Activo && r.TipoRango == abuelo.TipoRangoActual)
+            .FirstOrDefaultAsync();
+
+        decimal bonusRango = rangoAbuelo?.BonusComisionPorcentaje ?? 0m;
+        decimal bonoFinal = Math.Round(bonoBase * (1m + bonusRango / 100m), 2);
+
+        abuelo.SaldoDisponible += bonoFinal;
+
+        _contexto.MovimientosPuntos.Add(new MovimientoPuntos
         {
-            var padre = await _contexto.Users
-                .FirstOrDefaultAsync(u => u.Id == usuario.IdUsuarioPadre.Value);
+            UsuarioId = abuelo.Id,
+            CantidadPuntos = 0,
+            Monto = bonoFinal,
+            Motivo = $"Bono abuelo — ciclo de {sponsor.Nombres} {sponsor.Apellidos} ({producto.Nombre})",
+            Nivel = 1,
+            FechaMovimiento = DateTime.UtcNow
+        });
 
-            if (padre != null)
-            {
-                padre.SaldoDisponible += BONO_PADRE;
+        string detalleBono = bonusRango > 0
+            ? $"base {porcentajeBase}% + bonus rango {bonusRango}%"
+            : $"{porcentajeBase}% del precio";
 
-                await _notificaciones.CrearAsync(
-                    padre.Id,
-                    TipoNotificacion.Sistema,
-                    "💰 Bono recibido",
-                    $"Recibiste ${BONO_PADRE:N0} porque tu referido completó un ciclo.",
-                    "/Usuario/Panel"
-                );
-            }
-        }
+        await _notificaciones.CrearAsync(
+            abuelo.Id,
+            TipoNotificacion.Sistema,
+            "💰 Bono recibido",
+            $"Recibiste ${bonoFinal:N0} porque tu referido {sponsor.Nombres} completó un ciclo. ({detalleBono})",
+            "/Usuario/Panel"
+        );
     }
 }

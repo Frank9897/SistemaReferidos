@@ -1,0 +1,149 @@
+@* VerProducto.cshtml — Views/Contento/VerProducto.cshtml *@
+@model RedGenealogica.Web.Models.Producto
+@{ ViewData["Title"] = Model.Nombre; }
+
+<div style="max-width:900px; margin:0 auto;">
+
+    <div style="margin-bottom:20px; display:flex; align-items:center; gap:12px;">
+        <a href="/Contento/MiContenido" style="color:var(--text-muted); font-size:13px;">← Mi contenido</a>
+        <span style="color:var(--text-dim);">/</span>
+        <span style="font-size:13px; color:var(--text-muted);">@Model.Nombre</span>
+    </div>
+
+    <div class="section-title">@Model.Nombre</div>
+    @if (!string.IsNullOrEmpty(Model.Descripcion))
+    {
+        <div class="section-subtitle">@Model.Descripcion</div>
+    }
+
+    @* ── PDF 1 ──────────────────────────────────────────────────── *@
+    @if (!string.IsNullOrEmpty(Model.PdfUrl1))
+    {
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+                <span class="card-title">📄 @(Model.PdfNombre1 ?? "Documento 1")</span>
+                <a href="/Contento/DescargarPdf/@Model.Id/1"
+                   class="btn btn-secondary btn-sm"
+                   download>
+                    ⬇️ Descargar
+                </a>
+            </div>
+
+            @* Lector en vivo con PDF.js *@
+            <div style="position:relative; width:100%; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden;">
+                <div id="pdfviewer1-loading" style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">
+                    Cargando PDF...
+                </div>
+                <canvas id="pdfCanvas1" style="width:100%; display:none; border-radius:var(--radius-sm);"></canvas>
+                <div id="pdfviewer1-controls" style="display:none; align-items:center; justify-content:center; gap:16px; padding:12px; background:var(--surface); border-top:1px solid var(--border);">
+                    <button onclick="cambiarPagina(1, -1)" class="btn btn-secondary btn-sm">← Anterior</button>
+                    <span id="pdfviewer1-info" style="font-size:13px; color:var(--text-muted);">Página 1 de 1</span>
+                    <button onclick="cambiarPagina(1, 1)" class="btn btn-secondary btn-sm">Siguiente →</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── PDF 2 ──────────────────────────────────────────────────── *@
+    @if (!string.IsNullOrEmpty(Model.PdfUrl2))
+    {
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+                <span class="card-title">📄 @(Model.PdfNombre2 ?? "Documento 2")</span>
+                <a href="/Contento/DescargarPdf/@Model.Id/2"
+                   class="btn btn-secondary btn-sm"
+                   download>
+                    ⬇️ Descargar
+                </a>
+            </div>
+
+            <div style="position:relative; width:100%; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden;">
+                <div id="pdfviewer2-loading" style="padding:40px; text-align:center; color:var(--text-muted); font-size:13px;">
+                    Cargando PDF...
+                </div>
+                <canvas id="pdfCanvas2" style="width:100%; display:none; border-radius:var(--radius-sm);"></canvas>
+                <div id="pdfviewer2-controls" style="display:none; align-items:center; justify-content:center; gap:16px; padding:12px; background:var(--surface); border-top:1px solid var(--border);">
+                    <button onclick="cambiarPagina(2, -1)" class="btn btn-secondary btn-sm">← Anterior</button>
+                    <span id="pdfviewer2-info" style="font-size:13px; color:var(--text-muted);">Página 1 de 1</span>
+                    <button onclick="cambiarPagina(2, 1)" class="btn btn-secondary btn-sm">Siguiente →</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (string.IsNullOrEmpty(Model.PdfUrl1) && string.IsNullOrEmpty(Model.PdfUrl2))
+    {
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-icon">🔧</div>
+                <p style="color:var(--text-muted);">El administrador aún no subió los PDFs de este producto.</p>
+            </div>
+        </div>
+    }
+</div>
+
+@* PDF.js desde CDN *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Estado por visor
+const visorState = {};
+
+async function cargarPdf(num, url) {
+    const canvas   = document.getElementById(`pdfCanvas${num}`);
+    const loading  = document.getElementById(`pdfviewer${num}-loading`);
+    const controls = document.getElementById(`pdfviewer${num}-controls`);
+    const info     = document.getElementById(`pdfviewer${num}-info`);
+
+    try {
+        const pdf = await pdfjsLib.getDocument('/' + url).promise;
+        visorState[num] = { pdf, pagina: 1, total: pdf.numPages };
+        await renderPagina(num);
+        canvas.style.display = 'block';
+        controls.style.display = 'flex';
+        loading.style.display = 'none';
+        info.textContent = `Página 1 de ${pdf.numPages}`;
+    } catch (err) {
+        loading.textContent = 'Error al cargar el PDF.';
+        console.error(err);
+    }
+}
+
+async function renderPagina(num) {
+    const { pdf, pagina } = visorState[num];
+    const canvas = document.getElementById(`pdfCanvas${num}`);
+    const ctx    = canvas.getContext('2d');
+    const info   = document.getElementById(`pdfviewer${num}-info`);
+
+    const page     = await pdf.getPage(pagina);
+    const viewport = page.getViewport({ scale: canvas.parentElement.clientWidth / page.getViewport({ scale: 1 }).width });
+
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    info.textContent = `Página ${pagina} de ${visorState[num].total}`;
+}
+
+async function cambiarPagina(num, delta) {
+    const state = visorState[num];
+    const nueva = state.pagina + delta;
+    if (nueva < 1 || nueva > state.total) return;
+    state.pagina = nueva;
+    await renderPagina(num);
+}
+
+// Inicializar los visores con las URLs del servidor
+document.addEventListener('DOMContentLoaded', () => {
+    @if (!string.IsNullOrEmpty(Model.PdfUrl1))
+    {
+        <text>cargarPdf(1, '@Model.PdfUrl1');</text>
+    }
+    @if (!string.IsNullOrEmpty(Model.PdfUrl2))
+    {
+        <text>cargarPdf(2, '@Model.PdfUrl2');</text>
+    }
+});
+</script>
