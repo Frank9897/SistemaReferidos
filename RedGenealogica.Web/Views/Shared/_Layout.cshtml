@@ -12,14 +12,15 @@
     <header class="navbar-custom">
         <nav class="nav-container">
 
-            <div class="logo">◆ RedGenealogica</div>
+            <a href="/" class="logo" style="text-decoration:none;">◆ RedGenealogica</a>
 
             <div class="nav-links">
                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                 {
-                    <a href="/Usuario/Panel">Panel</a>
-                    <a href="/Contento/MiContenido">📚 Mi contenido</a>
-                    <a href="/Genealogia">Árbol</a>
+                    <a href="/">Inicio</a>
+                    <a href="/Usuario/Panel">Mi panel</a>
+                    <a href="/Contento/MiContenido">📚 Contenido</a>
+                    <a href="/Referidos/MisReferidos">Referidos</a>
                     <a href="/Ranking">Ranking</a>
 
                     @if (User.IsInRole("Admin"))
@@ -57,6 +58,7 @@
                 }
                 else
                 {
+                    <a href="/#como-funciona">Cómo funciona</a>
                     <a href="/Autenticacion/Login">Iniciar sesión</a>
                     <a href="/Autenticacion/Registro" class="btn btn-primary btn-sm">Registrarse</a>
                 }

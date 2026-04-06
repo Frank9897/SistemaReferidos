@@ -67,8 +67,7 @@
                         </td>
                         <td style="text-align:center;">
                             @{
-                                int pdfs = (string.IsNullOrEmpty(p.PdfUrl1) ? 0 : 1) +
-                                           (string.IsNullOrEmpty(p.PdfUrl2) ? 0 : 1);
+                                int pdfs = p.Pdfs.Count;
                             }
                             @if (pdfs > 0)
                             {

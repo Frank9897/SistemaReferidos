@@ -49,8 +49,7 @@ else
                 </div>
 
                 @{
-                    int cantPdfs = (string.IsNullOrEmpty(p.PdfUrl1) ? 0 : 1) +
-                                   (string.IsNullOrEmpty(p.PdfUrl2) ? 0 : 1);
+                    int cantPdfs = p.Pdfs.Count;
                 }
                 <div style="font-size:12px; color:var(--text-muted);">
                     @cantPdfs documento@(cantPdfs != 1 ? "s" : "") disponible@(cantPdfs != 1 ? "s" : "")

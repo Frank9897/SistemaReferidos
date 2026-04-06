@@ -26,7 +26,8 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
     public DbSet<RangoUsuario>     RangosUsuario     => Set<RangoUsuario>();
     public DbSet<RegistroWebhook>  RegistrosWebhook  => Set<RegistroWebhook>();
     public DbSet<SolicitudRetiro>  SolicitudesRetiro => Set<SolicitudRetiro>();
-    public DbSet<Notificacion>     Notificaciones    => Set<Notificacion>();  // NUEVO
+    public DbSet<Notificacion>     Notificaciones    => Set<Notificacion>();
+    public DbSet<ProductoPdf>      ProductoPdfs      => Set<ProductoPdf>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,10 +62,6 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
             entity.Property(x => x.ImagenUrl).HasMaxLength(250);
             entity.Property(x => x.Precio).HasPrecision(18, 2);
             entity.Property(x => x.PorcentajeAbueloComision).HasPrecision(5, 2).HasDefaultValue(10m);
-            entity.Property(x => x.PdfUrl1).HasMaxLength(350);
-            entity.Property(x => x.PdfNombre1).HasMaxLength(120);
-            entity.Property(x => x.PdfUrl2).HasMaxLength(350);
-            entity.Property(x => x.PdfNombre2).HasMaxLength(120);
         });
 
         // ── Pago ─────────────────────────────────────────────────────
@@ -185,6 +182,20 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
         modelBuilder.Entity<RegistroWebhook>(entity =>
         {
             entity.ToTable("RegistrosWebhook");
+        });
+
+
+        // ── ProductoPdf ───────────────────────────────────────────────
+        modelBuilder.Entity<ProductoPdf>(entity =>
+        {
+            entity.ToTable("ProductoPdfs");
+            entity.Property(x => x.Nombre).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Url).HasMaxLength(350).IsRequired();
+
+            entity.HasOne(x => x.Producto)
+                .WithMany(x => x.Pdfs)
+                .HasForeignKey(x => x.ProductoId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ── Seeds de rangos ──────────────────────────────────────────

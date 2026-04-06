@@ -146,38 +146,49 @@
 
         @* ── PDFs del producto digital ─────────────────────────────── *@
         <div class="card" style="margin-bottom:14px;">
-            <div class="card-header"><span class="card-title">📄 Contenido digital (PDFs)</span></div>
+            <div class="card-header">
+                <span class="card-title">📄 Documentos digitales</span>
+                <button type="button" onclick="agregarFila()" class="btn btn-secondary btn-sm">+ Agregar documento</button>
+            </div>
             <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
-                Los PDFs se desbloquean automáticamente cuando el comprador confirma el pago. Solo se aceptan archivos <strong>.pdf</strong>.
+                Podés subir tantos PDFs como quieras. Cada uno es una parte o módulo del producto. Se desbloquean al confirmar el pago.
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                <div>
-                    <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">PDF 1</div>
-                    <div class="form-group">
-                        <label>Nombre visible del PDF 1</label>
-                        <input asp-for="PdfNombre1" placeholder="Ej: Módulo 1 — Introducción" />
-                    </div>
-                    <div class="form-group">
-                        <label>Archivo PDF 1</label>
-                        <input type="file" name="archivoPdf1" accept=".pdf"
-                               style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; width:100%; color:var(--text); font-size:13px;" />
-                    </div>
-                </div>
-                <div>
-                    <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">PDF 2</div>
-                    <div class="form-group">
-                        <label>Nombre visible del PDF 2</label>
-                        <input asp-for="PdfNombre2" placeholder="Ej: Módulo 2 — Avanzado" />
-                    </div>
-                    <div class="form-group">
-                        <label>Archivo PDF 2</label>
-                        <input type="file" name="archivoPdf2" accept=".pdf"
-                               style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; width:100%; color:var(--text); font-size:13px;" />
-                    </div>
-                </div>
+            <div id="filas-pdf" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- fila dinámica inicial -->
             </div>
+
+            <button type="button" onclick="agregarFila()" class="btn btn-secondary btn-sm" style="margin-top:12px; width:100%; justify-content:center;">
+                + Agregar otro documento
+            </button>
         </div>
+
+        <script>
+        let filaPdfIdx = 0;
+        function agregarFila() {
+            filaPdfIdx++;
+            const cont = document.getElementById('filas-pdf');
+            const fila = document.createElement('div');
+            fila.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px;';
+            fila.innerHTML = `
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px; margin-bottom:4px; display:block;">Nombre del documento</label>
+                    <input type="text" name="nombresPdf" placeholder="Ej: Parte 1 — Jabones y detergentes"
+                           style="width:100%;" />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:12px; margin-bottom:4px; display:block;">Archivo PDF</label>
+                    <input type="file" name="archivosPdf" accept=".pdf"
+                           style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />
+                </div>
+                <button type="button" onclick="this.closest('div[style]').remove()"
+                        class="btn btn-danger btn-sm" style="height:38px; flex-shrink:0;">✕</button>
+            `;
+            cont.appendChild(fila);
+        }
+        // Agregar una fila inicial al cargar
+        document.addEventListener('DOMContentLoaded', agregarFila);
+        </script>
 
         <div style="display:flex; gap:10px;">
             <button type="submit" id="btn-submit" class="btn btn-primary">Crear producto</button>

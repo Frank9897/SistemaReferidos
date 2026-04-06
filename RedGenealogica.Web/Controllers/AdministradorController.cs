@@ -160,6 +160,7 @@ public class AdministradorController : Controller
     public async Task<IActionResult> Productos()
     {
         var productos = await _contexto.Productos
+            .Include(p => p.Pdfs)
             .OrderByDescending(p => p.FechaCreacion)
             .ToListAsync();
 
@@ -175,14 +176,12 @@ public class AdministradorController : Controller
     [HttpPost]
     public async Task<IActionResult> CrearProducto(
         Producto modelo,
-        IFormFile? archivoPdf1,
-        IFormFile? archivoPdf2)
+        List<IFormFile>? archivosPdf,
+        List<string>? nombresPdf)
     {
         if (modelo.PorcentajeAbueloComision > 66)
-        {
             ModelState.AddModelError("PorcentajeAbueloComision",
-                "El porcentaje máximo permitido es 66% para garantizar sostenibilidad.");
-        }
+                "El porcentaje máximo permitido es 66%.");
 
         if (!ModelState.IsValid)
             return View(modelo);
@@ -193,8 +192,8 @@ public class AdministradorController : Controller
         _contexto.Productos.Add(modelo);
         await _contexto.SaveChangesAsync();
 
-        await GuardarPdfs(modelo, archivoPdf1, archivoPdf2);
-        await _contexto.SaveChangesAsync();
+        if (archivosPdf != null && archivosPdf.Any())
+            await GuardarPdfs(modelo.Id, archivosPdf, nombresPdf ?? []);
 
         TempData["Exito"] = $"Producto '{modelo.Nombre}' creado correctamente.";
         return RedirectToAction("Productos");
@@ -203,7 +202,9 @@ public class AdministradorController : Controller
     [HttpGet]
     public async Task<IActionResult> EditarProducto(int id)
     {
-        var producto = await _contexto.Productos.FindAsync(id);
+        var producto = await _contexto.Productos
+            .Include(p => p.Pdfs.OrderBy(pdf => pdf.Orden))
+            .FirstOrDefaultAsync(p => p.Id == id);
         if (producto == null) return NotFound();
 
         return View(producto);
@@ -212,14 +213,12 @@ public class AdministradorController : Controller
     [HttpPost]
     public async Task<IActionResult> EditarProducto(
         Producto modelo,
-        IFormFile? archivoPdf1,
-        IFormFile? archivoPdf2)
+        List<IFormFile>? archivosPdf,
+        List<string>? nombresPdf)
     {
         if (modelo.PorcentajeAbueloComision > 66)
-        {
             ModelState.AddModelError("PorcentajeAbueloComision",
-                "El porcentaje máximo permitido es 66% para garantizar sostenibilidad.");
-        }
+                "El porcentaje máximo permitido es 66%.");
 
         if (!ModelState.IsValid)
             return View(modelo);
@@ -234,15 +233,13 @@ public class AdministradorController : Controller
         producto.ImagenUrl = modelo.ImagenUrl;
         producto.PorcentajeAbueloComision = modelo.PorcentajeAbueloComision;
 
-        // Solo pisar PDF si se subió uno nuevo
-        if (archivoPdf1 != null) producto.PdfNombre1 = modelo.PdfNombre1;
-        if (archivoPdf2 != null) producto.PdfNombre2 = modelo.PdfNombre2;
-
-        await GuardarPdfs(producto, archivoPdf1, archivoPdf2);
         await _contexto.SaveChangesAsync();
 
+        if (archivosPdf != null && archivosPdf.Any())
+            await GuardarPdfs(producto.Id, archivosPdf, nombresPdf ?? []);
+
         TempData["Exito"] = $"Producto '{producto.Nombre}' actualizado.";
-        return RedirectToAction("Productos");
+        return RedirectToAction("EditarProducto", new { id = producto.Id });
     }
 
     [HttpPost]
@@ -287,46 +284,69 @@ public class AdministradorController : Controller
         return RedirectToAction("Productos");
     }
 
-    // ── Helper: guardar archivos PDF subidos ────────────────────
-    private static readonly string[] _extensionesPdfPermitidas = [".pdf"];
+    // ── Helper: guardar N archivos PDF ──────────────────────────────
+    private static readonly string[] _extPdf = [".pdf"];
 
     private async Task GuardarPdfs(
-        Producto producto,
-        IFormFile? pdf1,
-        IFormFile? pdf2)
+        int productoId,
+        List<IFormFile> archivos,
+        List<string> nombres)
     {
-        var carpeta = Path.Combine(_env.WebRootPath, "pdfs", producto.Id.ToString());
+        var carpeta = Path.Combine(_env.WebRootPath, "pdfs", productoId.ToString());
         Directory.CreateDirectory(carpeta);
 
-        if (pdf1 != null && pdf1.Length > 0)
+        // Obtener el máximo orden actual
+        var ordenActual = await _contexto.ProductoPdfs
+            .Where(p => p.ProductoId == productoId)
+            .MaxAsync(p => (int?)p.Orden) ?? 0;
+
+        for (int i = 0; i < archivos.Count; i++)
         {
-            var ext = Path.GetExtension(pdf1.FileName).ToLowerInvariant();
-            if (_extensionesPdfPermitidas.Contains(ext))
+            var archivo = archivos[i];
+            if (archivo == null || archivo.Length == 0) continue;
+
+            var ext = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!_extPdf.Contains(ext)) continue;
+
+            ordenActual++;
+            var nombreArchivo = $"doc{ordenActual}_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
+            var rutaFisica = Path.Combine(carpeta, nombreArchivo);
+
+            await using var fs = new FileStream(rutaFisica, FileMode.Create);
+            await archivo.CopyToAsync(fs);
+
+            var nombreVisible = i < nombres.Count && !string.IsNullOrWhiteSpace(nombres[i])
+                ? nombres[i]
+                : Path.GetFileNameWithoutExtension(archivo.FileName);
+
+            _contexto.ProductoPdfs.Add(new ProductoPdf
             {
-                var nombre = $"pdf1_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
-                var ruta   = Path.Combine(carpeta, nombre);
-                await using var fs = new FileStream(ruta, FileMode.Create);
-                await pdf1.CopyToAsync(fs);
-                producto.PdfUrl1 = $"pdfs/{producto.Id}/{nombre}";
-                if (string.IsNullOrWhiteSpace(producto.PdfNombre1))
-                    producto.PdfNombre1 = Path.GetFileNameWithoutExtension(pdf1.FileName);
-            }
+                ProductoId  = productoId,
+                Nombre      = nombreVisible,
+                Url         = $"pdfs/{productoId}/{nombreArchivo}",
+                Orden       = ordenActual,
+                FechaSubida = DateTime.UtcNow
+            });
         }
 
-        if (pdf2 != null && pdf2.Length > 0)
-        {
-            var ext = Path.GetExtension(pdf2.FileName).ToLowerInvariant();
-            if (_extensionesPdfPermitidas.Contains(ext))
-            {
-                var nombre = $"pdf2_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf";
-                var ruta   = Path.Combine(carpeta, nombre);
-                await using var fs = new FileStream(ruta, FileMode.Create);
-                await pdf2.CopyToAsync(fs);
-                producto.PdfUrl2 = $"pdfs/{producto.Id}/{nombre}";
-                if (string.IsNullOrWhiteSpace(producto.PdfNombre2))
-                    producto.PdfNombre2 = Path.GetFileNameWithoutExtension(pdf2.FileName);
-            }
-        }
+        await _contexto.SaveChangesAsync();
+    }
+
+    // ── Helper: eliminar un PDF específico ───────────────────────────
+    [HttpPost]
+    public async Task<IActionResult> EliminarPdf(int pdfId, int productoId)
+    {
+        var pdf = await _contexto.ProductoPdfs.FindAsync(pdfId);
+        if (pdf == null || pdf.ProductoId != productoId) return NotFound();
+
+        var ruta = Path.Combine(_env.WebRootPath, pdf.Url.Replace('/', Path.DirectorySeparatorChar));
+        if (System.IO.File.Exists(ruta)) System.IO.File.Delete(ruta);
+
+        _contexto.ProductoPdfs.Remove(pdf);
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Documento '{pdf.Nombre}' eliminado.";
+        return RedirectToAction("EditarProducto", new { id = productoId });
     }
 
     // ================================================================
