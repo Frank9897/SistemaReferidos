@@ -11,10 +11,10 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
-
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 namespace RedGenealogica.Web.Data;
 
-public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, int>
+public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, int>, IDataProtectionKeyContext
 {
     public ContextoAplicacion(DbContextOptions<ContextoAplicacion> options)
         : base(options) { }
@@ -28,7 +28,7 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
     public DbSet<SolicitudRetiro>  SolicitudesRetiro => Set<SolicitudRetiro>();
     public DbSet<Notificacion>     Notificaciones    => Set<Notificacion>();
     public DbSet<ProductoPdf>      ProductoPdfs      => Set<ProductoPdf>();
-
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
