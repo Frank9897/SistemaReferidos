@@ -826,6 +826,8 @@ label {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  padding-bottom: 2px;
+  scroll-snap-type: x mandatory;
 }
 .admin-tabs::-webkit-scrollbar { display: none; }
 
@@ -839,6 +841,7 @@ label {
   margin-bottom: -1px;
   white-space: nowrap;
   flex-shrink: 0;
+  scroll-snap-align: start;
 }
 .admin-tab:hover { color: var(--text); }
 .admin-tab.active { color: var(--sky); border-bottom-color: var(--sky); }
