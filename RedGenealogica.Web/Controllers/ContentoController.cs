@@ -22,14 +22,27 @@ public class ContentoController : Controller
     public async Task<IActionResult> MiContenido()
     {
         var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var esAdmin   = User.IsInRole("Admin");
 
-        var productos = await _contexto.Pagos
-            .Where(p => p.UsuarioId == usuarioId && p.Confirmado)
-            .Select(p => p.Producto!)
-            .Where(p => p != null)
-            .Distinct()
-            .Include(p => p.Pdfs)
-            .ToListAsync();
+        List<RedGenealogica.Web.Models.Producto> productos;
+
+        if (esAdmin)
+        {
+            productos = await _contexto.Productos
+                .Where(p => p.Activo)
+                .Include(p => p.Pdfs)
+                .ToListAsync();
+        }
+        else
+        {
+            productos = await _contexto.Pagos
+                .Where(p => p.UsuarioId == usuarioId && p.Confirmado)
+                .Select(p => p.Producto!)
+                .Where(p => p != null)
+                .Distinct()
+                .Include(p => p.Pdfs)
+                .ToListAsync();
+        }
 
         return View(productos);
     }
