@@ -15,11 +15,10 @@ RUN dotnet publish RedGenealogica.Web.csproj -c Release -o /app/publish --no-res
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
-# Crear carpeta para PDFs subidos (Railway tiene filesystem efímero,
-# pero sirve para pruebas. Para producción real usar S3/Cloudflare R2)
-RUN mkdir -p wwwroot/pdfs
-
 COPY --from=build /app/publish .
+
+# Crear carpeta para PDFs DESPUÉS del COPY para que no se pise
+RUN mkdir -p wwwroot/pdfs && chmod 777 wwwroot/pdfs
 
 # Railway asigna el puerto via variable PORT
 ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
