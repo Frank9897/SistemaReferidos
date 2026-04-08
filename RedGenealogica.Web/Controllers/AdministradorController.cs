@@ -553,4 +553,32 @@ public class AdministradorController : Controller
         return View();
     }
 
+    // ================================================================
+    // CONFIGURACIÓN
+    // ================================================================
+
+    [HttpGet]
+    public async Task<IActionResult> Configuracion()
+    {
+        var configs = await _contexto.Configuraciones
+            .OrderBy(c => c.Clave)
+            .ToListAsync();
+        return View(configs);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GuardarConfiguracion(int id, string valor)
+    {
+        var config = await _contexto.Configuraciones.FindAsync(id);
+        if (config == null) return NotFound();
+
+        config.Valor = valor.Trim();
+        config.FechaModificacion = DateTime.UtcNow;
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Configuración '{config.Clave}' actualizada.";
+        return RedirectToAction("Configuracion");
+    }
+
 }

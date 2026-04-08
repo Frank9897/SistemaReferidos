@@ -29,6 +29,7 @@ public class ContextoAplicacion : IdentityDbContext<Usuario, IdentityRole<int>, 
     public DbSet<Notificacion>     Notificaciones    => Set<Notificacion>();
     public DbSet<ProductoPdf>      ProductoPdfs      => Set<ProductoPdf>();
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+    public DbSet<Configuracion> Configuraciones => Set<Configuracion>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

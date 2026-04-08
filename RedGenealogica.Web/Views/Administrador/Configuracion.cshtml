@@ -1,0 +1,52 @@
+@model List<RedGenealogica.Web.Models.Configuracion>
+@{ ViewData["Title"] = "Configuración"; }
+
+<div class="section-title">⚙️ Panel de administración</div>
+<div class="section-subtitle">Parámetros del sistema</div>
+
+<div class="admin-tabs">
+    <a href="/Administrador" class="admin-tab">Dashboard</a>
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+    <a href="/Administrador/Arbol" class="admin-tab">Árbol global</a>
+    <a href="/Administrador/Configuracion" class="admin-tab active">Configuración</a>
+</div>
+
+<div class="card" style="max-width:680px;">
+    <div class="card-header">
+        <span class="card-title">🔧 Parámetros configurables</span>
+    </div>
+
+    @foreach (var config in Model)
+    {
+        <form method="post" action="/Administrador/GuardarConfiguracion">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@config.Id" />
+
+            <div style="padding:16px 0; border-bottom:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+                    <div style="flex:1; min-width:200px;">
+                        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">
+                            @config.Clave
+                        </div>
+                        @if (!string.IsNullOrEmpty(config.Descripcion))
+                        {
+                            <div style="font-size:12px; color:var(--text-muted);">@config.Descripcion</div>
+                        }
+                        <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">
+                            Última modificación: @config.FechaModificacion.ToString("dd/MM/yy HH:mm")
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input name="valor" value="@config.Valor"
+                               style="width:140px; margin:0; padding:8px 12px; font-size:14px;" />
+                        <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+</div>
+
+@await Html.PartialAsync("_BotonVolver")

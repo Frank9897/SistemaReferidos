@@ -16,22 +16,21 @@ public class ServicioRetiros
 {
     private readonly ContextoAplicacion _contexto;
     private readonly ServicioNotificaciones _servicioNotificaciones;
-    private readonly IConfiguration _configuration;
 
     public ServicioRetiros(
         ContextoAplicacion contexto,
-        ServicioNotificaciones servicioNotificaciones,
-        IConfiguration configuration)
+        ServicioNotificaciones servicioNotificaciones)
     {
         _contexto = contexto;
         _servicioNotificaciones = servicioNotificaciones;
-        _configuration = configuration;
     }
 
     public async Task<(bool exito, string mensaje)> SolicitarRetiroAsync(
         int usuarioId, decimal monto, string cbuAlias)
     {
-        var montoMinimo = _configuration.GetValue<decimal>("Retiros:MontoMinimo", 500m);
+        var configMonto = await _contexto.Configuraciones
+            .FirstOrDefaultAsync(c => c.Clave == "retiros_monto_minimo");
+        var montoMinimo = decimal.TryParse(configMonto?.Valor, out var m) ? m : 500m;
         if (monto <= 0)
             return (false, "El monto debe ser mayor a cero");
         if (monto < montoMinimo)
