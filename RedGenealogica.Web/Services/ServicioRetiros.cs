@@ -35,6 +35,8 @@ public class ServicioRetiros
             return (false, "El monto debe ser mayor a cero");
         if (monto < montoMinimo)
             return (false, $"El monto mínimo de retiro es ${montoMinimo:N0}");
+        if (!ValidarCbuAlias(cbuAlias))
+        return (false, "CBU o alias inválido. El CBU debe tener 22 dígitos numéricos, o el alias entre 6 y 20 caracteres sin espacios.");
 
         // Si no envía CBU, intentar usar el del perfil
         if (string.IsNullOrWhiteSpace(cbuAlias))
@@ -185,5 +187,20 @@ public class ServicioRetiros
             .Where(s => s.UsuarioId == usuarioId)
             .OrderByDescending(s => s.FechaSolicitud)
             .ToListAsync();
+    }
+
+    private static bool ValidarCbuAlias(string valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return false;
+
+        valor = valor.Trim();
+
+        // CBU: exactamente 22 dígitos
+        if (valor.All(char.IsDigit))
+            return valor.Length == 22;
+
+        // Alias: 6-20 caracteres, solo letras, números, puntos y guiones
+        if (valor.Length < 6 || valor.Length > 20) return false;
+        return valor.All(c => char.IsLetterOrDigit(c) || c == '.' || c == '-');
     }
 }
