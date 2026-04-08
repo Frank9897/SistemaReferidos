@@ -8,6 +8,8 @@ using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +53,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<ContextoAplicacion>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("login", opt =>
+    {
+        opt.PermitLimit        = 10;
+        opt.Window             = TimeSpan.FromMinutes(5);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit         = 0;
+    });
+
+    options.RejectionStatusCode = 429;
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -71,6 +86,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllerRoute(
     name: "default",

@@ -187,6 +187,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Suspender(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
@@ -206,6 +207,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Reactivar(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
@@ -451,6 +453,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AprobarRetiro(
         int id, string referenciaTransferencia, string? nota)
     {
@@ -468,6 +471,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CompletarRetiro(int id, string referenciaTransferencia)
     {
         var (exito, mensaje) = await _servicioRetiros.CompletarRetiroAsync(
@@ -482,6 +486,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> RechazarRetiro(int id, string motivo)
     {
         var adminId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
@@ -501,6 +506,7 @@ public class AdministradorController : Controller
     // RESET CONTRASEÑA
     // ================================================================
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetearPassword(int id, string nuevaPassword)
     {
         var usuario = await _userManager.FindByIdAsync(id.ToString());

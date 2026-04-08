@@ -86,6 +86,7 @@ public class AutenticacionController : Controller
     // permitir el acceso, sin importar que las credenciales sean correctas.
     // ----------------------------------------------------------------
     [HttpPost]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("login")]
     public async Task<IActionResult> Login(LoginViewModel modelo)
     {
         if (!ModelState.IsValid)

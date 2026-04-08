@@ -221,6 +221,7 @@ public class UsuarioController : Controller
     // Procesa la solicitud de retiro.
     // ----------------------------------------------------------------
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> SolicitarRetiro(decimal monto, string cbuAlias)
     {
         var usuario = await _userManager.GetUserAsync(User);
