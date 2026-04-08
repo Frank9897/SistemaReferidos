@@ -51,7 +51,7 @@
                 @foreach (var p in Model)
                 {
                     <tr>
-                        <td>
+                        <td data-label="Producto">
                             <strong>@p.Nombre</strong>
                             @if (!string.IsNullOrWhiteSpace(p.Descripcion))
                             {
@@ -60,51 +60,34 @@
                                 </div>
                             }
                         </td>
-                        <td style="color:var(--sky); font-weight:600; white-space:nowrap;">$@p.Precio.ToString("N0")</td>
-                        <td style="text-align:center;">
-                            @{
-                                var pct = p.PorcentajeAbueloComision;
-                                var badgePct = pct > 30 ? "badge-warning" : "badge-info";
-                            }
+                        <td data-label="Precio" style="color:var(--sky); font-weight:600;">$@p.Precio.ToString("N0")</td>
+                        <td data-label="% Bono">
+                            @{ var pct = p.PorcentajeAbueloComision; var badgePct = pct > 30 ? "badge-warning" : "badge-info"; }
                             <span class="badge @badgePct">@pct%</span>
                         </td>
-                        <td style="text-align:center;">
-                            @{
-                                int pdfs = p.Pdfs.Count;
-                            }
-                            @if (pdfs > 0)
-                            {
-                                <span class="badge badge-success">@pdfs PDF@(pdfs > 1 ? "s" : "")</span>
-                            }
-                            else
-                            {
-                                <span class="badge badge-muted">Sin PDF</span>
-                            }
+                        <td data-label="PDFs">
+                            @{ int pdfs = p.Pdfs.Count; }
+                            @if (pdfs > 0) { <span class="badge badge-success">@pdfs PDF@(pdfs > 1 ? "s" : "")</span> }
+                            else           { <span class="badge badge-muted">Sin PDF</span> }
                         </td>
-                        <td>@(p.StockDisponible?.ToString() ?? "∞")</td>
-                        <td>
-                            @if (p.Activo)
-                            { <span class="badge badge-success">Activo</span> }
-                            else
-                            { <span class="badge badge-danger">Inactivo</span> }
+                        <td data-label="Stock">@(p.StockDisponible?.ToString() ?? "∞")</td>
+                        <td data-label="Estado">
+                            @if (p.Activo) { <span class="badge badge-success">Activo</span> }
+                            else           { <span class="badge badge-danger">Inactivo</span> }
                         </td>
-                        <td>
+                        <td data-label="Acciones">
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                 <a href="/Administrador/EditarProducto/@p.Id" class="btn btn-secondary btn-sm">Editar</a>
-
-                                <form method="post" action="/Administrador/ToggleProducto/@p.Id" style="display:inline;">
+                                <form method="post" action="/Administrador/ToggleProducto/@p.Id">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm @(p.Activo ? "btn-warning" : "btn-success")" style="font-size:12px; padding:5px 10px;">
+                                    <button type="submit" class="btn btn-sm @(p.Activo ? "btn-warning" : "btn-success")">
                                         @(p.Activo ? "Desactivar" : "Activar")
                                     </button>
                                 </form>
-
-                                <form method="post" action="/Administrador/EliminarProducto/@p.Id" style="display:inline;"
-                                      onsubmit="return confirm('¿Eliminar «@p.Nombre»? Esta acción no se puede deshacer.');">
+                                <form method="post" action="/Administrador/EliminarProducto/@p.Id"
+                                    onsubmit="return confirm('¿Eliminar «@p.Nombre»?');">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-danger btn-sm" style="font-size:12px; padding:5px 10px;">
-                                        Eliminar
-                                    </button>
+                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
                                 </form>
                             </div>
                         </td>
