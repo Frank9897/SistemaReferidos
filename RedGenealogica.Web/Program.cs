@@ -37,6 +37,10 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.User.RequireUniqueEmail = true;
     options.SignIn.RequireConfirmedAccount = false;
+    /*Suspensión automática por intentos fallidos*/
+    options.Lockout.DefaultLockoutTimeSpan  = TimeSpan.FromMinutes(15);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers      = true;
 })
 .AddEntityFrameworkStores<ContextoAplicacion>()
 .AddDefaultTokenProviders()
@@ -83,6 +87,17 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+/*Headers de seguridad HTTP — el navegador no sabe que tu app no debe cargar en iframes de otros sitios, ni ejecutar scripts de orígenes externos. Un middleware agrega esto en un bloque en Program.cs. Protege contra clickjacking y XSS básico.*/
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Frame-Options"]        = "DENY";
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-XSS-Protection"]       = "1; mode=block";
+    context.Response.Headers["Referrer-Policy"]        = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"]     = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
+
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
