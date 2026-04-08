@@ -16,20 +16,26 @@ public class ServicioRetiros
 {
     private readonly ContextoAplicacion _contexto;
     private readonly ServicioNotificaciones _servicioNotificaciones;
+    private readonly IConfiguration _configuration;
 
     public ServicioRetiros(
         ContextoAplicacion contexto,
-        ServicioNotificaciones servicioNotificaciones)
+        ServicioNotificaciones servicioNotificaciones,
+        IConfiguration configuration)
     {
         _contexto = contexto;
         _servicioNotificaciones = servicioNotificaciones;
+        _configuration = configuration;
     }
 
     public async Task<(bool exito, string mensaje)> SolicitarRetiroAsync(
         int usuarioId, decimal monto, string cbuAlias)
     {
+        var montoMinimo = _configuration.GetValue<decimal>("Retiros:MontoMinimo", 500m);
         if (monto <= 0)
             return (false, "El monto debe ser mayor a cero");
+        if (monto < montoMinimo)
+            return (false, $"El monto mínimo de retiro es ${montoMinimo:N0}");
 
         // Si no envía CBU, intentar usar el del perfil
         if (string.IsNullOrWhiteSpace(cbuAlias))
