@@ -828,6 +828,8 @@ label {
   scrollbar-width: none;
   padding-bottom: 2px;
   scroll-snap-type: x mandatory;
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
 .admin-tabs::-webkit-scrollbar { display: none; }
 
@@ -1179,4 +1181,22 @@ label {
   /* Ocultar columnas menos importantes en mobile muy pequeño — revertir el override anterior */
   .table th:nth-child(n+4),
   .table td:nth-child(n+4) { display: flex; }
+
+  /* Excluir tabla de rangos del comportamiento card en mobile */
+  .tabla-rangos thead { display: table-header-group; }
+  .tabla-rangos tbody tr {
+      display: table-row;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      margin-bottom: 0;
+      padding: 0;
+  }
+  .tabla-rangos td {
+      display: table-cell;
+      padding: 8px 6px;
+      font-size: 11px;
+  }
+  .tabla-rangos td::before { display: none; }
+
 }
