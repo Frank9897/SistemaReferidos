@@ -16,6 +16,7 @@
     <div class="section-subtitle">@Model.Nombre</div>
 
     <form method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <div asp-validation-summary="All" class="validation-summary-errors"></div>
 

@@ -422,6 +422,7 @@ public class AdministradorController : Controller
 
     // ── Helper: eliminar un PDF específico ───────────────────────────
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EliminarPdf(int pdfId, int productoId)
     {
         var pdf = await _contexto.ProductoPdfs.FindAsync(pdfId);
