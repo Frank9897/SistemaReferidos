@@ -164,10 +164,11 @@
                                 <span>@pdf.Nombre</span>
                                 <a href="/@pdf.Url" target="_blank" style="color:var(--text-muted); font-size:12px;">Ver →</a>
                             </div>
-                            <form method="post" action="/Administrador/EliminarPdf/@pdf.Id"
-                                  onsubmit="return confirm('¿Eliminar el documento «@pdf.Nombre»?');"
-                                  style="display:inline;">
+                            <form method="post" action="/Administrador/EliminarPdf"
+                                onsubmit="return confirm('¿Eliminar el documento «@pdf.Nombre»?');"
+                                style="display:inline;">
                                 @Html.AntiForgeryToken()
+                                <input type="hidden" name="pdfId" value="@pdf.Id" />
                                 <input type="hidden" name="productoId" value="@Model.Id" />
                                 <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px; font-size:12px;">✕</button>
                             </form>
