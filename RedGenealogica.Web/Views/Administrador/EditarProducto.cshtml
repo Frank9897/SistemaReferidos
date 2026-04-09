@@ -221,7 +221,7 @@ function agregarFila() {
             <input type="file" name="archivosPdf" accept=".pdf"
                    style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />
         </div>
-        <button type="button" onclick="this.closest('div').remove()"
+        <button type="button" onclick="this.closest('div[style]').remove()"
                 class="btn btn-danger btn-sm" style="height:38px;">✕</button>
     `;
     cont.appendChild(fila);
