@@ -15,12 +15,13 @@
     <div class="section-title">✏️ Editar producto</div>
     <div class="section-subtitle">@Model.Nombre</div>
 
+    @* ── Form principal ────────────────────────────────────────────── *@
     <form method="post" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <div asp-validation-summary="All" class="validation-summary-errors"></div>
 
-        @* ── Datos básicos ─────────────────────────────────────────── *@
+        @* ── Datos básicos ──────────────────────────────────────────── *@
         <div class="card" style="margin-bottom:14px;">
             <div class="card-header"><span class="card-title">📋 Datos generales</span></div>
 
@@ -53,7 +54,7 @@
             </div>
         </div>
 
-        @* ── Comisión al abuelo ────────────────────────────────────── *@
+        @* ── Comisión ───────────────────────────────────────────────── *@
         <div class="card" style="margin-bottom:14px;">
             <div class="card-header">
                 <span class="card-title">💰 Comisión al abuelo</span>
@@ -141,14 +142,14 @@
             </div>
         </div>
 
-        @* ── PDFs ─────────────────────────────────────────────────── *@
+        @* ── PDFs ───────────────────────────────────────────────────── *@
         <div class="card" style="margin-bottom:14px;">
             <div class="card-header">
                 <span class="card-title">📄 Documentos digitales</span>
                 <button type="button" onclick="agregarFila()" class="btn btn-secondary btn-sm">+ Agregar documento</button>
             </div>
             <div style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
-                Subir nuevos archivos los agrega a la lista existente. Para eliminar uno usá el botón de la lista actual.
+                Subir nuevos archivos los agrega a la lista existente. Para eliminar uno usá el botón ✕.
             </div>
 
             @* Documentos actuales *@
@@ -164,14 +165,11 @@
                                 <span>@pdf.Nombre</span>
                                 <a href="/@pdf.Url" target="_blank" style="color:var(--text-muted); font-size:12px;">Ver →</a>
                             </div>
-                            <form method="post" action="/Administrador/EliminarPdf"
-                                onsubmit="return confirm('¿Eliminar el documento «@pdf.Nombre»?');"
-                                style="display:inline;">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="pdfId" value="@pdf.Id" />
-                                <input type="hidden" name="productoId" value="@Model.Id" />
-                                <button type="submit" class="btn btn-danger btn-sm" style="padding:4px 10px; font-size:12px;">✕</button>
-                            </form>
+                            @* Botón que llama JS — NO es un form anidado *@
+                            <button type="button"
+                                    onclick="confirmarEliminarPdf(@pdf.Id, @Model.Id, '@Html.Raw(pdf.Nombre.Replace("'", "\\'"))')"
+                                    class="btn btn-danger btn-sm"
+                                    style="padding:4px 10px; font-size:12px;">✕</button>
                         </div>
                     }
                 </div>
@@ -185,37 +183,51 @@
             </button>
         </div>
 
-        <script>
-        function agregarFila() {
-            const cont = document.getElementById('filas-pdf');
-            const fila = document.createElement('div');
-            fila.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px;';
-            fila.innerHTML = `
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px; margin-bottom:4px; display:block;">Nombre del documento</label>
-                    <input type="text" name="nombresPdf" placeholder="Ej: Parte 3 — Limpia vidrios"
-                           style="width:100%;" />
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:12px; margin-bottom:4px; display:block;">Archivo PDF</label>
-                    <input type="file" name="archivosPdf" accept=".pdf"
-                           style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />
-                </div>
-                <button type="button" onclick="this.closest('div[style]').remove()"
-                        class="btn btn-danger btn-sm" style="height:38px;">✕</button>
-            `;
-            cont.appendChild(fila);
-        }
-        </script>
-
-                <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:10px;">
             <button type="submit" id="btn-submit" class="btn btn-primary">Guardar cambios</button>
             <a href="/Administrador/Productos" class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
+
+    @* ── Form de eliminar PDF — FUERA del form principal ────────────── *@
+    <form id="form-eliminar-pdf" method="post" action="/Administrador/EliminarPdf">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="eliminar-pdfId"      name="pdfId" />
+        <input type="hidden" id="eliminar-productoId" name="productoId" value="@Model.Id" />
+    </form>
 </div>
 
 <script>
+// ── Eliminar PDF via form separado ───────────────────────────────────
+function confirmarEliminarPdf(pdfId, productoId, nombre) {
+    if (!confirm('¿Eliminar el documento «' + nombre + '»?')) return;
+    document.getElementById('eliminar-pdfId').value      = pdfId;
+    document.getElementById('eliminar-productoId').value = productoId;
+    document.getElementById('form-eliminar-pdf').submit();
+}
+
+// ── Agregar fila de nuevo PDF ─────────────────────────────────────────
+function agregarFila() {
+    const cont = document.getElementById('filas-pdf');
+    const fila = document.createElement('div');
+    fila.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px;';
+    fila.innerHTML = `
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px; margin-bottom:4px; display:block;">Nombre del documento</label>
+            <input type="text" name="nombresPdf" placeholder="Ej: Parte 3 — Limpia vidrios" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label style="font-size:12px; margin-bottom:4px; display:block;">Archivo PDF</label>
+            <input type="file" name="archivosPdf" accept=".pdf"
+                   style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />
+        </div>
+        <button type="button" onclick="this.closest('div').remove()"
+                class="btn btn-danger btn-sm" style="height:38px;">✕</button>
+    `;
+    cont.appendChild(fila);
+}
+
+// ── Calculadora ───────────────────────────────────────────────────────
 function fmt(n) {
     return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -231,11 +243,11 @@ function actualizarCalculadora() {
     const margen    = ingreso - premio - bonoMax;
     const margenPct = ingreso > 0 ? (margen / ingreso * 100) : 0;
 
-    document.getElementById('calc-ingreso').textContent   = fmt(ingreso);
-    document.getElementById('calc-premio').textContent    = '−' + fmt(premio);
-    document.getElementById('calc-bono').textContent      = '−' + fmt(bonoBase);
-    document.getElementById('calc-bono-max').textContent  = '−' + fmt(bonoMax);
-    document.getElementById('calc-margen').textContent    = fmt(margen);
+    document.getElementById('calc-ingreso').textContent    = fmt(ingreso);
+    document.getElementById('calc-premio').textContent     = '−' + fmt(premio);
+    document.getElementById('calc-bono').textContent       = '−' + fmt(bonoBase);
+    document.getElementById('calc-bono-max').textContent   = '−' + fmt(bonoMax);
+    document.getElementById('calc-margen').textContent     = fmt(margen);
     document.getElementById('calc-margen-pct').textContent = margenPct.toFixed(1) + '%';
 
     const elMargen = document.getElementById('calc-margen');
@@ -248,11 +260,11 @@ function actualizarCalculadora() {
     const thEfectivo = document.getElementById('th-bono-efectivo');
     if (thEfectivo) thEfectivo.textContent = `Con ${pct}% base y precio ${fmt(precio)}`;
 
-    const badge    = document.getElementById('badge-zona');
-    const msgAdv   = document.getElementById('msg-advertencia');
-    const msgBlock = document.getElementById('msg-bloqueado');
-    const zonaInfo = document.getElementById('zona-info');
-    const btnSubmit= document.getElementById('btn-submit');
+    const badge     = document.getElementById('badge-zona');
+    const msgAdv    = document.getElementById('msg-advertencia');
+    const msgBlock  = document.getElementById('msg-bloqueado');
+    const zonaInfo  = document.getElementById('zona-info');
+    const btnSubmit = document.getElementById('btn-submit');
 
     msgAdv.style.display = msgBlock.style.display = 'none';
 
@@ -260,21 +272,6 @@ function actualizarCalculadora() {
         badge.className = 'badge badge-danger'; badge.textContent = '🚫 Bloqueado';
         msgBlock.style.display = 'block';
         zonaInfo.style.cssText += ';background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:#FCA5A5';
-        zonaInfo.textContent = '🚫 Límite superado. Con este porcentaje el negocio puede tener pérdidas. Máximo: 66%.';
+        zonaInfo.textContent = '🚫 Límite superado. Máximo: 66%.';
         if (btnSubmit) btnSubmit.disabled = true;
     } else if (pct > 30) {
-        badge.className = 'badge badge-warning'; badge.textContent = '⚠️ Zona agresiva';
-        msgAdv.style.display = 'block';
-        zonaInfo.style.cssText += ';background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:#FCD34D';
-        zonaInfo.textContent = `⚠️ Zona agresiva. Margen mínimo: ${margenPct.toFixed(0)}%. Asegurate de que el volumen lo justifique.`;
-        if (btnSubmit) btnSubmit.disabled = false;
-    } else {
-        badge.className = 'badge badge-success'; badge.textContent = '✅ Zona segura';
-        zonaInfo.style.cssText += ';background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.2);color:#4ADE80';
-        zonaInfo.textContent = `✅ El negocio retiene el ${margenPct.toFixed(0)}% del ingreso como margen mínimo.`;
-        if (btnSubmit) btnSubmit.disabled = false;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', actualizarCalculadora);
-</script>
