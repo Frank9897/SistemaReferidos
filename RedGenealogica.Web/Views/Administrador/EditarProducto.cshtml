@@ -211,19 +211,27 @@ function agregarFila() {
     const cont = document.getElementById('filas-pdf');
     const fila = document.createElement('div');
     fila.style.cssText = 'display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px;';
-    fila.innerHTML = `
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:12px; margin-bottom:4px; display:block;">Nombre del documento</label>
-            <input type="text" name="nombresPdf" placeholder="Ej: Parte 3 — Limpia vidrios" style="width:100%;" />
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label style="font-size:12px; margin-bottom:4px; display:block;">Archivo PDF</label>
-            <input type="file" name="archivosPdf" accept=".pdf"
-                   style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />
-        </div>
-        <button type="button" onclick="this.closest('div[style]').remove()"
-                class="btn btn-danger btn-sm" style="height:38px;">✕</button>
-    `;
+
+    const inputNombre = document.createElement('div');
+    inputNombre.className = 'form-group';
+    inputNombre.style.marginBottom = '0';
+    inputNombre.innerHTML = '<label style="font-size:12px; margin-bottom:4px; display:block;">Nombre del documento</label><input type="text" name="nombresPdf" placeholder="Ej: Parte 3" style="width:100%;" />';
+
+    const inputArchivo = document.createElement('div');
+    inputArchivo.className = 'form-group';
+    inputArchivo.style.marginBottom = '0';
+    inputArchivo.innerHTML = '<label style="font-size:12px; margin-bottom:4px; display:block;">Archivo PDF</label><input type="file" name="archivosPdf" accept=".pdf" style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm); padding:7px 10px; width:100%; color:var(--text); font-size:12px;" />';
+
+    const btnEliminar = document.createElement('button');
+    btnEliminar.type = 'button';
+    btnEliminar.className = 'btn btn-danger btn-sm';
+    btnEliminar.style.height = '38px';
+    btnEliminar.textContent = '✕';
+    btnEliminar.onclick = function() { fila.remove(); };
+
+    fila.appendChild(inputNombre);
+    fila.appendChild(inputArchivo);
+    fila.appendChild(btnEliminar);
     cont.appendChild(fila);
 }
 
