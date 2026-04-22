@@ -16,13 +16,15 @@ public class ServicioRetiros
 {
     private readonly ContextoAplicacion _contexto;
     private readonly ServicioNotificaciones _servicioNotificaciones;
-
+    private readonly ServicioCorreos _servicioCorreos;
     public ServicioRetiros(
         ContextoAplicacion contexto,
+        ServicioCorreos servicioCorreos,
         ServicioNotificaciones servicioNotificaciones)
     {
         _contexto = contexto;
         _servicioNotificaciones = servicioNotificaciones;
+        _servicioCorreos = servicioCorreos;
     }
 
     public async Task<(bool exito, string mensaje)> SolicitarRetiroAsync(
@@ -117,6 +119,13 @@ public class ServicioRetiros
             "/Usuario/SolicitarRetiro"
         );
 
+        // Email al usuario
+        if (!string.IsNullOrEmpty(solicitud.Usuario?.Email))
+            await _servicioCorreos.EnviarRetiroAprobadoAsync(
+                solicitud.Usuario.Email,
+                $"{solicitud.Usuario.Nombres} {solicitud.Usuario.Apellidos}",
+                solicitud.Monto);
+
         return (true, "Retiro aprobado correctamente");
     }
 
@@ -168,6 +177,13 @@ public class ServicioRetiros
             $"Tu solicitud de retiro por ${solicitud.Monto:N2} fue rechazada. Motivo: {motivo}. El saldo fue devuelto a tu cuenta.",
             "/Usuario/SolicitarRetiro"
         );
+        // Email al usuario
+        if (!string.IsNullOrEmpty(solicitud.Usuario?.Email))
+            await _servicioCorreos.EnviarRetiroRechazadoAsync(
+            solicitud.Usuario.Email,
+            $"{solicitud.Usuario.Nombres} {solicitud.Usuario.Apellidos}",
+            solicitud.Monto,
+            motivo);
 
         return (true, "Solicitud rechazada y saldo devuelto al usuario");
     }

@@ -32,17 +32,20 @@ public class ServicioPagos
     private readonly IConfiguration _configuration;
     private readonly ServicioNotificaciones _servicioNotificaciones;
     private readonly ServicioPremios _servicioPremios;
+    private readonly ServicioCorreos _servicioCorreos;
 
     public ServicioPagos(
         ContextoAplicacion contexto,
         IConfiguration configuration,
         ServicioNotificaciones servicioNotificaciones,
+        ServicioCorreos servicioCorreos,
         ServicioPremios servicioPremios)
     {
         _contexto = contexto;
         _configuration = configuration;
         _servicioNotificaciones = servicioNotificaciones;
         _servicioPremios = servicioPremios;
+        _servicioCorreos = servicioCorreos;
     }
 
     // ----------------------------------------------------------------
@@ -178,6 +181,13 @@ public class ServicioPagos
                     "/Usuario/Panel"
                 );
             }
+            
+            // Email al sponsor
+            if (!string.IsNullOrEmpty(referidor.Email))
+                await _servicioCorreos.EnviarReferidoPagoAsync(
+                    referidor.Email,
+                    $"{referidor.Nombres} {referidor.Apellidos}",
+                    referido.NombreCompleto);
 
             // Disparar la nueva lógica de premios.
             await _servicioPremios.ProcesarPagoReferidoAsync(referido.Id);

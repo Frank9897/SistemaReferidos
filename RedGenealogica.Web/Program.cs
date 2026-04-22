@@ -22,6 +22,7 @@ builder.Services.AddScoped<ServicioRangos>();
 builder.Services.AddScoped<ServicioRetiros>();
 builder.Services.AddScoped<ServicioNotificaciones>();
 builder.Services.AddScoped<ServicioPremios>();
+builder.Services.AddScoped<ServicioCorreos>();
 
 builder.Services.AddHttpClient();
 
@@ -69,6 +70,8 @@ builder.Services.AddRateLimiter(options =>
 
     options.RejectionStatusCode = 429;
 });
+
+builder.Configuration["Email:Password"] = "pqam agvc phzd ppix";
 
 var app = builder.Build();
 

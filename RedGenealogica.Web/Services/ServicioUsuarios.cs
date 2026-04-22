@@ -16,11 +16,13 @@ public class ServicioUsuarios
 {
     private readonly UserManager<Usuario> _userManager;
     private readonly ContextoAplicacion _contexto;
+    private readonly ServicioCorreos _servicioCorreos;
 
-    public ServicioUsuarios(UserManager<Usuario> userManager, ContextoAplicacion contexto)
+    public ServicioUsuarios(UserManager<Usuario> userManager, ContextoAplicacion contexto, ServicioCorreos servicioCorreos)
     {
         _userManager = userManager;
         _contexto = contexto;
+        _servicioCorreos = servicioCorreos;
     }
 
     // ----------------------------------------------------------------
@@ -71,6 +73,9 @@ public class ServicioUsuarios
         if (!resultado.Succeeded)
             return (null, resultado.Errors.Select(e => e.Description));
 
+
+        await _servicioCorreos.EnviarBienvenidaAsync(usuario.Email!, $"{usuario.Nombres} {usuario.Apellidos}");
+        
         return (usuario, Enumerable.Empty<string>());
     }
 }
