@@ -216,7 +216,9 @@ public class ServicioPagos
 
             // Mantener la lógica de puntos del referidor.
             referidor.PuntosAcumulados += 100;
-            referidor.TipoRangoActual = await ObtenerRangoActualAsync(referidor.PuntosAcumulados);
+            var totalReferidosPagados = await _contexto.Referidos
+                .CountAsync(r => r.UsuarioId == referidor.Id && r.PagoConfirmado);
+            referidor.TipoRangoActual = await ObtenerRangoActualAsync(totalReferidosPagados);
 
             _contexto.MovimientosPuntos.Add(new MovimientoPuntos
             {
@@ -409,20 +411,18 @@ public class ServicioPagos
     // Obtiene el rango actual del usuario según sus puntos.
     // Se conserva esta lógica porque sigue siendo útil para el panel.
     // ----------------------------------------------------------------
-    private async Task<TipoRango> ObtenerRangoActualAsync(int puntosAcumulados)
+    private async Task<TipoRango> ObtenerRangoActualAsync(int referidosPagados)
     {
         var rangos = await _contexto.RangosUsuario
             .Where(r => r.Activo)
-            .OrderBy(r => r.Orden)
+            .OrderByDescending(r => r.Orden)
             .ToListAsync();
 
         if (!rangos.Any())
             return TipoRango.Bronce;
 
-        var rango = rangos.LastOrDefault(r =>
-            puntosAcumulados >= r.PuntosMinimos &&
-            puntosAcumulados <= r.PuntosMaximos);
+        var rango = rangos.FirstOrDefault(r => referidosPagados >= r.PuntosMinimos);
 
-        return rango?.TipoRango ?? rangos.First().TipoRango;
+        return rango?.TipoRango ?? rangos.Last().TipoRango;
     }
 }

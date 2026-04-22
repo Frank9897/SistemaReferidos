@@ -27,14 +27,18 @@ public class ServicioRangos
     // cuando los puntos están en el límite exacto entre dos rangos.
     // Si no hay coincidencia en la tabla, devuelve Cobre por defecto.
     // ----------------------------------------------------------------
-    public async Task<TipoRango> ObtenerRangoAsync(int puntos)
+    public async Task<TipoRango> ObtenerRangoAsync(int referidosPagados)
     {
-        var rango = await _contexto.RangosUsuario
-            .Where(r => r.Activo &&
-                        puntos >= r.PuntosMinimos &&
-                        puntos <= r.PuntosMaximos)
-            .OrderByDescending(r => r.Orden)  // el rango más alto alcanzado
-            .FirstOrDefaultAsync();
+        var rangos = await _contexto.RangosUsuario
+            .Where(r => r.Activo)
+            .OrderByDescending(r => r.Orden)
+            .ToListAsync();
+
+        if (!rangos.Any())
+            return TipoRango.Cobre;
+
+        // PuntosMinimos se reutiliza como mínimo de referidos pagados para ese rango
+        var rango = rangos.FirstOrDefault(r => referidosPagados >= r.PuntosMinimos);
 
         return rango?.TipoRango ?? TipoRango.Cobre;
     }
