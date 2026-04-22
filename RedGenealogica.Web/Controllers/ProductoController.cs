@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Models;
 using System.Security.Claims;
-
+using RedGenealogica.Web.Enumeraciones;
 namespace RedGenealogica.Web.Controllers;
 
 [AllowAnonymous]
@@ -63,7 +63,8 @@ public class ProductoController : Controller
                                && p.ProductoId == producto.Id
                                && p.Confirmado);
 
-                ViewBag.EstadoAcceso = yaPago ? "pagado" : "sin_pago";
+                bool esPendiente = !yaPago && usuario.EstadoUsuario == EstadoUsuario.Pendiente;
+                ViewBag.EstadoAcceso = yaPago ? "pagado" : esPendiente ? "pendiente_activacion" : "sin_pago";
 
                 // Progreso de ciclo del usuario
                 var referidosPagados = await _contexto.Referidos

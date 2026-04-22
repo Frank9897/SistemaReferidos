@@ -9,7 +9,8 @@
     var linkRegistro   = ViewBag.LinkRegistro as string ?? "/Autenticacion/Registro";
     var estaLogueado   = User.Identity?.IsAuthenticated == true;
     var yaPago         = estadoAcceso == "pagado";
-    var sinPago        = estadoAcceso == "sin_pago";
+    var sinPago            = estadoAcceso == "sin_pago";
+    var pendienteActivacion = estadoAcceso == "pendiente_activacion";
 
     var urlProducto = ViewBag.UrlProducto as string ?? "";
     var mensajeWa = Uri.EscapeDataString(
@@ -141,10 +142,25 @@
                         📖 Ver mi contenido
                     </a>
                 }
+                else if (pendienteActivacion)
+                {
+                    <div style="background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.2); border-radius:var(--radius-sm); padding:14px; margin-bottom:16px; text-align:center;">
+                        <div style="font-size:22px; margin-bottom:6px;">🔓</div>
+                        <div style="font-weight:600; color:var(--sky); margin-bottom:4px;">Activá tu cuenta</div>
+                        <div style="font-size:12px; color:var(--text-muted);">Comprá este producto para activar tu cuenta y empezar a ganar.</div>
+                    </div>
+                    <a href="/Referidos/Crear" class="btn btn-primary"
+                    style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-bottom:10px;">
+                        💳 Comprar para activar — $@Model.Precio.ToString("N0")
+                    </a>
+                    <div style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:16px;">
+                        Tu cuenta se activa automáticamente al confirmar el pago.
+                    </div>
+                }
                 else if (sinPago)
                 {
                     <a href="/Referidos/Crear" class="btn btn-primary"
-                       style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-bottom:10px;">
+                    style="width:100%; justify-content:center; padding:13px; font-size:15px; margin-bottom:10px;">
                         💳 Comprar ahora — $@Model.Precio.ToString("N0")
                     </a>
                     <div style="font-size:12px; color:var(--text-muted); text-align:center; margin-bottom:16px;">
