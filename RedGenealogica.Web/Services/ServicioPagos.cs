@@ -33,21 +33,23 @@ public class ServicioPagos
     private readonly ServicioNotificaciones _servicioNotificaciones;
     private readonly ServicioPremios _servicioPremios;
     private readonly ServicioCorreos _servicioCorreos;
+    private readonly Microsoft.AspNetCore.Identity.UserManager<Models.Usuario> _userManager;
 
     public ServicioPagos(
         ContextoAplicacion contexto,
         IConfiguration configuration,
         ServicioNotificaciones servicioNotificaciones,
+        ServicioPremios servicioPremios,
         ServicioCorreos servicioCorreos,
-        ServicioPremios servicioPremios)
+        Microsoft.AspNetCore.Identity.UserManager<Models.Usuario> userManager)
     {
         _contexto = contexto;
         _configuration = configuration;
         _servicioNotificaciones = servicioNotificaciones;
         _servicioPremios = servicioPremios;
         _servicioCorreos = servicioCorreos;
+        _userManager = userManager;
     }
-
     // ----------------------------------------------------------------
     // Confirma el pago de un referido y dispara la lógica de premios.
     // ----------------------------------------------------------------
@@ -109,8 +111,88 @@ public class ServicioPagos
 
             // Pago para el usuario convertido — si el referido ya es usuario,
             // también desbloquea el contenido para él.
-            if (referido.UsuarioConvertidoId.HasValue)
+            // ── Crear cuenta automática si el referido no es usuario aún ──
+            if (!referido.UsuarioConvertidoId.HasValue
+                && !string.IsNullOrEmpty(referido.CorreoElectronico))
             {
+                // Verificar que no exista ya una cuenta con ese email
+                var usuarioExistente = await _userManager.FindByEmailAsync(referido.CorreoElectronico);
+                if (usuarioExistente == null)
+                {
+                    // Generar contraseña temporal segura
+                    var passwordTemporal = $"Rg{Guid.NewGuid().ToString("N")[..6]}!";
+
+                    var nuevoUsuario = new Models.Usuario
+                    {
+                        UserName       = referido.CorreoElectronico,
+                        Email          = referido.CorreoElectronico,
+                        Nombres        = referido.NombreCompleto.Split(' ')[0],
+                        Apellidos      = referido.NombreCompleto.Contains(' ')
+                                            ? referido.NombreCompleto[(referido.NombreCompleto.IndexOf(' ') + 1)..]
+                                            : "",
+                        CodigoReferido = Guid.NewGuid().ToString("N")[..8],
+                        EstadoUsuario  = Enumeraciones.EstadoUsuario.Activo,
+                        FechaRegistro  = DateTime.UtcNow,
+                        FechaActivacion = DateTime.UtcNow,
+                        IdUsuarioPadre = referidor.Id   // el sponsor es el padre
+                    };
+
+                    var resultado = await _userManager.CreateAsync(nuevoUsuario, passwordTemporal);
+
+                    if (resultado.Succeeded)
+                    {
+                        referido.UsuarioConvertidoId = nuevoUsuario.Id;
+
+                        // Desbloquear contenido para el nuevo usuario
+                        _contexto.Pagos.Add(new Pago
+                        {
+                            UsuarioId         = nuevoUsuario.Id,
+                            ProductoId        = referido.ProductoId,
+                            Monto             = referido.Producto!.Precio,
+                            EstadoPago        = Enumeraciones.EstadoPago.Aprobado,
+                            PlataformaPago    = "MercadoPago",
+                            Confirmado        = true,
+                            EsSimulado        = false,
+                            FechaSolicitud    = DateTime.UtcNow,
+                            FechaConfirmacion = DateTime.UtcNow
+                        });
+
+                        // Email con credenciales
+                        await _servicioCorreos.EnviarCredencialesAsync(
+                            referido.CorreoElectronico,
+                            referido.NombreCompleto,
+                            passwordTemporal);
+                    }
+                }
+                else
+                {
+                    // Ya tiene cuenta — solo vinculamos y desbloqueamos contenido
+                    referido.UsuarioConvertidoId = usuarioExistente.Id;
+
+                    bool yaTimePago = await _contexto.Pagos.AnyAsync(p =>
+                        p.UsuarioId == usuarioExistente.Id &&
+                        p.ProductoId == referido.ProductoId && p.Confirmado);
+
+                    if (!yaTimePago)
+                    {
+                        _contexto.Pagos.Add(new Pago
+                        {
+                            UsuarioId         = usuarioExistente.Id,
+                            ProductoId        = referido.ProductoId,
+                            Monto             = referido.Producto!.Precio,
+                            EstadoPago        = Enumeraciones.EstadoPago.Aprobado,
+                            PlataformaPago    = "MercadoPago",
+                            Confirmado        = true,
+                            EsSimulado        = false,
+                            FechaSolicitud    = DateTime.UtcNow,
+                            FechaConfirmacion = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+            else if (referido.UsuarioConvertidoId.HasValue)
+            {
+                // Ya estaba vinculado antes — solo asegurar que tenga el pago
                 bool yaTimePago = await _contexto.Pagos.AnyAsync(p =>
                     p.UsuarioId == referido.UsuarioConvertidoId.Value &&
                     p.ProductoId == referido.ProductoId && p.Confirmado);
@@ -119,14 +201,14 @@ public class ServicioPagos
                 {
                     _contexto.Pagos.Add(new Pago
                     {
-                        UsuarioId    = referido.UsuarioConvertidoId.Value,
-                        ProductoId   = referido.ProductoId,
-                        Monto        = referido.Producto!.Precio,
-                        EstadoPago   = EstadoPago.Aprobado,
-                        PlataformaPago = "MercadoPago",
-                        Confirmado   = true,
-                        EsSimulado   = false,
-                        FechaSolicitud   = DateTime.UtcNow,
+                        UsuarioId         = referido.UsuarioConvertidoId.Value,
+                        ProductoId        = referido.ProductoId,
+                        Monto             = referido.Producto!.Precio,
+                        EstadoPago        = Enumeraciones.EstadoPago.Aprobado,
+                        PlataformaPago    = "MercadoPago",
+                        Confirmado        = true,
+                        EsSimulado        = false,
+                        FechaSolicitud    = DateTime.UtcNow,
                         FechaConfirmacion = DateTime.UtcNow
                     });
                 }
