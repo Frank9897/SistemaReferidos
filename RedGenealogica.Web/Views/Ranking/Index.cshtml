@@ -13,6 +13,8 @@
     var rangoSig      = (RangoUsuario?)ViewBag.RangoSiguiente;
     int puntosFalt    = (int)ViewBag.PuntosFaltantes;
     int progresoRango = (int)ViewBag.ProgresoEnRango;
+    decimal pctProducto   = (decimal)(ViewBag.PorcentajeProducto ?? 10m);
+    int referidosPagados  = (int)(ViewBag.ReferidosPagados ?? 0);
 }
 
 @functions {
@@ -229,7 +231,7 @@
                 string ptsTxt  = rango.TipoRango == TipoRango.Diamante
                     ? $"+{rango.PuntosMinimos:N0}"
                     : $"{rango.PuntosMinimos:N0} – {rango.PuntosMaximos:N0}";
-                decimal ejemplo = Math.Round(10m * (1m + rango.BonusComisionPorcentaje / 100m), 1);
+                decimal ejemplo = Math.Round(pctProducto * (1m + rango.BonusComisionPorcentaje / 100m), 1);
 
                 <tr style="@(esActual ? $"background:rgba({RgbOf(rango.TipoRango)},0.07); border-left:3px solid {Color(rango.TipoRango)};" : "")">
                     <td>
@@ -272,7 +274,7 @@
                     <td style="font-size:12px; color:var(--text-muted);">
                         @if (rango.BonusComisionPorcentaje == 0)
                         {
-                            <span>Cobrás el 10%</span>
+                            <span>Cobrás el @pctProducto%</span>
                         }
                         else
                         {

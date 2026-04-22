@@ -44,40 +44,51 @@ public class RankingController : Controller
 
         var usuario = await _userManager.GetUserAsync(User);
 
-        // Calcular progreso dentro del rango actual
         RangoUsuario? rangoActual    = null;
         RangoUsuario? rangoSiguiente = null;
-        int puntosFaltantes   = 0;
-        int progresoEnRango   = 0;
+        int puntosFaltantes = 0;
+        int progresoEnRango = 0;
 
         if (usuario != null)
         {
+            // Usar referidos pagados directos (no puntos)
+            int referidosPagados = await _contexto.Referidos
+                .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado);
+
             rangoActual    = rangos.FirstOrDefault(r => r.TipoRango == usuario.TipoRangoActual);
             rangoSiguiente = rangos.FirstOrDefault(r => r.Orden == (rangoActual?.Orden ?? 0) + 1);
 
             if (rangoActual != null && rangoSiguiente != null)
             {
-                int span              = rangoSiguiente.PuntosMinimos - rangoActual.PuntosMinimos;
-                int puntosDentro      = usuario.PuntosAcumulados - rangoActual.PuntosMinimos;
-                progresoEnRango       = span > 0
-                    ? (int)Math.Clamp(puntosDentro * 100.0 / span, 0, 100)
+                int span         = rangoSiguiente.PuntosMinimos - rangoActual.PuntosMinimos;
+                int dentroRango  = referidosPagados - rangoActual.PuntosMinimos;
+                progresoEnRango  = span > 0
+                    ? (int)Math.Clamp(dentroRango * 100.0 / span, 0, 100)
                     : 100;
-                puntosFaltantes = Math.Max(0, rangoSiguiente.PuntosMinimos - usuario.PuntosAcumulados);
+                puntosFaltantes  = Math.Max(0, rangoSiguiente.PuntosMinimos - referidosPagados);
             }
             else
             {
-                // Rango máximo alcanzado
                 progresoEnRango = 100;
                 puntosFaltantes = 0;
             }
+
+            ViewBag.ReferidosPagados = referidosPagados;
         }
 
-        ViewBag.Rangos          = rangos;
-        ViewBag.UsuarioActual   = usuario;
-        ViewBag.RangoActual     = rangoActual;
-        ViewBag.RangoSiguiente  = rangoSiguiente;
-        ViewBag.PuntosFaltantes = puntosFaltantes;
-        ViewBag.ProgresoEnRango = progresoEnRango;
+        // Pasar el porcentaje real del producto activo para el ejemplo de bonus
+        var producto = await _contexto.Productos
+            .Where(p => p.Activo)
+            .OrderBy(p => p.FechaCreacion)
+            .FirstOrDefaultAsync();
+
+        ViewBag.PorcentajeProducto  = producto?.PorcentajeAbueloComision ?? 10m;
+        ViewBag.Rangos              = rangos;
+        ViewBag.UsuarioActual       = usuario;
+        ViewBag.RangoActual         = rangoActual;
+        ViewBag.RangoSiguiente      = rangoSiguiente;
+        ViewBag.PuntosFaltantes     = puntosFaltantes;
+        ViewBag.ProgresoEnRango     = progresoEnRango;
 
         return View(ranking);
     }
