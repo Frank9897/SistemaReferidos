@@ -47,6 +47,14 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
 .AddDefaultTokenProviders()
 .AddErrorDescriber<ErroresIdentityEspanol>();
 
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId     = "176575923432-qv3ki5g470dac1tfus2p6f9cb4em0qeg.apps.googleusercontent.com";
+        options.ClientSecret = "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";
+        options.CallbackPath = "/signin-google";
+    });
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Autenticacion/Login";

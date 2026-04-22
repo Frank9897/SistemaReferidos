@@ -10,7 +10,8 @@ using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
 using RedGenealogica.Web.ViewModels;
-
+using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
 namespace RedGenealogica.Web.Controllers;
 
 [AllowAnonymous]
@@ -133,5 +134,86 @@ public class AutenticacionController : Controller
     {
         await _signInManager.SignOutAsync();
         return RedirectToAction("Login", "Autenticacion");
+    }
+
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/LoginGoogle
+    // Redirige a Google para autenticación
+    // ----------------------------------------------------------------
+    [HttpGet]
+    public IActionResult LoginGoogle()
+    {
+        var propiedades = new AuthenticationProperties
+        {
+            RedirectUri = Url.Action("CallbackGoogle", "Autenticacion")
+        };
+        return Challenge(propiedades, "Google");
+    }
+
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/CallbackGoogle
+    // Google redirige acá con el resultado
+    // ----------------------------------------------------------------
+    [HttpGet]
+    public async Task<IActionResult> CallbackGoogle()
+    {
+        var resultado = await HttpContext.AuthenticateAsync("Google");
+
+        if (!resultado.Succeeded)
+        {
+            TempData["Error"] = "No se pudo iniciar sesión con Google.";
+            return RedirectToAction("Login");
+        }
+
+        var email  = resultado.Principal.FindFirstValue(ClaimTypes.Email);
+        var nombre = resultado.Principal.FindFirstValue(ClaimTypes.GivenName) ?? "";
+        var apellido = resultado.Principal.FindFirstValue(ClaimTypes.Surname) ?? "";
+
+        if (string.IsNullOrEmpty(email))
+        {
+            TempData["Error"] = "No se pudo obtener el email de Google.";
+            return RedirectToAction("Login");
+        }
+
+        // Buscar si ya existe la cuenta
+        var usuario = await _userManager.FindByEmailAsync(email);
+
+        if (usuario == null)
+        {
+            // Crear cuenta automáticamente
+            usuario = new Models.Usuario
+            {
+                UserName       = email,
+                Email          = email,
+                Nombres        = nombre,
+                Apellidos      = apellido,
+                CodigoReferido = Guid.NewGuid().ToString("N")[..8],
+                EstadoUsuario  = RedGenealogica.Web.Enumeraciones.EstadoUsuario.Pendiente,
+                FechaRegistro  = DateTime.UtcNow,
+                EmailConfirmed = true
+            };
+
+            var crear = await _userManager.CreateAsync(usuario);
+            if (!crear.Succeeded)
+            {
+                TempData["Error"] = "No se pudo crear la cuenta. Intentá con email y contraseña.";
+                return RedirectToAction("Login");
+            }
+
+            // Bienvenida por email
+            var correos = HttpContext.RequestServices.GetRequiredService<Services.ServicioCorreos>();
+            await correos.EnviarBienvenidaAsync(email, $"{nombre} {apellido}".Trim());
+        }
+
+        // Verificar que no esté suspendido
+        if (usuario.EstadoUsuario == RedGenealogica.Web.Enumeraciones.EstadoUsuario.Suspendido ||
+            usuario.EstadoUsuario == RedGenealogica.Web.Enumeraciones.EstadoUsuario.Inactivo)
+        {
+            TempData["Error"] = "Tu cuenta está suspendida. Contactá con soporte.";
+            return RedirectToAction("Login");
+        }
+
+        await _signInManager.SignInAsync(usuario, isPersistent: true);
+        return RedirectToAction("Panel", "Usuario");
     }
 }
