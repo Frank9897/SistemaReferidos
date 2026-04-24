@@ -10,6 +10,7 @@ using RedGenealogica.Web.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,13 @@ builder.Services.AddIdentity<Usuario, IdentityRole<int>>(options =>
 .AddEntityFrameworkStores<ContextoAplicacion>()
 .AddDefaultTokenProviders()
 .AddErrorDescriber<ErroresIdentityEspanol>();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddAuthentication()
     .AddGoogle(options =>
@@ -115,9 +123,11 @@ app.Use(async (context, next) =>
 });
 
 app.UseRouting();
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+app.UseForwardedHeaders();
+app.Use(async (ctx, next) =>
 {
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+    ctx.Request.Scheme = "https";
+    await next();
 });
 app.UseAuthorization();
 app.UseRateLimiter();
