@@ -209,4 +209,27 @@ public class ServicioCorreos
         </body>
         </html>
         """;
+
+    // ----------------------------------------------------------------
+    // Link de pago — se manda cuando el sponsor registra el referido
+    // ----------------------------------------------------------------
+    public async Task EnviarLinkPagoAsync(string email, string nombreReferido, string nombreSponsor, string urlPago)
+    {
+        var html = PlantillaBase("Tenés una invitación 🎉", $"""
+            <p>Hola <strong>{nombreReferido}</strong>,</p>
+            <p><strong>{nombreSponsor}</strong> te invitó a unirte a <strong>RedGenealogica</strong>, una red de referidos con productos digitales.</p>
+            <p>Para activar tu cuenta y acceder al contenido, completá tu pago haciendo clic en el botón:</p>
+            <div style="text-align:center; margin:28px 0;">
+                <a href="{urlPago}"
+                style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
+                        text-decoration:none; font-weight:600; font-size:15px;">
+                    💳 Completar pago y activar cuenta
+                </a>
+            </div>
+            <p style="color:#94a3b8; font-size:13px;">Una vez confirmado el pago, recibirás tus credenciales de acceso por este mismo correo.</p>
+            <p style="color:#94a3b8; font-size:13px;">Si no esperabas este mensaje, podés ignorarlo.</p>
+        """);
+
+        await EnviarAsync(email, nombreReferido, "◆ Tu invitación a RedGenealogica", html);
+    }
 }

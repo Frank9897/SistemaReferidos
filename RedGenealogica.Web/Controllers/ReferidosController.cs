@@ -27,18 +27,21 @@ namespace RedGenealogica.Web.Controllers;
 [Authorize]
 public class ReferidosController : Controller
 {
+    private readonly ContextoAplicacion _contexto;
     private readonly UserManager<Usuario> _userManager;
     private readonly ServicioReferidos _servicioReferidos;
-    private readonly ContextoAplicacion _contexto;
+    private readonly ServicioCorreos _servicioCorreos;
 
     public ReferidosController(
+        ContextoAplicacion contexto,
         UserManager<Usuario> userManager,
         ServicioReferidos servicioReferidos,
-        ContextoAplicacion contexto)
+        ServicioCorreos servicioCorreos)
     {
+        _contexto = contexto;
         _userManager = userManager;
         _servicioReferidos = servicioReferidos;
-        _contexto = contexto;
+        _servicioCorreos = servicioCorreos;
     }
 
     // ----------------------------------------------------------------
@@ -90,7 +93,20 @@ public class ReferidosController : Controller
             return View(modelo);
         }
 
-        TempData["Exito"] = "Referido registrado. Compartile el link de pago para que complete su activación.";
+        // Mandar email con link de pago si el referido tiene email
+        if (!string.IsNullOrEmpty(modelo.CorreoElectronico))
+        {
+            var urlPago = Url.Action("Pagar", "Pagos", new { referidoId = referido.Id }, Request.Scheme)!
+                            .Replace("http://", "https://");
+
+            await _servicioCorreos.EnviarLinkPagoAsync(
+                modelo.CorreoElectronico,
+                modelo.NombreCompleto,
+                $"{usuario.Nombres} {usuario.Apellidos}",
+                urlPago);
+        }
+
+        TempData["Exito"] = "Referido registrado. Le enviamos el link de pago por email.";
         return RedirectToAction("Panel", "Usuario");
     }
 
