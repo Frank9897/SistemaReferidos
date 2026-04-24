@@ -53,6 +53,12 @@ builder.Services.AddAuthentication()
         options.ClientId     = builder.Configuration["Google:ClientId"]!;
         options.ClientSecret = builder.Configuration["Google:ClientSecret"]!;
         options.CallbackPath = "/signin-google";
+        options.Events.OnRedirectToAuthorizationEndpoint = context =>
+        {
+            var redirectUri = context.RedirectUri.Replace("http://", "https://");
+            context.Response.Redirect(redirectUri);
+            return Task.CompletedTask;
+        };
     });
 
 builder.Services.ConfigureApplicationCookie(options =>
