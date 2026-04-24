@@ -109,9 +109,17 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseForwardedHeaders();
+
+app.Use(async (ctx, next) =>
+{
+    ctx.Request.Scheme = "https";
+    await next();
+});
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-/*Headers de seguridad HTTP — el navegador no sabe que tu app no debe cargar en iframes de otros sitios, ni ejecutar scripts de orígenes externos. Un middleware agrega esto en un bloque en Program.cs. Protege contra clickjacking y XSS básico.*/
+
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Frame-Options"]        = "DENY";
@@ -123,12 +131,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseRouting();
-app.UseForwardedHeaders();
-app.Use(async (ctx, next) =>
-{
-    ctx.Request.Scheme = "https";
-    await next();
-});
+app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
