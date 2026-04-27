@@ -1199,4 +1199,10 @@ label {
   }
   .tabla-rangos td::before { display: none; }
 
+@media (max-width: 600px) {
+    .grid-producto-comision {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 }

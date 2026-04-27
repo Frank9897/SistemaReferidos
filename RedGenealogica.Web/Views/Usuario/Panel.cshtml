@@ -235,52 +235,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     else
     {
-        <table class="table">
-            <thead>
+        <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Referidos.Take(5))
+            {
+                var badgeClass = r.Estado switch {
+                    EstadoReferido.Convertido => "badge-success",
+                    EstadoReferido.Pagado     => "badge-info",
+                    EstadoReferido.Cancelado  => "badge-danger",
+                    _ => "badge-warning"
+                };
+                var estadoLabel = r.Estado switch {
+                    EstadoReferido.Convertido => "Convertido",
+                    EstadoReferido.Pagado     => "Pagado",
+                    EstadoReferido.Cancelado  => "Cancelado",
+                    _ => "Pendiente"
+                };
                 <tr>
-                    <th>Nombre</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                    <th>Acción</th>
+                    <td data-label="Nombre"><strong>@r.NombreCompleto</strong></td>
+                    <td data-label="Estado"><span class="badge @badgeClass">@estadoLabel</span></td>
+                    <td data-label="Fecha">@r.FechaRegistro.ToString("dd/MM/yy")</td>
+                    <td data-label="Acción">
+                        @if (r.Estado == EstadoReferido.Pendiente)
+                        {
+                            <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">💳 Link pago</a>
+                        }
+                        else if (r.Estado == EstadoReferido.Convertido)
+                        {
+                            <span style="font-size:12px; color:var(--green);">✓ Activo</span>
+                        }
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in Model.Referidos.Take(5))
-                {
-                    <tr>
-                        <td><strong>@r.NombreCompleto</strong></td>
-                        <td>
-                            @{
-                                var badgeClass = r.Estado switch {
-                                    EstadoReferido.Convertido => "badge-success",
-                                    EstadoReferido.Pagado     => "badge-info",
-                                    EstadoReferido.Cancelado  => "badge-danger",
-                                    _ => "badge-warning"
-                                };
-                                var estadoLabel = r.Estado switch {
-                                    EstadoReferido.Convertido => "Convertido",
-                                    EstadoReferido.Pagado     => "Pagado",
-                                    EstadoReferido.Cancelado  => "Cancelado",
-                                    _ => "Pendiente"
-                                };
-                            }
-                            <span class="badge @badgeClass">@estadoLabel</span>
-                        </td>
-                        <td>@r.FechaRegistro.ToString("dd/MM/yy")</td>
-                        <td>
-                            @if (r.Estado == EstadoReferido.Pendiente)
-                            {
-                                <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">💳 Link pago</a>
-                            }
-                            else if (r.Estado == EstadoReferido.Convertido)
-                            {
-                                <span style="font-size:12px; color:var(--green);">✓ Activo</span>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+            }
+        </tbody>
+    </table>
     }
 </div>
 
