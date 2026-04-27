@@ -361,7 +361,7 @@ public class AdministradorController : Controller
         }
 
         // Eliminar carpeta de PDFs si existe
-        var carpetaPdfs = Path.Combine(_env.WebRootPath, "pdfs", id.ToString());
+        var carpetaPdfs = Path.Combine("/app/storage/pdfs", id.ToString());
         if (Directory.Exists(carpetaPdfs))
             Directory.Delete(carpetaPdfs, recursive: true);
 
@@ -380,7 +380,7 @@ public class AdministradorController : Controller
         List<IFormFile> archivos,
         List<string> nombres)
     {
-        var carpeta = Path.Combine(_env.WebRootPath, "pdfs", productoId.ToString());
+        var carpeta = Path.Combine("/app/storage/pdfs", productoId.ToString());
         Directory.CreateDirectory(carpeta);
 
         // Obtener el máximo orden actual
@@ -411,7 +411,7 @@ public class AdministradorController : Controller
             {
                 ProductoId  = productoId,
                 Nombre      = nombreVisible,
-                Url         = $"pdfs/{productoId}/{nombreArchivo}",
+                Url = $"/storage/pdfs/{productoId}/{nombreArchivo}",
                 Orden       = ordenActual,
                 FechaSubida = DateTime.UtcNow
             });
@@ -428,7 +428,7 @@ public class AdministradorController : Controller
         var pdf = await _contexto.ProductoPdfs.FindAsync(pdfId);
         if (pdf == null || pdf.ProductoId != productoId) return NotFound();
 
-        var ruta = Path.Combine(_env.WebRootPath, pdf.Url.Replace('/', Path.DirectorySeparatorChar));
+        var ruta = pdf.Url.Replace('/', Path.DirectorySeparatorChar);
         if (System.IO.File.Exists(ruta)) System.IO.File.Delete(ruta);
 
         _contexto.ProductoPdfs.Remove(pdf);
@@ -580,6 +580,18 @@ public class AdministradorController : Controller
 
         TempData["Exito"] = $"Configuración '{config.Clave}' actualizada.";
         return RedirectToAction("Configuracion");
+    }
+    
+    // ----------------------------------------------------------------
+    // GET /Administrador/ServirPdf
+    // Sirve PDFs desde el volumen persistente
+    // ----------------------------------------------------------------
+    [HttpGet]
+    public IActionResult ServirPdf(string ruta)
+    {
+        var rutaFisica = Path.Combine("/app/storage", ruta.TrimStart('/'));
+        if (!System.IO.File.Exists(rutaFisica)) return NotFound();
+        return PhysicalFile(rutaFisica, "application/pdf");
     }
 
 }

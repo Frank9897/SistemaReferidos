@@ -303,7 +303,7 @@ const VS = {};
 // ── Cargar PDF ────────────────────────────────────────────────────
 async function cargarPdf(idx, url) {
     try {
-        const pdf = await pdfjsLib.getDocument('/' + url).promise;
+        const pdf = await pdfjsLib.getDocument('/Administrador/ServirPdf?ruta=' + encodeURIComponent(url)).promise;
         VS[idx] = { pdf, pag: 1, zoom: 1.0, doble: false };
 
         document.getElementById('loading-' + idx).style.display = 'none';
