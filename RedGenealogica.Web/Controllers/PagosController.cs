@@ -1,5 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using RedGenealogica.Web.Data;
+using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
+using RedGenealogica.Web.Enumeraciones;
 using System.Text.Json;
 using System.IO;
 
@@ -9,11 +15,19 @@ public class PagosController : Controller
 {
     private readonly ServicioPagos _servicioPagos;
     private readonly IConfiguration _configuration;
+    private readonly ContextoAplicacion _contexto;
+    private readonly UserManager<Usuario> _userManager;
 
-    public PagosController(ServicioPagos servicioPagos, IConfiguration configuration)
+    public PagosController(
+        ServicioPagos servicioPagos,
+        IConfiguration configuration,
+        ContextoAplicacion contexto,
+        UserManager<Usuario> userManager)
     {
-        _servicioPagos = servicioPagos;
-        _configuration = configuration;
+        _servicioPagos   = servicioPagos;
+        _configuration   = configuration;
+        _contexto        = contexto;
+        _userManager     = userManager;
     }
 
     public async Task<IActionResult> Pagar(int referidoId)
@@ -111,5 +125,57 @@ public class PagosController : Controller
         }
     }
 
+    // ----------------------------------------------------------------
+    // GET /Pagos/PagarActivacion
+    // El usuario paga el producto para activar su propia cuenta
+    // ----------------------------------------------------------------
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> PagarActivacion()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null) return RedirectToAction("Login", "Autenticacion");
+
+        if (usuario.EstadoUsuario == EstadoUsuario.Activo)
+        {
+            TempData["Exito"] = "Tu cuenta ya está activa.";
+            return RedirectToAction("Panel", "Usuario");
+        }
+
+        // Buscar el producto activo
+        var producto = await _contexto.Productos
+            .Where(p => p.Activo)
+            .OrderBy(p => p.FechaCreacion)
+            .FirstOrDefaultAsync();
+
+        if (producto == null)
+        {
+            TempData["Error"] = "No hay productos disponibles.";
+            return RedirectToAction("Panel", "Usuario");
+        }
+
+        // Crear un referido propio si no existe
+        var referidoPropio = await _contexto.Referidos
+            .FirstOrDefaultAsync(r => r.UsuarioId == usuario.Id && r.EsAutoPago);
+
+        if (referidoPropio == null)
+        {
+            referidoPropio = new Referido
+            {
+                UsuarioId        = usuario.Id,
+                NombreCompleto   = $"{usuario.Nombres} {usuario.Apellidos}",
+                CorreoElectronico = usuario.Email!,
+                ProductoId       = producto.Id,
+                FechaRegistro    = DateTime.UtcNow,
+                Estado           = EstadoReferido.Pendiente,
+                EsAutoPago       = true
+            };
+            _contexto.Referidos.Add(referidoPropio);
+            await _contexto.SaveChangesAsync();
+        }
+
+        var urlPago = await _servicioPagos.CrearPreferencia(referidoPropio.Id);
+        return Redirect(urlPago);
+    }
     
 }

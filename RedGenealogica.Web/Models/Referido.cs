@@ -62,4 +62,7 @@ public class Referido
 
     // Flag de idempotencia: evita procesar el mismo pago dos veces
     public bool PagoConfirmado { get; set; } = false;
+    
+    // true cuando el usuario se paga a sí mismo para activar su cuenta
+    public bool EsAutoPago { get; set; } = false;
 }

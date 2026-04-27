@@ -91,6 +91,19 @@ public class ServicioPagos
                 referidor.FechaActivacion = DateTime.UtcNow;
             }
 
+            // Si es autopago, activar la cuenta del propio usuario
+            if (referido.EsAutoPago)
+            {
+                var usuarioAPagar = await _contexto.Users.FindAsync(referido.UsuarioId);
+                if (usuarioAPagar != null && usuarioAPagar.EstadoUsuario != EstadoUsuario.Activo)
+                {
+                    usuarioAPagar.EstadoUsuario = EstadoUsuario.Activo;
+                    usuarioAPagar.FechaActivacion = DateTime.UtcNow;
+                }
+                await _contexto.SaveChangesAsync();
+                return;
+            }
+
             // ── Crear registro de Pago confirmado ────────────────────
             // Este registro es lo que desbloquea el acceso al contenido
             // digital del producto para el referidor (sponsor).
