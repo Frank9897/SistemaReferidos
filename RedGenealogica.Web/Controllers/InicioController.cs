@@ -44,4 +44,11 @@ public class InicioController : Controller
 
         return View();
     }
+
+    [HttpGet]
+    public IActionResult Privacidad() => View();
+
+    [HttpGet]
+    public IActionResult Terminos() => View();
+
 }
