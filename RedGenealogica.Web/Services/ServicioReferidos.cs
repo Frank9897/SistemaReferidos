@@ -42,8 +42,7 @@ public class ServicioReferidos
     {
         var usuario = await _contexto.Users.FindAsync(usuarioId);
         return usuario != null &&
-               usuario.EstadoUsuario != EstadoUsuario.Suspendido &&
-               usuario.EstadoUsuario != EstadoUsuario.Inactivo;
+               usuario.EstadoUsuario == EstadoUsuario.Activo;;
     }
 
     // ----------------------------------------------------------------

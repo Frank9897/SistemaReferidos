@@ -85,7 +85,7 @@ public class ReferidosController : Controller
 
         if (referido == null)
         {
-            ModelState.AddModelError("", "No podés registrar referidos. Tu cuenta puede estar suspendida o sin permisos.");
+           ModelState.AddModelError("", "Tu cuenta no está activa. Primero debés pagar el producto para poder referir.");
             ViewBag.Productos = await _contexto.Productos
                 .Where(p => p.Activo)
                 .ToListAsync();
