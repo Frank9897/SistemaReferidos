@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Esto previene que el servidor sirva el archivo como text/plain
 async function descargarPdf(url, nombre) {
     try {
-        const res  = await fetch(url);
+        const res  = await fetch('/Administrador/ServirPdf?ruta=' + encodeURIComponent(url));
         const blob = await res.blob();
         const obj  = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
         const a    = document.createElement('a');
@@ -516,7 +516,7 @@ async function descargarPdf(url, nombre) {
         a.click();
         setTimeout(() => URL.revokeObjectURL(obj), 5000);
     } catch(e) {
-        window.location.href = url;
+        window.location.href = '/Administrador/ServirPdf?ruta=' + encodeURIComponent(url);
     }
 }
 
