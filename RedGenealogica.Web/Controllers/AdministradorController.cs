@@ -586,11 +586,15 @@ public class AdministradorController : Controller
     // GET /Administrador/ServirPdf
     // Sirve PDFs desde el volumen persistente
     // ----------------------------------------------------------------
-    [HttpGet]
+   [HttpGet]
     public IActionResult ServirPdf(string ruta)
     {
-        var rutaFisica = Path.Combine("/app/storage", ruta.TrimStart('/'));
-        if (!System.IO.File.Exists(rutaFisica)) return NotFound();
+        var rutaLimpia = ruta.TrimStart('/');
+        var rutaFisica = Path.Combine("/app", rutaLimpia);
+
+        if (!System.IO.File.Exists(rutaFisica))
+            return NotFound();
+
         return PhysicalFile(rutaFisica, "application/pdf");
     }
 
