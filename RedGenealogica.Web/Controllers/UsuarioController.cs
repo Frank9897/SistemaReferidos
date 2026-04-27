@@ -56,17 +56,17 @@ public class UsuarioController : Controller
         ViewBag.Activado = Request.Query["activado"] == "1";
 
         var referidos = await _contexto.Referidos
-            .Where(r => r.UsuarioId == usuario.Id)
+            .Where(r => r.UsuarioId == usuario.Id && !r.EsAutoPago)
             .OrderByDescending(r => r.FechaRegistro)
             .ToListAsync();
 
         // Referidos "activos" en el nuevo modelo: ya convertidos a usuario.
         var totalReferidosActivos = await _contexto.Referidos
-            .CountAsync(r => r.UsuarioId == usuario.Id && r.Estado == EstadoReferido.Convertido);
+            .CountAsync(r => r.UsuarioId == usuario.Id && r.Estado == EstadoReferido.Convertido && !r.EsAutoPago);
 
         // Cantidad de referidos pagos directos para el ciclo actual.
         var referidosPagadosDirectos = await _contexto.Referidos
-            .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado);
+            .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado && !r.EsAutoPago);
 
         var referidosActuales = referidosPagadosDirectos % 3;
 
