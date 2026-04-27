@@ -68,6 +68,9 @@ public class AutenticacionController : Controller
 
         // Loguear automáticamente después del registro
         await _signInManager.SignInAsync(usuario, isPersistent: true);
+        // Redirigir si debe cambiar password temporal
+        if (usuario.DebecambiarPassword)
+            return RedirectToAction("CambiarPasswordTemporal");
 
         return RedirectToAction("Panel", "Usuario");
     }
@@ -214,6 +217,82 @@ public class AutenticacionController : Controller
         }
 
         await _signInManager.SignInAsync(usuario, isPersistent: true);
+        return RedirectToAction("Panel", "Usuario");
+    }
+
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/CambiarPasswordTemporal
+    // ----------------------------------------------------------------
+    [HttpGet]
+    [Authorize]
+    public IActionResult CambiarPasswordTemporal()
+    {
+        return View();
+    }
+
+    // ----------------------------------------------------------------
+    // POST /Autenticacion/CambiarPasswordTemporal
+    // ----------------------------------------------------------------
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CambiarPasswordTemporal(string passwordActual, string passwordNuevo, string passwordConfirmar)
+    {
+        if (passwordNuevo != passwordConfirmar)
+        {
+            TempData["Error"] = "Las contraseñas no coinciden.";
+            return View();
+        }
+
+        if (passwordNuevo.Length < 8)
+        {
+            TempData["Error"] = "La contraseña debe tener al menos 8 caracteres.";
+            return View();
+        }
+
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null) return RedirectToAction("Login");
+
+        var resultado = await _userManager.ChangePasswordAsync(usuario, passwordActual, passwordNuevo);
+
+        if (!resultado.Succeeded)
+        {
+            TempData["Error"] = resultado.Errors.FirstOrDefault()?.Description ?? "Error al cambiar contraseña.";
+            return View();
+        }
+
+        usuario.DebecambiarPassword = false;
+        await _userManager.UpdateAsync(usuario);
+
+        // Generar token de verificación de email
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(usuario);
+        var urlVerificacion = Url.Action("VerificarEmail", "Autenticacion",
+            new { userId = usuario.Id, token = token }, Request.Scheme)!
+            .Replace("http://", "https://");
+
+        var correos = HttpContext.RequestServices.GetRequiredService<ServicioCorreos>();
+        await correos.EnviarVerificacionEmailAsync(usuario.Email!, $"{usuario.Nombres} {usuario.Apellidos}", urlVerificacion);
+
+        TempData["Exito"] = "Contraseña cambiada. Te enviamos un email para verificar tu cuenta.";
+        return RedirectToAction("Panel", "Usuario");
+    }
+
+    // ----------------------------------------------------------------
+    // GET /Autenticacion/VerificarEmail
+    // ----------------------------------------------------------------
+    [HttpGet]
+    public async Task<IActionResult> VerificarEmail(int userId, string token)
+    {
+        var usuario = await _userManager.FindByIdAsync(userId.ToString());
+        if (usuario == null) return RedirectToAction("Login");
+
+        var resultado = await _userManager.ConfirmEmailAsync(usuario, token);
+
+        if (resultado.Succeeded)
+            TempData["Exito"] = "✅ Email verificado correctamente. ¡Bienvenido!";
+        else
+            TempData["Error"] = "El link de verificación no es válido o ya fue usado.";
+
         return RedirectToAction("Panel", "Usuario");
     }
 }

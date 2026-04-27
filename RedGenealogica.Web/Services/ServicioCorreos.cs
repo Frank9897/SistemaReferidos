@@ -232,4 +232,25 @@ public class ServicioCorreos
 
         await EnviarAsync(email, nombreReferido, "◆ Tu invitación a RedGenealogica", html);
     }
+
+    // ----------------------------------------------------------------
+    // Verificación de email
+    // ----------------------------------------------------------------
+    public async Task EnviarVerificacionEmailAsync(string email, string nombre, string urlVerificacion)
+    {
+        var html = PlantillaBase("Verificá tu email ✉️", $"""
+            <p>Hola <strong>{nombre}</strong>,</p>
+            <p>Ya cambiaste tu contraseña. Solo falta verificar tu email para completar la activación de tu cuenta.</p>
+            <div style="text-align:center; margin:28px 0;">
+                <a href="{urlVerificacion}"
+                style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
+                        text-decoration:none; font-weight:600; font-size:15px;">
+                    ✅ Verificar mi email
+                </a>
+            </div>
+            <p style="color:#94a3b8; font-size:13px;">Si no creaste esta cuenta, ignorá este mensaje.</p>
+        """);
+
+        await EnviarAsync(email, nombre, "◆ Verificá tu email en RedGenealogica", html);
+    }
 }

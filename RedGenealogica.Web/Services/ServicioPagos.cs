@@ -134,7 +134,9 @@ public class ServicioPagos
                         EstadoUsuario  = Enumeraciones.EstadoUsuario.Activo,
                         FechaRegistro  = DateTime.UtcNow,
                         FechaActivacion = DateTime.UtcNow,
-                        IdUsuarioPadre = referidor.Id   // el sponsor es el padre
+                        IdUsuarioPadre = referidor.Id,   // el sponsor es el padre
+                        DebecambiarPassword = true,   // ← nuevo
+                        EmailConfirmed  = false      // ← forzar verificación
                     };
 
                     var resultado = await _userManager.CreateAsync(nuevoUsuario, passwordTemporal);
