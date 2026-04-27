@@ -135,7 +135,7 @@ public class ServicioPagos
                         FechaRegistro  = DateTime.UtcNow,
                         FechaActivacion = DateTime.UtcNow,
                         IdUsuarioPadre = referidor.Id,   // el sponsor es el padre
-                        DebecambiarPassword = true,   // ← nuevo
+                        DebeambiarPassword = true,   // ← nuevo
                         EmailConfirmed  = false      // ← forzar verificación
                     };
 

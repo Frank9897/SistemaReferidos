@@ -75,5 +75,5 @@ public class Usuario : IdentityUser<int>
 
     // true cuando la cuenta fue creada automáticamente por el sistema
     // y el usuario aún no cambió su contraseña temporal.
-    public bool DebecambiarPassword { get; set; } = false;
+    public bool DebeambiarPassword { get; set; } = false;
 }

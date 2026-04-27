@@ -69,7 +69,7 @@ public class AutenticacionController : Controller
         // Loguear automáticamente después del registro
         await _signInManager.SignInAsync(usuario, isPersistent: true);
         // Redirigir si debe cambiar password temporal
-        if (usuario.DebecambiarPassword)
+        if (usuario.DebeambiarPassword)
             return RedirectToAction("CambiarPasswordTemporal");
 
         return RedirectToAction("Panel", "Usuario");
@@ -261,7 +261,7 @@ public class AutenticacionController : Controller
             return View();
         }
 
-        usuario.DebecambiarPassword = false;
+        usuario.DebeambiarPassword = false;
         await _userManager.UpdateAsync(usuario);
 
         // Generar token de verificación de email
