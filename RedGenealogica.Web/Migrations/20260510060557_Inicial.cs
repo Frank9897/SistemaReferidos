@@ -9,7 +9,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace RedGenealogica.Web.Migrations
 {
     /// <inheritdoc />
-    public partial class InicialLimpia : Migration
+    public partial class Inicial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,6 +30,36 @@ namespace RedGenealogica.Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Configuraciones",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Clave = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Valor = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Descripcion = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    FechaModificacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Configuraciones", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DataProtectionKeys",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    FriendlyName = table.Column<string>(type: "text", nullable: true),
+                    Xml = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DataProtectionKeys", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Productos",
                 columns: table => new
                 {
@@ -38,9 +68,7 @@ namespace RedGenealogica.Web.Migrations
                     Nombre = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
                     Descripcion = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Precio = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    ComisionNivel1Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
-                    ComisionNivel2Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
-                    ComisionNivel3Porcentaje = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    PorcentajeAbueloComision = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false, defaultValue: 10m),
                     StockDisponible = table.Column<int>(type: "integer", nullable: true),
                     ImagenUrl = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
                     Activo = table.Column<bool>(type: "boolean", nullable: false),
@@ -108,6 +136,7 @@ namespace RedGenealogica.Web.Migrations
                     CbuAlias = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     IdUsuarioPadre = table.Column<int>(type: "integer", nullable: true),
                     CiclosCompletados = table.Column<int>(type: "integer", nullable: false),
+                    DebeambiarPassword = table.Column<bool>(type: "boolean", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -151,6 +180,29 @@ namespace RedGenealogica.Web.Migrations
                         name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductoPdfs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ProductoId = table.Column<int>(type: "integer", nullable: false),
+                    Nombre = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false),
+                    Url = table.Column<string>(type: "character varying(350)", maxLength: 350, nullable: false),
+                    Orden = table.Column<int>(type: "integer", nullable: false),
+                    FechaSubida = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductoPdfs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductoPdfs_Productos_ProductoId",
+                        column: x => x.ProductoId,
+                        principalTable: "Productos",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -344,7 +396,8 @@ namespace RedGenealogica.Web.Migrations
                     FechaRegistro = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     FechaActivacion = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UsuarioConvertidoId = table.Column<int>(type: "integer", nullable: true),
-                    PagoConfirmado = table.Column<bool>(type: "boolean", nullable: false)
+                    PagoConfirmado = table.Column<bool>(type: "boolean", nullable: false),
+                    EsAutoPago = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -477,6 +530,11 @@ namespace RedGenealogica.Web.Migrations
                 column: "UsuarioId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProductoPdfs_ProductoId",
+                table: "ProductoPdfs",
+                column: "ProductoId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Referidos_PagoReferidoId",
                 table: "Referidos",
                 column: "PagoReferidoId");
@@ -548,10 +606,19 @@ namespace RedGenealogica.Web.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "Configuraciones");
+
+            migrationBuilder.DropTable(
+                name: "DataProtectionKeys");
+
+            migrationBuilder.DropTable(
                 name: "MovimientosPuntos");
 
             migrationBuilder.DropTable(
                 name: "Notificaciones");
+
+            migrationBuilder.DropTable(
+                name: "ProductoPdfs");
 
             migrationBuilder.DropTable(
                 name: "RangosUsuario");
