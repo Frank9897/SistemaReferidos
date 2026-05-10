@@ -56,6 +56,7 @@ public class ServicioPagos
     public async Task ConfirmarPago(int referidoId)
     {
         using var transaccion = await _contexto.Database.BeginTransactionAsync();
+        int referidoIdConfirmado = 0;
 
         try
         {
@@ -91,6 +92,8 @@ public class ServicioPagos
                     usuarioAPagar.FechaActivacion = DateTime.UtcNow;
                 }
                 await _contexto.SaveChangesAsync();
+                // Commiteamos ANTES de procesar premios para que el webhook
+                // quede guardado aunque los premios fallen.
                 await transaccion.CommitAsync();
                 return;
             }
@@ -109,20 +112,27 @@ public class ServicioPagos
             // ── Crear registro de Pago confirmado ────────────────────
             // Este registro es lo que desbloquea el acceso al contenido
             // digital del producto para el referidor (sponsor).
-            // Pago para el referidor (sponsor) — desbloquea su contenido
-            var pagoConfirmado = new Pago
+            // Verificar que el sponsor no tenga ya un pago para este producto.
+            bool sponsorYaTienePago = await _contexto.Pagos.AnyAsync(p =>
+                p.UsuarioId == referidor.Id &&
+                p.ProductoId == referido.ProductoId &&
+                p.Confirmado);
+
+            if (!sponsorYaTienePago)
             {
-                UsuarioId    = referidor.Id,
-                ProductoId   = referido.ProductoId,
-                Monto        = referido.Producto!.Precio,
-                EstadoPago   = EstadoPago.Aprobado,
-                PlataformaPago = "MercadoPago",
-                Confirmado   = true,
-                EsSimulado   = false,
-                FechaSolicitud   = DateTime.UtcNow,
-                FechaConfirmacion = DateTime.UtcNow
-            };
-            _contexto.Pagos.Add(pagoConfirmado);
+                _contexto.Pagos.Add(new Pago
+                {
+                    UsuarioId         = referidor.Id,
+                    ProductoId        = referido.ProductoId,
+                    Monto             = referido.Producto!.Precio,
+                    EstadoPago        = EstadoPago.Aprobado,
+                    PlataformaPago    = "MercadoPago",
+                    Confirmado        = true,
+                    EsSimulado        = false,
+                    FechaSolicitud    = DateTime.UtcNow,
+                    FechaConfirmacion = DateTime.UtcNow
+                });
+            }
 
             // Pago para el usuario convertido — si el referido ya es usuario,
             // también desbloquea el contenido para él.
@@ -290,9 +300,9 @@ public class ServicioPagos
                     $"{referidor.Nombres} {referidor.Apellidos}",
                     referido.NombreCompleto);
 
-            // Disparar la nueva lógica de premios.
-            await _servicioPremios.ProcesarPagoReferidoAsync(referido.Id);
-
+            referidoIdConfirmado = referido.Id; // ← guardar antes del commit
+            // Commiteamos ANTES de procesar premios para que el webhook
+            // quede guardado aunque los premios fallen.
             await transaccion.CommitAsync();
         }
         catch
@@ -300,6 +310,11 @@ public class ServicioPagos
             await transaccion.RollbackAsync();
             throw;
         }
+
+        // Premios fuera de la transacción principal — tienen su propio SaveChanges.
+        // Si fallan, el pago ya está confirmado y el webhook registrado.
+        if (referidoIdConfirmado > 0)
+            await _servicioPremios.ProcesarPagoReferidoAsync(referidoIdConfirmado);
     }
 
     // ----------------------------------------------------------------

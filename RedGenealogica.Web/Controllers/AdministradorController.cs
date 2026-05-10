@@ -459,8 +459,10 @@ public class AdministradorController : Controller
         var pdf = await _contexto.ProductoPdfs.FindAsync(pdfId);
         if (pdf == null || pdf.ProductoId != productoId) return NotFound();
 
-        var ruta = pdf.Url.Replace('/', Path.DirectorySeparatorChar);
-        if (System.IO.File.Exists(ruta)) System.IO.File.Delete(ruta);
+        // Construir ruta física correcta para Railway (/app/storage/...)
+        var rutaRelativa = pdf.Url.TrimStart('/');
+        var rutaFisica = Path.Combine("/app", rutaRelativa);
+        if (System.IO.File.Exists(rutaFisica)) System.IO.File.Delete(rutaFisica);
 
         _contexto.ProductoPdfs.Remove(pdf);
         await _contexto.SaveChangesAsync();
