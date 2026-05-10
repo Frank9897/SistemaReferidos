@@ -108,6 +108,18 @@
         </div>
 
 <!-- REFERIDOS -->
+@if (TempData["LinkPago"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom:14px; word-break:break-all;">
+        🔗 <strong>Link de pago para @TempData["LinkPagoNombre"]:</strong><br/>
+        <span style="font-size:12px; color:var(--sky);">@TempData["LinkPago"]</span>
+        <button onclick="navigator.clipboard.writeText('@TempData["LinkPago"]'); this.innerText='✅ Copiado!'"
+                class="btn btn-secondary btn-sm" style="margin-top:8px; display:block;">
+            📋 Copiar link
+        </button>
+    </div>
+}
+
 <div class="card">
     <div class="card-header">
         <span class="card-title">👤 Referidos (@referidos.Count)</span>
@@ -120,7 +132,16 @@
     else
     {
         <table class="table">
-            <thead><tr><th>Nombre</th><th>Email</th><th>Producto</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Producto</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
             <tbody>
                 @foreach (var r in referidos)
                 {
@@ -130,20 +151,65 @@
                         EstadoReferido.Cancelado  => "badge-danger",
                         _ => "badge-warning"
                     };
+                    var estadoLabel = r.Estado switch {
+                        EstadoReferido.Convertido => "Convertido",
+                        EstadoReferido.Pagado     => "Pagado",
+                        EstadoReferido.Cancelado  => "Cancelado",
+                        _ => "Pendiente"
+                    };
                     <tr>
                         <td><strong>@r.NombreCompleto</strong></td>
-                        <td>@(r.CorreoElectronico ?? "—")</td>
-                        <td>@(r.Producto?.Nombre ?? "—")</td>
-                        <td><span class="badge @badgeClass">@r.Estado</span></td>
-                        <td>@r.FechaRegistro.ToString("dd/MM/yy")</td>
+                        <td style="font-size:12px; color:var(--text-muted);">@(r.CorreoElectronico ?? "—")</td>
+                        <td style="font-size:12px;">@(r.Producto?.Nombre ?? "—")</td>
+                        <td><span class="badge @badgeClass">@estadoLabel</span></td>
+                        <td style="font-size:12px;">@r.FechaRegistro.ToString("dd/MM/yy")</td>
                         <td>
-                            @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
-                            {
-                                <form asp-controller="Administrador" asp-action="ConvertirReferido" asp-route-referidoId="@r.Id" method="post">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-success btn-sm">Convertir a usuario</button>
-                                </form>
-                            }
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+
+                                @* Pendiente: mostrar link de pago + confirmar pago manual *@
+                                @if (r.Estado == EstadoReferido.Pendiente)
+                                {
+                                    <a asp-controller="Administrador" asp-action="LinkPagoReferido"
+                                       asp-route-referidoId="@r.Id"
+                                       class="btn btn-secondary btn-sm"
+                                       title="Genera el link de MP para enviárselo al referido">
+                                        🔗 Link pago
+                                    </a>
+
+                                    <form asp-controller="Administrador" asp-action="ConfirmarPagoReferido"
+                                          asp-route-referidoId="@r.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm"
+                                                onclick="return confirm('¿Confirmar el pago de @r.NombreCompleto manualmente? Solo hacelo si verificaste el pago en MercadoPago.')">
+                                            ✅ Confirmar pago
+                                        </button>
+                                    </form>
+                                }
+
+                                @* Pagado: convertir a usuario si no fue convertido aún *@
+                                @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
+                                {
+                                    <form asp-controller="Administrador" asp-action="ConvertirReferido"
+                                          asp-route-referidoId="@r.Id" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-primary btn-sm"
+                                                onclick="return confirm('¿Convertir a @r.NombreCompleto en usuario del sistema?')">
+                                            👤 Activar como usuario
+                                        </button>
+                                    </form>
+                                }
+
+                                @* Convertido: mostrar vínculo al usuario *@
+                                @if (r.Estado == EstadoReferido.Convertido && r.UsuarioConvertidoId != null)
+                                {
+                                    <a asp-controller="Administrador" asp-action="DetalleUsuario"
+                                       asp-route-id="@r.UsuarioConvertidoId"
+                                       class="btn btn-secondary btn-sm">
+                                        👁 Ver usuario
+                                    </a>
+                                }
+
+                            </div>
                         </td>
                     </tr>
                 }

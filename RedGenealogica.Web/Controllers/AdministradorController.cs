@@ -28,6 +28,7 @@ public class AdministradorController : Controller
     private readonly UserManager<Usuario> _userManager;
     private readonly ServicioReferidos _servicioReferidos;
     private readonly ServicioRetiros _servicioRetiros;
+    private readonly ServicioPagos _servicioPagos;
     private readonly IWebHostEnvironment _env;
 
     public AdministradorController(
@@ -35,12 +36,14 @@ public class AdministradorController : Controller
         UserManager<Usuario> userManager,
         ServicioReferidos servicioReferidos,
         ServicioRetiros servicioRetiros,
+        ServicioPagos servicioPagos,
         IWebHostEnvironment env)
     {
         _contexto = contexto;
         _userManager = userManager;
         _servicioReferidos = servicioReferidos;
         _servicioRetiros = servicioRetiros;
+        _servicioPagos = servicioPagos;
         _env = env;
     }
 
@@ -269,6 +272,78 @@ public class AdministradorController : Controller
 
         var referido = await _contexto.Referidos.FindAsync(referidoId);
         return RedirectToAction("DetalleUsuario", "Administrador", new { id = referido?.UsuarioId });
+    }
+
+    // ================================================================
+    // ACCIONES SOBRE REFERIDOS
+    // ================================================================
+
+    // ── ConfirmarPagoReferido ────────────────────────────────────────
+    // Confirma el pago de un referido manualmente desde el admin.
+    // Útil cuando el webhook de MP falló pero el pago se hizo igual.
+    // Activa al sponsor y dispara la lógica de premios.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmarPagoReferido(int referidoId)
+    {
+        var referido = await _contexto.Referidos
+            .Include(r => r.Usuario)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+        {
+            TempData["Error"] = "Referido no encontrado.";
+            return RedirectToAction("Usuarios");
+        }
+
+        if (referido.PagoConfirmado)
+        {
+            TempData["Error"] = "El pago de este referido ya fue confirmado.";
+            return RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
+        }
+
+        await _servicioPagos.ConfirmarPago(referido.Id);
+
+        TempData["Exito"] = $"✅ Pago de {referido.NombreCompleto} confirmado manualmente.";
+        return RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
+    }
+
+    // ── ObtenerLinkPago ──────────────────────────────────────────────
+    // Genera o regenera el link de pago de MercadoPago para un referido
+    // pendiente y redirige al admin a ese link (o lo muestra).
+    [HttpGet]
+    public async Task<IActionResult> LinkPagoReferido(int referidoId)
+    {
+        var referido = await _contexto.Referidos
+            .Include(r => r.Usuario)
+            .Include(r => r.Producto)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+        {
+            TempData["Error"] = "Referido no encontrado.";
+            return RedirectToAction("Usuarios");
+        }
+
+        if (referido.PagoConfirmado)
+        {
+            TempData["Error"] = "Este referido ya pagó.";
+            return RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
+        }
+
+        try
+        {
+            var url = await _servicioPagos.CrearPreferencia(referido.Id);
+            // Mostrar el link en TempData para que el admin lo copie
+            TempData["LinkPago"] = url;
+            TempData["LinkPagoNombre"] = referido.NombreCompleto;
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Error al generar el link: {ex.Message}";
+        }
+
+        return RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
     }
 
     // ================================================================
