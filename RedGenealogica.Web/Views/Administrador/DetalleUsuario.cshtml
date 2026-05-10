@@ -48,33 +48,40 @@
         <div style="font-size:12px; color:var(--text-muted);">Pendiente: $@Model.SaldoPendienteRetiro.ToString("N2")</div>
     </div>
     <div class="acciones-inline">
-        @if (Model.EstadoUsuario != EstadoUsuario.Suspendido)
+        @if (Model.EstadoUsuario == EstadoUsuario.Activo)
         {
             <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-danger">Suspender</button>
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('¿Suspender este usuario?')">🚫 Suspender</button>
             </form>
         }
-        else
+        else if (Model.EstadoUsuario == EstadoUsuario.Suspendido)
         {
             <form asp-controller="Administrador" asp-action="Reactivar" asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-success">Reactivar</button>
+                <button type="submit" class="btn btn-success">✅ Reactivar</button>
             </form>
         }
-        <a href="/Administrador/Usuarios" class="btn btn-secondary">← Volver</a>
-        @if (Model.EstadoUsuario != EstadoUsuario.Activo)
+        else if (Model.EstadoUsuario == EstadoUsuario.Pendiente)
         {
             <form asp-controller="Administrador" asp-action="ActivarManualmente"
-                  asp-route-id="@Model.Id" method="post">
+                asp-route-id="@Model.Id" method="post">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-success"
-                        onclick="return confirm('¿Activar manualmente? Solo hacelo si confirmaste el pago en el panel de MercadoPago.')">
+                        onclick="return confirm('¿Activar manualmente? Solo hacelo si confirmaste el pago en MercadoPago.')">
                     ⚡ Activar manualmente
                 </button>
             </form>
+            <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger"
+                        onclick="return confirm('¿Suspender este usuario?')">🚫 Suspender</button>
+            </form>
         }
-            </div>
+        <a href="/Administrador/Usuarios" class="btn btn-secondary">← Volver</a>
+    </div>
+    </div>
         </div>
 
         <!-- RESET CONTRASEÑA -->
