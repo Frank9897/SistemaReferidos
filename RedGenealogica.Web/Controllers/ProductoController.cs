@@ -82,8 +82,6 @@ public class ProductoController : Controller
         // URL pública del producto para compartir (calculada en el controller, no en la vista)
         ViewBag.UrlProducto = $"{Request.Scheme}://{Request.Host}/Producto/{producto.Id}";
 
-        // URL pública del producto para compartir
-        ViewBag.UrlProducto = $"{Request.Scheme}://{Request.Host}/Producto/{producto.Id}";
 
         return View(producto);
     }

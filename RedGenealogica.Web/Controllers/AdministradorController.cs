@@ -261,6 +261,7 @@ public class AdministradorController : Controller
     // ================================================================
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ConvertirReferido(int referidoId)
     {
         var (exito, mensaje) = await _servicioReferidos.ConvertirReferidoAUsuarioAsync(referidoId);
@@ -437,6 +438,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleProducto(int id)
     {
         var producto = await _contexto.Productos.FindAsync(id);
@@ -451,6 +453,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EliminarProducto(int id)
     {
         var producto = await _contexto.Productos.FindAsync(id);

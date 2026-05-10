@@ -112,8 +112,8 @@
 {
     <div class="alert alert-success" style="margin-bottom:14px; word-break:break-all;">
         🔗 <strong>Link de pago para @TempData["LinkPagoNombre"]:</strong><br/>
-        <span style="font-size:12px; color:var(--sky);">@TempData["LinkPago"]</span>
-        <button onclick="navigator.clipboard.writeText('@TempData["LinkPago"]'); this.innerText='✅ Copiado!'"
+        <span style="font-size:12px; color:var(--sky);" id="linkPagoTexto">@TempData["LinkPago"]</span>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('linkPagoTexto').innerText); this.innerText='✅ Copiado!'"
                 class="btn btn-secondary btn-sm" style="margin-top:8px; display:block;">
             📋 Copiar link
         </button>
