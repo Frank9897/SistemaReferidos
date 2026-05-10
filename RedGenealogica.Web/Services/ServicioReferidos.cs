@@ -18,6 +18,7 @@ using RedGenealogica.Web.Data;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.ViewModels;
+using RedGenealogica.Web.Services;
 
 namespace RedGenealogica.Web.Services;
 
@@ -25,11 +26,16 @@ public class ServicioReferidos
 {
     private readonly ContextoAplicacion _contexto;
     private readonly UserManager<Usuario> _userManager;
+    private readonly ServicioCorreos _servicioCorreos;
 
-    public ServicioReferidos(ContextoAplicacion contexto, UserManager<Usuario> userManager)
+    public ServicioReferidos(
+        ContextoAplicacion contexto,
+        UserManager<Usuario> userManager,
+        ServicioCorreos servicioCorreos)
     {
         _contexto = contexto;
         _userManager = userManager;
+        _servicioCorreos = servicioCorreos;
     }
 
     // ----------------------------------------------------------------
@@ -183,10 +189,14 @@ public class ServicioReferidos
             return (false, $"Error al crear usuario: {errores}");
         }
 
-        // Genera token de reset para que el usuario establezca su contraseña
-        // TODO: enviar por email → /Autenticacion/EstablecerPassword?token=X&email=Y
-        var tokenReset = await _userManager.GeneratePasswordResetTokenAsync(nuevoUsuario);
-        _ = tokenReset; // pendiente: implementar envío de email
+        // Enviar credenciales por email para que el usuario pueda ingresar
+        if (!string.IsNullOrEmpty(nuevoUsuario.Email))
+        {
+            await _servicioCorreos.EnviarCredencialesAsync(
+                nuevoUsuario.Email,
+                nuevoUsuario.Nombres,
+                passwordTemporal);
+        }
 
         referido.UsuarioConvertidoId = nuevoUsuario.Id;
         referido.Estado = EstadoReferido.Convertido;

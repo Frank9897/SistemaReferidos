@@ -46,9 +46,9 @@ public class ServicioPremios
     }
 
     // ── ProcesarPagoReferidoAsync ───────────────────────────────────────
-    // IMPORTANTE: NO abre transacción propia. La transacción viene del
-    // caller (ServicioPagos.ConfirmarPago). Abrir una transacción anidada
-    // en PostgreSQL con EF Core causa errores de concurrencia.
+    // Se ejecuta FUERA de la transacción de ConfirmarPago.
+    // Tiene su propio SaveChangesAsync. Si falla, el pago ya está
+    // confirmado y el webhook registrado — no se pierde el pago.
     public async Task ProcesarPagoReferidoAsync(int referidoId)
     {
         var referido = await _contexto.Referidos
