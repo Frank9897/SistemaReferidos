@@ -55,7 +55,9 @@
                     💡 Una vez registrado, el referido deberá pagar el producto para que tu cuenta se active y empieces a ganar comisiones.
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+                @{ var hayProductos = (ViewBag.Productos as List<RedGenealogica.Web.Models.Producto>)?.Any() ?? false; }
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;"
+                        @(hayProductos ? "" : "disabled")>
                     Registrar referido
                 </button>
             </form>
