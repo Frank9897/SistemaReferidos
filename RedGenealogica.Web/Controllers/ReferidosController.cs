@@ -66,6 +66,7 @@ public class ReferidosController : Controller
     // registrar referidos. La activación real ocurre cuando paga.
     // ----------------------------------------------------------------
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Crear(RegistrarReferidoViewModel modelo)
     {
         if (!ModelState.IsValid)

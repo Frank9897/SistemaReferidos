@@ -157,6 +157,7 @@ public class UsuarioController : Controller
     // Inicia el pago del primer referido para activar la cuenta.
     // ----------------------------------------------------------------
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ActivarCuenta()
     {
         var usuario = await _userManager.GetUserAsync(User);
@@ -270,6 +271,7 @@ public class UsuarioController : Controller
     // POST /Usuario/EditarPerfil
     // ----------------------------------------------------------------
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditarPerfil(EditarPerfilViewModel model)
     {
         if (!ModelState.IsValid)

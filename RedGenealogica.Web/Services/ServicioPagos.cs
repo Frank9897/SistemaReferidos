@@ -350,7 +350,7 @@ public class ServicioPagos
             },
             payer = new
             {
-                email = "test_user_123@testuser.com"
+                email = referido.CorreoElectronico ?? "franco.vasquez9897@gmail.com"
             },
             back_urls = new
             {

@@ -30,6 +30,8 @@ public class PagosController : Controller
         _userManager     = userManager;
     }
 
+    [HttpGet]
+    [Authorize]
     public async Task<IActionResult> Pagar(int referidoId)
     {
         var url = await _servicioPagos.CrearPreferencia(referidoId);
