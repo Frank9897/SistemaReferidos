@@ -101,6 +101,19 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
     if (!await roleManager.RoleExistsAsync("Admin"))
         await roleManager.CreateAsync(new IdentityRole<int>("Admin"));
+
+    var contexto = scope.ServiceProvider.GetRequiredService<ContextoAplicacion>();
+    if (!await contexto.Configuraciones.AnyAsync())
+    {
+        contexto.Configuraciones.Add(new RedGenealogica.Web.Models.Configuracion
+        {
+            Clave = "retiros_monto_minimo",
+            Valor = "500",
+            Descripcion = "Monto mínimo para solicitar un retiro (en pesos)",
+            FechaModificacion = DateTime.UtcNow
+        });
+        await contexto.SaveChangesAsync();
+    }
 }
 
 if (!app.Environment.IsDevelopment())

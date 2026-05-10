@@ -16,6 +16,7 @@
     <div class="section-subtitle">Completá los datos del producto digital</div>
 
     <form method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
         <div asp-validation-summary="All" class="validation-summary-errors"></div>
 
         @* ── Datos básicos ─────────────────────────────────────────── *@

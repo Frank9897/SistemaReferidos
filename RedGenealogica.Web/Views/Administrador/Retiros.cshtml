@@ -71,19 +71,22 @@
 
                                     <button type="button"
                                             class="btn btn-secondary btn-sm"
-                                            onclick="copiarTexto('@Html.Raw(s.CbuAlias)')">
+                                            data-copiar="@s.CbuAlias"
+                                            onclick="copiarTexto(this.dataset.copiar)">
                                         📋 Alias
                                     </button>
 
                                     <button type="button"
                                             class="btn btn-secondary btn-sm"
-                                            onclick="copiarTexto('@s.Monto.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)')">
+                                            data-copiar="@s.Monto.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                            onclick="copiarTexto(this.dataset.copiar)">
                                         💰 Monto
                                     </button>
 
                                     <button type="button"
                                             class="btn btn-primary btn-sm"
-                                            onclick="copiarTexto('Alias: @s.CbuAlias | Monto: @s.Monto.ToString("F2")')">
+                                            data-copiar="Alias: @s.CbuAlias | Monto: $@s.Monto.ToString("N2")"
+                                            onclick="copiarTexto(this.dataset.copiar)">
                                         📦 Todo
                                     </button>
 

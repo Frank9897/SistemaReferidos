@@ -136,7 +136,7 @@ public class ServicioRetiros
         if (solicitud.Estado != EstadoRetiro.Aprobado)
             return (false, "Solo se pueden completar solicitudes aprobadas");
 
-        solicitud.Usuario!.SaldoPendienteRetiro -= solicitud.Monto;
+        solicitud.Usuario!.SaldoPendienteRetiro = Math.Max(0, solicitud.Usuario.SaldoPendienteRetiro - solicitud.Monto);
         solicitud.Estado                  = EstadoRetiro.Completado;
         solicitud.ReferenciaTransferencia = referenciaTransferencia;
         solicitud.FechaResolucion         = DateTime.UtcNow;
@@ -157,7 +157,7 @@ public class ServicioRetiros
             return (false, "Solo se pueden rechazar solicitudes pendientes");
 
         solicitud.Usuario!.SaldoDisponible      += solicitud.Monto;
-        solicitud.Usuario.SaldoPendienteRetiro  -= solicitud.Monto;
+        solicitud.Usuario.SaldoPendienteRetiro = Math.Max(0, solicitud.Usuario.SaldoPendienteRetiro - solicitud.Monto);
         solicitud.Estado           = EstadoRetiro.Rechazado;
         solicitud.NotaAdmin        = motivo;
         solicitud.AdminResolvidoId = adminId;
