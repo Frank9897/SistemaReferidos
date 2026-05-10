@@ -33,6 +33,10 @@
             $@string.Format("{0:N0}", (decimal)ViewBag.IngresoBruto)
         </div>
         <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Ingreso bruto (pagos)</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:6px; line-height:1.8;">
+            Comisión MP ~6%: <span style="color:var(--red);">-$@string.Format("{0:N2}", (decimal)ViewBag.ComisionEstimadaMP)</span><br/>
+            Neto estimado: <span style="color:var(--sky);">$@string.Format("{0:N2}", (decimal)ViewBag.IngresoNetoEstimado)</span>
+        </div>
     </div>
 
     <div class="card" style="margin-bottom:0; text-align:center; padding:20px 16px;">

@@ -42,6 +42,7 @@
                     <th>Estado</th>
                     <th>Puntos</th>
                     <th>Saldo</th>
+                    <th>CBU/Alias</th>
                     <th>Registro</th>
                     <th>Acciones</th>
                 </tr>
@@ -65,6 +66,9 @@
                         <td data-label="Estado"><span class="badge @estadoBadge">@u.EstadoUsuario</span></td>
                         <td data-label="Puntos" style="color:var(--sky);">@u.PuntosAcumulados</td>
                         <td data-label="Saldo" style="color:var(--green);">$@u.SaldoDisponible.ToString("N0")</td>
+                        <td data-label="CBU/Alias" style="font-size:12px; color:var(--text-muted);">
+                            @(string.IsNullOrEmpty(u.CbuAlias) ? "—" : u.CbuAlias)
+                        </td>
                         <td data-label="Registro">@u.FechaRegistro.ToString("dd/MM/yy")</td>
                         <td data-label="Acciones">
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">

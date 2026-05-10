@@ -115,7 +115,12 @@ public class AdministradorController : Controller
         ViewBag.TotalReferidos     = totalReferidos;
         ViewBag.ReferidosPagados   = referidosPagados;
         ViewBag.TotalPagos         = totalPagos;
-        ViewBag.IngresoBruto       = ingresoBruto;
+        // Comisión MP estimada: 4.99% + IVA 21% ≈ 6.04% efectivo sobre tarjeta crédito.
+        // Es una estimación — el monto real varía según el método de pago del comprador.
+        const decimal comisionMP = 0.0604m;
+        ViewBag.IngresoBruto           = ingresoBruto;
+        ViewBag.ComisionEstimadaMP     = Math.Round(ingresoBruto * comisionMP, 2);
+        ViewBag.IngresoNetoEstimado    = Math.Round(ingresoBruto * (1m - comisionMP), 2);
         ViewBag.TotalCiclos        = totalCiclos;
         ViewBag.TotalPremios       = totalPremios;
         ViewBag.TotalBonosAbuelo   = totalBonosAbuelo;
@@ -219,6 +224,32 @@ public class AdministradorController : Controller
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} reactivado.";
         return RedirectToAction("DetalleUsuario", new { id });
     }
+
+    // ── Activación manual por el admin ─────────────────────────────────
+    // Usá esto cuando el pago se confirmó en MP pero el webhook falló
+    // y el usuario quedó en estado Pendiente sin activarse.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarManualmente(int id)
+    {
+        var usuario = await _contexto.Users.FindAsync(id);
+        if (usuario == null) return NotFound();
+
+        if (usuario.EstadoUsuario == EstadoUsuario.Activo)
+        {
+            TempData["Error"] = "El usuario ya está activo.";
+            return RedirectToAction("DetalleUsuario", new { id });
+        }
+
+        usuario.EstadoUsuario = EstadoUsuario.Activo;
+        usuario.FechaActivacion ??= DateTime.UtcNow;
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"✅ Usuario {usuario.Nombres} {usuario.Apellidos} activado manualmente.";
+        return RedirectToAction("DetalleUsuario", new { id });
+    }
+
+
 
     // ================================================================
     // CONVERSIÓN DE REFERIDO A USUARIO
@@ -586,11 +617,20 @@ public class AdministradorController : Controller
     // GET /Administrador/ServirPdf
     // Sirve PDFs desde el volumen persistente
     // ----------------------------------------------------------------
-   [HttpGet]
+    // ── ServirPdf ───────────────────────────────────────────────────────
+    // Sirve PDFs desde el volumen persistente /app/storage.
+    // Sanitiza la ruta para prevenir path traversal (ej: ../../etc/passwd).
+    [HttpGet]
     public IActionResult ServirPdf(string ruta)
     {
-        var rutaLimpia = ruta.TrimStart('/');
-        var rutaFisica = Path.Combine("/app", rutaLimpia);
+        if (string.IsNullOrWhiteSpace(ruta))
+            return BadRequest();
+
+        var rutaLimpia = ruta.TrimStart('/').Replace("..", string.Empty);
+        var rutaFisica = Path.GetFullPath(Path.Combine("/app", rutaLimpia));
+
+        if (!rutaFisica.StartsWith("/app/storage/", StringComparison.OrdinalIgnoreCase))
+            return Forbid();
 
         if (!System.IO.File.Exists(rutaFisica))
             return NotFound();

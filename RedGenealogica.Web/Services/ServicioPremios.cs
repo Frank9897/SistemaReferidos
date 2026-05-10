@@ -45,53 +45,40 @@ public class ServicioPremios
         _notificaciones = notificaciones;
     }
 
+    // ── ProcesarPagoReferidoAsync ───────────────────────────────────────
+    // IMPORTANTE: NO abre transacción propia. La transacción viene del
+    // caller (ServicioPagos.ConfirmarPago). Abrir una transacción anidada
+    // en PostgreSQL con EF Core causa errores de concurrencia.
     public async Task ProcesarPagoReferidoAsync(int referidoId)
     {
-        using var tx = await _contexto.Database.BeginTransactionAsync();
+        var referido = await _contexto.Referidos
+            .Include(r => r.Usuario)
+            .Include(r => r.Producto)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
 
-        try
-        {
-            var referido = await _contexto.Referidos
-                .Include(r => r.Usuario)
-                .Include(r => r.Producto)
-                .FirstOrDefaultAsync(r => r.Id == referidoId);
+        if (referido == null) return;
 
-            if (referido == null) return;
+        var sponsor = referido.Usuario;
+        if (sponsor == null) return;
 
-            var sponsor = referido.Usuario;
-            if (sponsor == null) return;
+        var producto = referido.Producto;
+        if (producto == null) return;
 
-            var producto = referido.Producto;
-            if (producto == null) return;
+        var cantidadPagados = await _contexto.Referidos
+            .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
 
-            var cantidadPagados = await _contexto.Referidos
-                .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
+        int ciclosCalculados = cantidadPagados / REFERIDOS_POR_CICLO;
 
-            int ciclosCalculados = cantidadPagados / REFERIDOS_POR_CICLO;
+        if (ciclosCalculados <= sponsor.CiclosCompletados) return;
 
-            if (ciclosCalculados <= sponsor.CiclosCompletados)
-            {
-                await tx.CommitAsync();
-                return;
-            }
+        int nuevosCiclos = ciclosCalculados - sponsor.CiclosCompletados;
 
-            int nuevosCiclos = ciclosCalculados - sponsor.CiclosCompletados;
+        for (int i = 0; i < nuevosCiclos; i++)
+            await OtorgarPremioYBonoAsync(sponsor, producto);
 
-            for (int i = 0; i < nuevosCiclos; i++)
-            {
-                await OtorgarPremioYBonoAsync(sponsor, producto);
-            }
+        sponsor.CiclosCompletados = ciclosCalculados;
 
-            sponsor.CiclosCompletados = ciclosCalculados;
-
-            await _contexto.SaveChangesAsync();
-            await tx.CommitAsync();
-        }
-        catch
-        {
-            await tx.RollbackAsync();
-            throw;
-        }
+        await _contexto.SaveChangesAsync();
     }
 
     private async Task OtorgarPremioYBonoAsync(Usuario sponsor, Producto producto)

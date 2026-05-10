@@ -80,18 +80,8 @@ public class ServicioPagos
             referido.Estado = EstadoReferido.Pagado;
             referido.FechaActivacion = DateTime.UtcNow;
 
-            var referidor = referido.Usuario!;
-            var rangoAnterior = referidor.TipoRangoActual;
-            var eraActivo = referidor.EstadoUsuario == EstadoUsuario.Activo;
-
-            // Activar al referidor si estaba inactivo / pendiente.
-            if (!eraActivo)
-            {
-                referidor.EstadoUsuario = EstadoUsuario.Activo;
-                referidor.FechaActivacion = DateTime.UtcNow;
-            }
-
-            // Si es autopago, activar la cuenta del propio usuario
+            // Autopago: el usuario se activa a sí mismo.
+            // Retornamos temprano para no correr la lógica de referidor/premios.
             if (referido.EsAutoPago)
             {
                 var usuarioAPagar = await _contexto.Users.FindAsync(referido.UsuarioId);
@@ -101,7 +91,19 @@ public class ServicioPagos
                     usuarioAPagar.FechaActivacion = DateTime.UtcNow;
                 }
                 await _contexto.SaveChangesAsync();
+                await transaccion.CommitAsync();
                 return;
+            }
+
+            // Pago de referido normal: activar al referidor si estaba inactivo.
+            var referidor = referido.Usuario!;
+            var rangoAnterior = referidor.TipoRangoActual;
+            var eraActivo = referidor.EstadoUsuario == EstadoUsuario.Activo;
+
+            if (!eraActivo)
+            {
+                referidor.EstadoUsuario = EstadoUsuario.Activo;
+                referidor.FechaActivacion = DateTime.UtcNow;
             }
 
             // ── Crear registro de Pago confirmado ────────────────────
@@ -409,16 +411,17 @@ public class ServicioPagos
         if (referido == null)
             return false;
 
-        await ConfirmarPago(referidoId);
-
+        // Registrar el webhook ANTES de procesar para evitar duplicados
+        // incluso si ConfirmarPago hace return anticipado (caso autopago).
         _contexto.RegistrosWebhook.Add(new RegistroWebhook
         {
             IdPago = idPago,
             Estado = status,
             FechaRegistro = DateTime.UtcNow
         });
-
         await _contexto.SaveChangesAsync();
+
+        await ConfirmarPago(referidoId);
         return true;
     }
 
@@ -433,8 +436,9 @@ public class ServicioPagos
             .OrderByDescending(r => r.Orden)
             .ToListAsync();
 
+        // Consistente con el default del modelo Usuario (TipoRango.Cobre)
         if (!rangos.Any())
-            return TipoRango.Bronce;
+            return TipoRango.Cobre;
 
         var rango = rangos.FirstOrDefault(r => referidosPagados >= r.PuntosMinimos);
 

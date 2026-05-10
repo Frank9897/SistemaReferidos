@@ -23,6 +23,11 @@
     <div>
         <div class="titulo-principal">@Model.Nombres @Model.Apellidos</div>
         <div style="color:var(--text-muted); font-size:14px; margin-top:2px;">@Model.Email</div>
+        <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">
+            CBU/Alias: <strong style="color:var(--text);">
+                @(string.IsNullOrEmpty(Model.CbuAlias) ? "Sin configurar" : Model.CbuAlias)
+            </strong>
+        </div>
         <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
             <span class="badge-rango @rangoClass">@Model.TipoRangoActual</span>
             @{
@@ -58,6 +63,17 @@
             </form>
         }
         <a href="/Administrador/Usuarios" class="btn btn-secondary">← Volver</a>
+        @if (Model.EstadoUsuario != EstadoUsuario.Activo)
+        {
+            <form asp-controller="Administrador" asp-action="ActivarManualmente"
+                  asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('¿Activar manualmente? Solo hacelo si confirmaste el pago en el panel de MercadoPago.')">
+                    ⚡ Activar manualmente
+                </button>
+            </form>
+        }
             </div>
         </div>
 
