@@ -80,7 +80,13 @@ public class PagosController : Controller
         {
             await _servicioPagos.ProcesarWebhookPagoAsync(paymentId);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Loguear el error y retornar 500 para que MP reintente el webhook
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<PagosController>>();
+            logger.LogError(ex, "Error procesando webhook MP para pago {PaymentId}", paymentId);
+            return StatusCode(500);
+        }
 
         return Ok();
     }

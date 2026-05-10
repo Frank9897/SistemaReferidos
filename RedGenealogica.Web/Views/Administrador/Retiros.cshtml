@@ -69,6 +69,10 @@
 
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
 
+                                    @{
+                                        var _montoStr = s.Monto.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("es-AR"));
+                                        var _todoStr  = $"Alias: {s.CbuAlias} | Monto: ${_montoStr}";
+                                    }
                                     <button type="button"
                                             class="btn btn-secondary btn-sm"
                                             data-copiar="@s.CbuAlias"
@@ -78,14 +82,14 @@
 
                                     <button type="button"
                                             class="btn btn-secondary btn-sm"
-                                            data-copiar="@s.Monto.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-copiar="@_montoStr"
                                             onclick="copiarTexto(this.dataset.copiar)">
                                         💰 Monto
                                     </button>
 
                                     <button type="button"
                                             class="btn btn-primary btn-sm"
-                                            data-copiar="Alias: @s.CbuAlias | Monto: $@s.Monto.ToString("N2")"
+                                            data-copiar="@_todoStr"
                                             onclick="copiarTexto(this.dataset.copiar)">
                                         📦 Todo
                                     </button>

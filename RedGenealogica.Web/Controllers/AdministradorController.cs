@@ -408,6 +408,7 @@ public class AdministradorController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditarProducto(
         Producto modelo,
         List<IFormFile>? archivosPdf,
