@@ -71,7 +71,8 @@ public class NotificacionesController : Controller
         var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         await _servicioNotificaciones.MarcarLeidaAsync(id, usuarioId);
 
-        if (!string.IsNullOrEmpty(urlRetorno))
+        // Validar que la URL sea local para evitar open redirect
+        if (!string.IsNullOrEmpty(urlRetorno) && Url.IsLocalUrl(urlRetorno))
             return Redirect(urlRetorno);
 
         return RedirectToAction("Index");

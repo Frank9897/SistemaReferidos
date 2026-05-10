@@ -54,7 +54,7 @@
                 <span class="card-title">Nueva solicitud</span>
             </div>
 
-            <form method="post">
+            <form method="post" id="formRetiro">
                 @Html.AntiForgeryToken()
 
                 <div class="form-group">
@@ -257,6 +257,6 @@ function cerrarConfirmacion() {
 }
 
 function confirmarEnvio() {
-    document.querySelector("form").submit();
+    document.getElementById("formRetiro").submit();
 }
 </script>

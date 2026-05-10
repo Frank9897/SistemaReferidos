@@ -104,13 +104,9 @@ public class ServicioNotificaciones
     // ----------------------------------------------------------------
     public async Task MarcarTodasLeidasAsync(int usuarioId)
     {
-        var noLeidas = await _contexto.Notificaciones
+        // ExecuteUpdateAsync actualiza directamente en BD sin cargar entidades en memoria.
+        await _contexto.Notificaciones
             .Where(n => n.UsuarioId == usuarioId && !n.Leida)
-            .ToListAsync();
-
-        foreach (var n in noLeidas)
-            n.Leida = true;
-
-        await _contexto.SaveChangesAsync();
+            .ExecuteUpdateAsync(s => s.SetProperty(n => n.Leida, true));
     }
 }
