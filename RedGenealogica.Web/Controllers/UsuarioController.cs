@@ -76,15 +76,19 @@ public class UsuarioController : Controller
             .Take(5)
             .ToListAsync();
 
-        var todosLosUsuarios = await _contexto.Users
+        var hijosDirectos = await _contexto.Users
             .AsNoTracking()
+            .Where(u => u.IdUsuarioPadre == usuario.Id)
             .ToListAsync();
 
-        var hijosDirectos = todosLosUsuarios
-            .Where(u => u.IdUsuarioPadre == usuario.Id)
-            .ToList();
+        // Solo cargar Id e IdUsuarioPadre para calcular descendientes,
+        // evitando traer todas las columnas de todos los usuarios a memoria.
+        var mapaArbol = await _contexto.Users
+            .AsNoTracking()
+            .Select(u => new Usuario { Id = u.Id, IdUsuarioPadre = u.IdUsuarioPadre })
+            .ToListAsync();
 
-        int totalDescendientes = ContarDescendientes(usuario.Id, todosLosUsuarios);
+        int totalDescendientes = ContarDescendientes(usuario.Id, mapaArbol);
 
         int referidosIndirectos = totalDescendientes > hijosDirectos.Count
             ? totalDescendientes - hijosDirectos.Count

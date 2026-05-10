@@ -37,30 +37,26 @@ public class ServicioRetiros
             return (false, "El monto debe ser mayor a cero");
         if (monto < montoMinimo)
             return (false, $"El monto mínimo de retiro es ${montoMinimo:N0}");
-        if (!ValidarCbuAlias(cbuAlias))
-        return (false, "CBU o alias inválido. El CBU debe tener 22 dígitos numéricos, o el alias entre 6 y 20 caracteres sin espacios.");
-
-        // Si no envía CBU, intentar usar el del perfil
+        // Primero resolver el CBU — puede venir del perfil si el campo está vacío
         if (string.IsNullOrWhiteSpace(cbuAlias))
         {
             var usuarioExistente = await _contexto.Users.FindAsync(usuarioId);
-
             if (usuarioExistente == null)
                 return (false, "Usuario no encontrado");
-
             if (string.IsNullOrWhiteSpace(usuarioExistente.CbuAlias))
                 return (false, "Debés ingresar tu CBU o alias de MercadoPago");
-
             cbuAlias = usuarioExistente.CbuAlias;
         }
         else
         {
-            // Si lo envía manualmente, actualizar el perfil
+            // Validar solo si viene explícitamente
+            if (!ValidarCbuAlias(cbuAlias))
+                return (false, "CBU o alias inválido. El CBU debe tener 22 dígitos numéricos, o el alias entre 6 y 20 caracteres sin espacios.");
+
+            // Actualizar el perfil con el CBU ingresado
             var usuarioExistente = await _contexto.Users.FindAsync(usuarioId);
             if (usuarioExistente != null)
-            {
                 usuarioExistente.CbuAlias = cbuAlias;
-            }
         }
 
         var usuario = await _contexto.Users.FindAsync(usuarioId);

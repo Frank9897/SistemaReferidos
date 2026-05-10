@@ -117,13 +117,16 @@ public class AutenticacionController : Controller
             usuario.UserName!,
             modelo.Password,
             isPersistent: true,
-            lockoutOnFailure: false);
+            lockoutOnFailure: true);
 
         if (!resultado.Succeeded)
         {
             ModelState.AddModelError("", "Contraseña incorrecta");
             return View(modelo);
         }
+
+        if (usuario.DebeambiarPassword)
+            return RedirectToAction("CambiarPasswordTemporal");
 
         return RedirectToAction("Panel", "Usuario");
     }
@@ -217,6 +220,10 @@ public class AutenticacionController : Controller
         }
 
         await _signInManager.SignInAsync(usuario, isPersistent: true);
+
+        if (usuario.DebeambiarPassword)
+            return RedirectToAction("CambiarPasswordTemporal");
+
         return RedirectToAction("Panel", "Usuario");
     }
 

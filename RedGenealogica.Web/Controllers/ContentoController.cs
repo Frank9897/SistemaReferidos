@@ -35,11 +35,16 @@ public class ContentoController : Controller
         }
         else
         {
-            productos = await _contexto.Pagos
+            // Include después de Distinct no carga relaciones en EF Core.
+            // Primero obtener IDs distintos, luego cargar productos con Include.
+            var productoIds = await _contexto.Pagos
                 .Where(p => p.UsuarioId == usuarioId && p.Confirmado)
-                .Select(p => p.Producto!)
-                .Where(p => p != null)
+                .Select(p => p.ProductoId)
                 .Distinct()
+                .ToListAsync();
+
+            productos = await _contexto.Productos
+                .Where(p => productoIds.Contains(p.Id) && p.Activo)
                 .Include(p => p.Pdfs)
                 .ToListAsync();
         }
@@ -98,9 +103,9 @@ public class ContentoController : Controller
             if (!tieneAcceso) return Forbid();
         }
 
-        var rutaAbsoluta = Path.Combine(
-            _env.WebRootPath,
-            pdf.Url.Replace('/', Path.DirectorySeparatorChar));
+        // Ruta física correcta para Railway Volume (/app/storage/...)
+        var rutaRelativa = pdf.Url.TrimStart('/');
+        var rutaAbsoluta = Path.Combine("/app", rutaRelativa);
 
         if (!System.IO.File.Exists(rutaAbsoluta)) return NotFound();
 
