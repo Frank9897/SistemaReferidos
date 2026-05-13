@@ -59,12 +59,16 @@ public class ServicioRetiros
                 usuarioExistente.CbuAlias = cbuAlias;
         }
 
+        using var transaccion = await _contexto.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable);
+        try
+        {
         var usuario = await _contexto.Users.FindAsync(usuarioId);
-        if (usuario == null) return (false, "Usuario no encontrado");
+        if (usuario == null) { await transaccion.RollbackAsync(); return (false, "Usuario no encontrado"); }
         if (usuario.EstadoUsuario != EstadoUsuario.Activo)
-            return (false, "Tu cuenta no está activa");
+            { await transaccion.RollbackAsync(); return (false, "Tu cuenta no está activa"); }
         if (monto > usuario.SaldoDisponible)
-            return (false, $"Saldo insuficiente. Disponible: ${usuario.SaldoDisponible:F2}");
+            { await transaccion.RollbackAsync(); return (false, $"Saldo insuficiente. Disponible: ${usuario.SaldoDisponible:F2}"); }
 
         var tienePendiente = await _contexto.SolicitudesRetiro
             .AnyAsync(s => s.UsuarioId == usuarioId && s.Estado == EstadoRetiro.Pendiente);
@@ -84,8 +88,15 @@ public class ServicioRetiros
             FechaSolicitud = DateTime.UtcNow
         });
 
-        await _contexto.SaveChangesAsync();
-        return (true, "Solicitud enviada. El admin la revisará a la brevedad.");
+            await _contexto.SaveChangesAsync();
+            await transaccion.CommitAsync();
+            return (true, "Solicitud de retiro registrada correctamente.");
+        }
+        catch
+        {
+            await transaccion.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<(bool exito, string mensaje)> AprobarRetiroAsync(
