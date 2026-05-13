@@ -330,8 +330,9 @@ public class ServicioPagos
         var accessToken = _configuration["MercadoPago:AccessToken"]
             ?? throw new Exception("Token de MercadoPago no configurado");
 
-        var baseUrl = _configuration["App:BaseUrl"]
-            ?? throw new Exception("BaseUrl no configurado en appsettings");
+        var baseUrl = (_configuration["App:BaseUrl"]
+            ?? throw new Exception("BaseUrl no configurado en appsettings"))
+            .TrimEnd('/');
 
         using var http = new HttpClient();
         http.DefaultRequestHeaders.Authorization =
