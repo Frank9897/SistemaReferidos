@@ -1,5 +1,5 @@
 @* Usuarios.cshtml — Views/Administrador/Usuarios.cshtml *@
-@model List<RedGenealogica.Web.Models.Usuario>
+@model List<RedGenealogica.Web.ViewModels.AdminUsuarioConReferidosViewModel>
 @using RedGenealogica.Web.Enumeraciones
 @{ ViewData["Title"] = "Admin — Usuarios"; }
 
@@ -34,13 +34,14 @@
     }
     else
     {
-        <table class="table">
+        <table class="table" id="tablaUsuarios">
             <thead>
                 <tr>
+                    <th style="width:32px;"></th>
                     <th>Usuario</th>
                     <th>Rango</th>
                     <th>Estado</th>
-                    <th>Puntos</th>
+                    <th>Referidos</th>
                     <th>Saldo</th>
                     <th>CBU/Alias</th>
                     <th>Registro</th>
@@ -48,8 +49,10 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var u in Model)
+                @foreach (var item in Model)
                 {
+                    var u = item.Usuario;
+                    var referidos = item.Referidos;
                     var rangoClass = "rango-" + u.TipoRangoActual.ToString().ToLower();
                     var estadoBadge = u.EstadoUsuario switch {
                         EstadoUsuario.Activo     => "badge-success",
@@ -57,60 +60,225 @@
                         EstadoUsuario.Suspendido => "badge-danger",
                         _ => "badge-muted"
                     };
-                    <tr>
+                    var tieneReferidos = referidos.Any();
+                    var rowId = $"referidos-{u.Id}";
+
+                    @* ── Fila principal del usuario ── *@
+                    <tr class="fila-usuario @(tieneReferidos ? "expandible" : "")"
+                        @(tieneReferidos ? $"onclick=\"toggleReferidos('{rowId}')\"" : "")
+                        style="@(tieneReferidos ? "cursor:pointer;" : "")">
+
+                        <td style="text-align:center; color:var(--text-muted); font-size:12px;">
+                            @if (tieneReferidos)
+                            {
+                                <span id="icon-@u.Id" style="transition:transform .2s;">▶</span>
+                            }
+                        </td>
+
                         <td data-label="Usuario">
                             <strong>@u.Nombres @u.Apellidos</strong>
                             <div style="font-size:12px; color:var(--text-muted);">@u.Email</div>
                         </td>
-                        <td data-label="Rango"><span class="badge-rango @rangoClass">@u.TipoRangoActual</span></td>
-                        <td data-label="Estado"><span class="badge @estadoBadge">@u.EstadoUsuario</span></td>
-                        <td data-label="Puntos" style="color:var(--sky);">@u.PuntosAcumulados</td>
+                        <td data-label="Rango">
+                            <span class="badge-rango @rangoClass">@u.TipoRangoActual</span>
+                        </td>
+                        <td data-label="Estado">
+                            <span class="badge @estadoBadge">@u.EstadoUsuario</span>
+                        </td>
+                        <td data-label="Referidos" style="color:var(--text-muted); font-size:13px;">
+                            @if (tieneReferidos)
+                            {
+                                <span style="color:var(--sky);">@referidos.Count</span>
+                                <span style="font-size:11px;"> (@referidos.Count(r => r.PagoConfirmado) pagados)</span>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
                         <td data-label="Saldo" style="color:var(--green);">$@u.SaldoDisponible.ToString("N0")</td>
                         <td data-label="CBU/Alias" style="font-size:12px; color:var(--text-muted);">
                             @(string.IsNullOrEmpty(u.CbuAlias) ? "—" : u.CbuAlias)
                         </td>
                         <td data-label="Registro">@u.FechaRegistro.ToString("dd/MM/yy")</td>
-                        <td data-label="Acciones">
+                        <td data-label="Acciones" onclick="event.stopPropagation()">
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                <a asp-controller="Administrador" asp-action="DetalleUsuario" asp-route-id="@u.Id" class="btn btn-secondary btn-sm">Ver</a>
-                        @if (u.EstadoUsuario == EstadoUsuario.Suspendido)
-                        {
-                            <form asp-controller="Administrador" asp-action="Reactivar"
-                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-success btn-sm">✅ Activar</button>
-                            </form>
-                        }
-                        else if (u.EstadoUsuario == EstadoUsuario.Pendiente)
-                        {
-                            <form asp-controller="Administrador" asp-action="ActivarManualmente"
-                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-success btn-sm"
-                                        onclick="return confirm('¿Activar a @u.Nombres @u.Apellidos? No requiere pago confirmado.')">
-                                    ✅ Activar
-                                </button>
-                            </form>
-                            <form asp-controller="Administrador" asp-action="Suspender"
-                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
-                            </form>
-                        }
-                        else
-                        {
-                            @* Activo: solo mostrar Suspender *@
-                            <form asp-controller="Administrador" asp-action="Suspender"
-                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
-                            </form>
-                        }
+                                <a asp-controller="Administrador" asp-action="DetalleUsuario"
+                                   asp-route-id="@u.Id" class="btn btn-secondary btn-sm">Ver</a>
+
+                                @if (u.EstadoUsuario == EstadoUsuario.Suspendido)
+                                {
+                                    <form asp-controller="Administrador" asp-action="Reactivar"
+                                          asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm">✅ Activar</button>
+                                    </form>
+                                }
+                                else if (u.EstadoUsuario == EstadoUsuario.Pendiente)
+                                {
+                                    <form asp-controller="Administrador" asp-action="ActivarManualmente"
+                                          asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-success btn-sm"
+                                                onclick="return confirm('¿Activar a @u.Nombres @u.Apellidos?')">
+                                            ✅ Activar
+                                        </button>
+                                    </form>
+                                    <form asp-controller="Administrador" asp-action="Suspender"
+                                          asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Administrador" asp-action="Suspender"
+                                          asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
+                                    </form>
+                                }
                             </div>
                         </td>
                     </tr>
+
+                    @* ── Fila expandible de referidos (oculta por defecto) ── *@
+                    @if (tieneReferidos)
+                    {
+                        <tr id="@rowId" style="display:none;">
+                            <td colspan="9" style="padding:0; background:var(--bg-card); border-top:none;">
+                                <div style="padding:12px 16px 16px 48px; border-left:3px solid var(--sky); margin:0 8px 8px;">
+
+                                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px; font-weight:600; letter-spacing:.05em;">
+                                        REFERIDOS DE @u.Nombres.ToUpper() @u.Apellidos.ToUpper()
+                                    </div>
+
+                                    <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                        <thead>
+                                            <tr style="color:var(--text-muted); border-bottom:1px solid var(--border);">
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Nombre</th>
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Email</th>
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Producto</th>
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Estado</th>
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Fecha</th>
+                                                <th style="padding:6px 8px; text-align:left; font-weight:500;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var r in referidos)
+                                            {
+                                                var refBadge = r.Estado switch {
+                                                    EstadoReferido.Pagado     => "badge-info",
+                                                    EstadoReferido.Convertido => "badge-success",
+                                                    EstadoReferido.Cancelado  => "badge-danger",
+                                                    _ => "badge-warning"
+                                                };
+                                                var refLabel = r.Estado switch {
+                                                    EstadoReferido.Pagado     => "Pagado",
+                                                    EstadoReferido.Convertido => "Convertido",
+                                                    EstadoReferido.Cancelado  => "Cancelado",
+                                                    _ => "Pendiente"
+                                                };
+                                                <tr style="border-bottom:1px solid var(--border);">
+                                                    <td style="padding:7px 8px;">
+                                                        <strong>@r.NombreCompleto</strong>
+                                                    </td>
+                                                    <td style="padding:7px 8px; color:var(--text-muted);">
+                                                        @(r.CorreoElectronico ?? "—")
+                                                    </td>
+                                                    <td style="padding:7px 8px; color:var(--text-muted);">
+                                                        @(r.Producto?.Nombre ?? "—")
+                                                    </td>
+                                                    <td style="padding:7px 8px;">
+                                                        <span class="badge @refBadge" style="font-size:11px;">@refLabel</span>
+                                                    </td>
+                                                    <td style="padding:7px 8px; color:var(--text-muted);">
+                                                        @r.FechaRegistro.ToString("dd/MM/yy")
+                                                    </td>
+                                                    <td style="padding:7px 8px;">
+                                                        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+
+                                                            @* Pendiente: Link pago + Confirmar pago *@
+                                                            @if (r.Estado == EstadoReferido.Pendiente)
+                                                            {
+                                                                <a asp-controller="Administrador"
+                                                                   asp-action="LinkPagoReferido"
+                                                                   asp-route-referidoId="@r.Id"
+                                                                   class="btn btn-secondary btn-sm"
+                                                                   style="font-size:11px; padding:3px 8px;"
+                                                                   title="Generar link de pago MP">
+                                                                    🔗 Link
+                                                                </a>
+                                                                <form asp-controller="Administrador"
+                                                                      asp-action="ConfirmarPagoReferido"
+                                                                      asp-route-referidoId="@r.Id" method="post">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <button type="submit"
+                                                                            class="btn btn-success btn-sm"
+                                                                            style="font-size:11px; padding:3px 8px;"
+                                                                            onclick="return confirm('¿Confirmar pago de @r.NombreCompleto? Solo si verificaste en MP.')">
+                                                                        ✅ Confirmar
+                                                                    </button>
+                                                                </form>
+                                                            }
+
+                                                            @* Pagado: Convertir a usuario *@
+                                                            @if (r.Estado == EstadoReferido.Pagado && r.UsuarioConvertidoId == null)
+                                                            {
+                                                                <form asp-controller="Administrador"
+                                                                      asp-action="ConvertirReferido"
+                                                                      asp-route-referidoId="@r.Id" method="post">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <button type="submit"
+                                                                            class="btn btn-primary btn-sm"
+                                                                            style="font-size:11px; padding:3px 8px;"
+                                                                            onclick="return confirm('¿Convertir a @r.NombreCompleto en usuario?')">
+                                                                        👤 Activar usuario
+                                                                    </button>
+                                                                </form>
+                                                            }
+
+                                                            @* Convertido: Ver usuario *@
+                                                            @if (r.UsuarioConvertidoId != null)
+                                                            {
+                                                                <a asp-controller="Administrador"
+                                                                   asp-action="DetalleUsuario"
+                                                                   asp-route-id="@r.UsuarioConvertidoId"
+                                                                   class="btn btn-secondary btn-sm"
+                                                                   style="font-size:11px; padding:3px 8px;">
+                                                                    👁 Ver usuario
+                                                                </a>
+                                                            }
+
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
     }
 </div>
+
+<style>
+    .fila-usuario:hover { background: var(--bg-hover, rgba(255,255,255,.03)); }
+    .fila-usuario.expandible:hover td { background: transparent; }
+</style>
+
+<script>
+function toggleReferidos(rowId) {
+    const fila = document.getElementById(rowId);
+    const userId = rowId.replace('referidos-', '');
+    const icon = document.getElementById('icon-' + userId);
+    const visible = fila.style.display !== 'none';
+
+    fila.style.display = visible ? 'none' : 'table-row';
+    if (icon) icon.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+</script>

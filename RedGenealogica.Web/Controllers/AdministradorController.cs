@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
+using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
@@ -160,8 +161,22 @@ public class AdministradorController : Controller
             .OrderByDescending(u => u.FechaRegistro)
             .ToListAsync();
 
+        // Cargar todos los referidos de una sola query y agrupar en memoria
+        var usuarioIds = usuarios.Select(u => u.Id).ToList();
+        var todosLosReferidos = await _contexto.Referidos
+            .Where(r => usuarioIds.Contains(r.UsuarioId))
+            .Include(r => r.Producto)
+            .OrderByDescending(r => r.FechaRegistro)
+            .ToListAsync();
+
+        var viewModel = usuarios.Select(u => new AdminUsuarioConReferidosViewModel
+        {
+            Usuario   = u,
+            Referidos = todosLosReferidos.Where(r => r.UsuarioId == u.Id).ToList()
+        }).ToList();
+
         ViewBag.Busqueda = busqueda;
-        return View(usuarios);
+        return View(viewModel);
     }
 
     [HttpGet]
@@ -196,7 +211,7 @@ public class AdministradorController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Suspender(int id, string? retorno = null)
+    public async Task<IActionResult> Suspender(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -211,14 +226,12 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} suspendido.";
-        return retorno == "lista"
-            ? RedirectToAction("Usuarios")
-            : RedirectToAction("DetalleUsuario", new { id });
+        return RedirectToAction("DetalleUsuario", new { id });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Reactivar(int id, string? retorno = null)
+    public async Task<IActionResult> Reactivar(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -227,9 +240,7 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} reactivado.";
-        return retorno == "lista"
-            ? RedirectToAction("Usuarios")
-            : RedirectToAction("DetalleUsuario", new { id });
+        return RedirectToAction("DetalleUsuario", new { id });
     }
 
     // ── Activación manual por el admin ─────────────────────────────────
@@ -237,7 +248,7 @@ public class AdministradorController : Controller
     // y el usuario quedó en estado Pendiente sin activarse.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ActivarManualmente(int id, string? retorno = null)
+    public async Task<IActionResult> ActivarManualmente(int id)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -253,9 +264,7 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"✅ Usuario {usuario.Nombres} {usuario.Apellidos} activado manualmente.";
-        return retorno == "lista"
-            ? RedirectToAction("Usuarios")
-            : RedirectToAction("DetalleUsuario", new { id });
+        return RedirectToAction("DetalleUsuario", new { id });
     }
 
 
