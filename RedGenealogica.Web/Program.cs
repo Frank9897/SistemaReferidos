@@ -23,6 +23,7 @@ builder.Services.AddScoped<ServicioRangos>();
 builder.Services.AddScoped<ServicioRetiros>();
 builder.Services.AddScoped<ServicioNotificaciones>();
 builder.Services.AddScoped<ServicioPremios>();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<ServicioCorreos>();
 
 builder.Services.AddHttpClient();

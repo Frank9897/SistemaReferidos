@@ -2,17 +2,24 @@
 // ServicioCorreos.cs
 // Ubicación: Services/ServicioCorreos.cs
 //
-// Envía correos transaccionales via Gmail SMTP con MailKit.
+// Envía correos transaccionales via Resend API (HTTP).
+// Reemplaza MailKit/SMTP que Railway bloquea en plan Hobby.
+//
+// Variable de entorno requerida: Email__ResendApiKey
+// Remitente: onboarding@resend.dev (sin verificar dominio)
+//
 // Disparadores:
 //   - Bienvenida al registrarse manualmente
 //   - Credenciales cuando el sistema crea la cuenta automáticamente post-pago
+//   - Link de pago cuando el sponsor registra un referido
 //   - Notificación al sponsor cuando su referido pagó
 //   - Notificación al usuario cuando su retiro fue aprobado/rechazado
+//   - Verificación de email al cambiar contraseña temporal
 // ============================================================
 
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace RedGenealogica.Web.Services;
 
@@ -20,36 +27,60 @@ public class ServicioCorreos
 {
     private readonly IConfiguration _config;
     private readonly ILogger<ServicioCorreos> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    private const string REMITENTE_EMAIL = "referidossistema00@gmail.com";
+    private const string REMITENTE_EMAIL = "onboarding@resend.dev";
     private const string REMITENTE_NOMBRE = "RedGenealogica";
+    private const string RESEND_API_URL   = "https://api.resend.com/emails";
 
-    public ServicioCorreos(IConfiguration config, ILogger<ServicioCorreos> logger)
+    public ServicioCorreos(
+        IConfiguration config,
+        ILogger<ServicioCorreos> logger,
+        IHttpClientFactory httpClientFactory)
     {
-        _config = config;
-        _logger = logger;
+        _config            = config;
+        _logger            = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     // ----------------------------------------------------------------
-    // Método base — envía cualquier email HTML
+    // Método base — envía cualquier email HTML via Resend API
     // ----------------------------------------------------------------
     private async Task EnviarAsync(string destinatario, string nombreDestinatario, string asunto, string cuerpoHtml)
     {
         try
         {
-            var mensaje = new MimeMessage();
-            mensaje.From.Add(new MailboxAddress(REMITENTE_NOMBRE, REMITENTE_EMAIL));
-            mensaje.To.Add(new MailboxAddress(nombreDestinatario, destinatario));
-            mensaje.Subject = asunto;
+            var apiKey = _config["Email:ResendApiKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                _logger.LogWarning("Email:ResendApiKey no configurado. Email a {Destinatario} omitido.", destinatario);
+                return;
+            }
 
-            var builder = new BodyBuilder { HtmlBody = cuerpoHtml };
-            mensaje.Body = builder.ToMessageBody();
+            var payload = new
+            {
+                from    = $"{REMITENTE_NOMBRE} <{REMITENTE_EMAIL}>",
+                to      = new[] { destinatario },
+                subject = asunto,
+                html    = cuerpoHtml
+            };
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(REMITENTE_EMAIL, _config["Email:Password"]);
-            await smtp.SendAsync(mensaje);
-            await smtp.DisconnectAsync(true);
+            var json    = JsonSerializer.Serialize(payload);
+            var request = new HttpRequestMessage(HttpMethod.Post, RESEND_API_URL)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+            var http     = _httpClientFactory.CreateClient();
+            var response = await http.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Resend API error {Status} al enviar a {Destinatario}: {Body}",
+                    (int)response.StatusCode, destinatario, body);
+            }
         }
         catch (Exception ex)
         {
@@ -104,6 +135,29 @@ public class ServicioCorreos
         """);
 
         await EnviarAsync(email, nombre, "◆ Tu cuenta en RedGenealogica está lista", html);
+    }
+
+    // ----------------------------------------------------------------
+    // Link de pago — se manda cuando el sponsor registra el referido
+    // ----------------------------------------------------------------
+    public async Task EnviarLinkPagoAsync(string email, string nombreReferido, string nombreSponsor, string urlPago)
+    {
+        var html = PlantillaBase("Tenés una invitación 🎉", $"""
+            <p>Hola <strong>{nombreReferido}</strong>,</p>
+            <p><strong>{nombreSponsor}</strong> te invitó a unirte a <strong>RedGenealogica</strong>, una red de referidos con productos digitales.</p>
+            <p>Para activar tu cuenta y acceder al contenido, completá tu pago haciendo clic en el botón:</p>
+            <div style="text-align:center; margin:28px 0;">
+                <a href="{urlPago}"
+                style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
+                        text-decoration:none; font-weight:600; font-size:15px;">
+                    💳 Completar pago y activar cuenta
+                </a>
+            </div>
+            <p style="color:#94a3b8; font-size:13px;">Una vez confirmado el pago, recibirás tus credenciales de acceso por este mismo correo.</p>
+            <p style="color:#94a3b8; font-size:13px;">Si no esperabas este mensaje, podés ignorarlo.</p>
+        """);
+
+        await EnviarAsync(email, nombreReferido, "◆ Tu invitación a RedGenealogica", html);
     }
 
     // ----------------------------------------------------------------
@@ -167,73 +221,6 @@ public class ServicioCorreos
     }
 
     // ----------------------------------------------------------------
-    // Plantilla HTML base — dark mode consistente con el sistema
-    // ----------------------------------------------------------------
-    private static string PlantillaBase(string titulo, string contenido) => $"""
-        <!DOCTYPE html>
-        <html lang="es">
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-        <body style="margin:0; padding:0; background:#0f172a; font-family:'Segoe UI',sans-serif; color:#e2e8f0;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a; padding:40px 0;">
-                <tr><td align="center">
-                    <table width="560" cellpadding="0" cellspacing="0"
-                           style="background:#1e293b; border-radius:12px; overflow:hidden; max-width:90vw;">
-                        <!-- Header -->
-                        <tr>
-                            <td style="background:#0f172a; padding:24px 32px; border-bottom:1px solid #334155;">
-                                <span style="font-size:22px; font-weight:700; color:#e2e8f0;">◆ RedGenealogica</span>
-                            </td>
-                        </tr>
-                        <!-- Título -->
-                        <tr>
-                            <td style="padding:28px 32px 0;">
-                                <h2 style="margin:0; font-size:20px; color:#f1f5f9;">{titulo}</h2>
-                            </td>
-                        </tr>
-                        <!-- Contenido -->
-                        <tr>
-                            <td style="padding:20px 32px 32px; font-size:14px; line-height:1.7; color:#cbd5e1;">
-                                {contenido}
-                            </td>
-                        </tr>
-                        <!-- Footer -->
-                        <tr>
-                            <td style="background:#0f172a; padding:16px 32px; border-top:1px solid #334155;
-                                       font-size:12px; color:#475569; text-align:center;">
-                                © 2026 RedGenealogica · Este es un mensaje automático, no respondas este correo.
-                            </td>
-                        </tr>
-                    </table>
-                </td></tr>
-            </table>
-        </body>
-        </html>
-        """;
-
-    // ----------------------------------------------------------------
-    // Link de pago — se manda cuando el sponsor registra el referido
-    // ----------------------------------------------------------------
-    public async Task EnviarLinkPagoAsync(string email, string nombreReferido, string nombreSponsor, string urlPago)
-    {
-        var html = PlantillaBase("Tenés una invitación 🎉", $"""
-            <p>Hola <strong>{nombreReferido}</strong>,</p>
-            <p><strong>{nombreSponsor}</strong> te invitó a unirte a <strong>RedGenealogica</strong>, una red de referidos con productos digitales.</p>
-            <p>Para activar tu cuenta y acceder al contenido, completá tu pago haciendo clic en el botón:</p>
-            <div style="text-align:center; margin:28px 0;">
-                <a href="{urlPago}"
-                style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
-                        text-decoration:none; font-weight:600; font-size:15px;">
-                    💳 Completar pago y activar cuenta
-                </a>
-            </div>
-            <p style="color:#94a3b8; font-size:13px;">Una vez confirmado el pago, recibirás tus credenciales de acceso por este mismo correo.</p>
-            <p style="color:#94a3b8; font-size:13px;">Si no esperabas este mensaje, podés ignorarlo.</p>
-        """);
-
-        await EnviarAsync(email, nombreReferido, "◆ Tu invitación a RedGenealogica", html);
-    }
-
-    // ----------------------------------------------------------------
     // Verificación de email
     // ----------------------------------------------------------------
     public async Task EnviarVerificacionEmailAsync(string email, string nombre, string urlVerificacion)
@@ -253,4 +240,44 @@ public class ServicioCorreos
 
         await EnviarAsync(email, nombre, "◆ Verificá tu email en RedGenealogica", html);
     }
+
+    // ----------------------------------------------------------------
+    // Plantilla HTML base — dark mode consistente con el sistema
+    // ----------------------------------------------------------------
+    private static string PlantillaBase(string titulo, string contenido) => $"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+        <body style="margin:0; padding:0; background:#0f172a; font-family:'Segoe UI',sans-serif; color:#e2e8f0;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a; padding:40px 0;">
+                <tr><td align="center">
+                    <table width="560" cellpadding="0" cellspacing="0"
+                           style="background:#1e293b; border-radius:12px; overflow:hidden; max-width:90vw;">
+                        <tr>
+                            <td style="background:#0f172a; padding:24px 32px; border-bottom:1px solid #334155;">
+                                <span style="font-size:22px; font-weight:700; color:#e2e8f0;">◆ RedGenealogica</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:28px 32px 0;">
+                                <h2 style="margin:0; font-size:20px; color:#f1f5f9;">{titulo}</h2>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:20px 32px 32px; font-size:14px; line-height:1.7; color:#cbd5e1;">
+                                {contenido}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="background:#0f172a; padding:16px 32px; border-top:1px solid #334155;
+                                       font-size:12px; color:#475569; text-align:center;">
+                                © 2026 RedGenealogica · Este es un mensaje automático, no respondas este correo.
+                            </td>
+                        </tr>
+                    </table>
+                </td></tr>
+            </table>
+        </body>
+        </html>
+        """;
 }
