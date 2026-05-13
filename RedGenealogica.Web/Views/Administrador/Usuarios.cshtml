@@ -250,6 +250,25 @@
                                                                 </a>
                                                             }
 
+                                                            @* Eliminar referido — disponible para cualquier estado menos Convertido *@
+                                                            @if (r.Estado != EstadoReferido.Convertido)
+                                                            {
+                                                                <form asp-controller="Administrador"
+                                                                      asp-action="EliminarReferido"
+                                                                      asp-route-referidoId="@r.Id"
+                                                                      asp-route-retorno="lista"
+                                                                      method="post">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <button type="submit"
+                                                                            class="btn btn-danger btn-sm"
+                                                                            style="font-size:11px; padding:3px 8px;"
+                                                                            data-nombre="@r.NombreCompleto"
+                                                                            onclick="return confirm('¿Eliminar este referido? Esta acción no se puede deshacer.')">
+                                                                        🗑 Eliminar
+                                                                    </button>
+                                                                </form>
+                                                            }
+
                                                         </div>
                                                     </td>
                                                 </tr>

@@ -161,4 +161,37 @@ public class ReferidosController : Controller
         ViewBag.CodigoReferido = usuario.CodigoReferido;
         return View(referidos);
     }
+
+    // ── CancelarReferido ─────────────────────────────────────────────
+    // El usuario puede cancelar (borrar) un referido Pendiente propio.
+    // Solo aplica a referidos sin pago confirmado.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelarReferido(int id)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+            return RedirectToAction("Login", "Autenticacion");
+
+        var referido = await _contexto.Referidos
+            .FirstOrDefaultAsync(r => r.Id == id && r.UsuarioId == usuario.Id);
+
+        if (referido == null)
+        {
+            TempData["Error"] = "Referido no encontrado.";
+            return RedirectToAction("MisReferidos");
+        }
+
+        if (referido.Estado != EstadoReferido.Pendiente)
+        {
+            TempData["Error"] = "Solo podés cancelar referidos que aún no pagaron.";
+            return RedirectToAction("MisReferidos");
+        }
+
+        _contexto.Referidos.Remove(referido);
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"{referido.NombreCompleto} fue eliminado de tu lista de referidos.";
+        return RedirectToAction("MisReferidos");
+    }
 }

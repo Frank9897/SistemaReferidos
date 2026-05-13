@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
-using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
@@ -161,22 +160,8 @@ public class AdministradorController : Controller
             .OrderByDescending(u => u.FechaRegistro)
             .ToListAsync();
 
-        // Cargar todos los referidos de una sola query y agrupar en memoria
-        var usuarioIds = usuarios.Select(u => u.Id).ToList();
-        var todosLosReferidos = await _contexto.Referidos
-            .Where(r => usuarioIds.Contains(r.UsuarioId))
-            .Include(r => r.Producto)
-            .OrderByDescending(r => r.FechaRegistro)
-            .ToListAsync();
-
-        var viewModel = usuarios.Select(u => new AdminUsuarioConReferidosViewModel
-        {
-            Usuario   = u,
-            Referidos = todosLosReferidos.Where(r => r.UsuarioId == u.Id).ToList()
-        }).ToList();
-
         ViewBag.Busqueda = busqueda;
-        return View(viewModel);
+        return View(usuarios);
     }
 
     [HttpGet]
@@ -322,6 +307,43 @@ public class AdministradorController : Controller
 
         TempData["Exito"] = $"✅ Pago de {referido.NombreCompleto} confirmado manualmente.";
         return RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
+    }
+
+    // ── EliminarReferido ─────────────────────────────────────────────
+    // El admin puede eliminar cualquier referido sin importar el estado,
+    // excepto los ya Convertidos (ya son usuarios, no tiene sentido borrarlos).
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarReferido(int referidoId, string? retorno = null)
+    {
+        var referido = await _contexto.Referidos
+            .Include(r => r.Usuario)
+            .FirstOrDefaultAsync(r => r.Id == referidoId);
+
+        if (referido == null)
+        {
+            TempData["Error"] = "Referido no encontrado.";
+            return RedirectToAction("Usuarios");
+        }
+
+        if (referido.Estado == EstadoReferido.Convertido)
+        {
+            TempData["Error"] = "No podés eliminar un referido que ya fue convertido en usuario.";
+            return retorno == "lista"
+                ? RedirectToAction("Usuarios")
+                : RedirectToAction("DetalleUsuario", new { id = referido.UsuarioId });
+        }
+
+        var nombre = referido.NombreCompleto;
+        var sponsorId = referido.UsuarioId;
+
+        _contexto.Referidos.Remove(referido);
+        await _contexto.SaveChangesAsync();
+
+        TempData["Exito"] = $"Referido {nombre} eliminado correctamente.";
+        return retorno == "lista"
+            ? RedirectToAction("Usuarios")
+            : RedirectToAction("DetalleUsuario", new { id = sponsorId });
     }
 
     // ── ObtenerLinkPago ──────────────────────────────────────────────
