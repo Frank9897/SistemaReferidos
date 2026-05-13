@@ -2,19 +2,11 @@
 // ServicioCorreos.cs
 // Ubicación: Services/ServicioCorreos.cs
 //
-// Envía correos transaccionales via Resend API (HTTP).
+// Envía correos transaccionales via SendGrid API (HTTP).
 // Reemplaza MailKit/SMTP que Railway bloquea en plan Hobby.
 //
-// Variable de entorno requerida: Email__ResendApiKey
-// Remitente: onboarding@resend.dev (sin verificar dominio)
-//
-// Disparadores:
-//   - Bienvenida al registrarse manualmente
-//   - Credenciales cuando el sistema crea la cuenta automáticamente post-pago
-//   - Link de pago cuando el sponsor registra un referido
-//   - Notificación al sponsor cuando su referido pagó
-//   - Notificación al usuario cuando su retiro fue aprobado/rechazado
-//   - Verificación de email al cambiar contraseña temporal
+// Variable de entorno requerida: Email__SendGridApiKey
+// Remitente verificado: referidossistema00@gmail.com
 // ============================================================
 
 using System.Net.Http.Headers;
@@ -29,9 +21,9 @@ public class ServicioCorreos
     private readonly ILogger<ServicioCorreos> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    private const string REMITENTE_EMAIL = "onboarding@resend.dev";
+    private const string REMITENTE_EMAIL  = "referidossistema00@gmail.com";
     private const string REMITENTE_NOMBRE = "RedGenealogica";
-    private const string RESEND_API_URL   = "https://api.resend.com/emails";
+    private const string SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send";
 
     public ServicioCorreos(
         IConfiguration config,
@@ -44,29 +36,38 @@ public class ServicioCorreos
     }
 
     // ----------------------------------------------------------------
-    // Método base — envía cualquier email HTML via Resend API
+    // Método base — envía cualquier email HTML via SendGrid API
     // ----------------------------------------------------------------
     private async Task EnviarAsync(string destinatario, string nombreDestinatario, string asunto, string cuerpoHtml)
     {
         try
         {
-            var apiKey = _config["Email:ResendApiKey"];
+            var apiKey = _config["Email:SendGridApiKey"];
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                _logger.LogWarning("Email:ResendApiKey no configurado. Email a {Destinatario} omitido.", destinatario);
+                _logger.LogWarning("Email:SendGridApiKey no configurado. Email a {Destinatario} omitido.", destinatario);
                 return;
             }
 
             var payload = new
             {
-                from    = $"{REMITENTE_NOMBRE} <{REMITENTE_EMAIL}>",
-                to      = new[] { destinatario },
+                personalizations = new[]
+                {
+                    new
+                    {
+                        to = new[] { new { email = destinatario, name = nombreDestinatario } }
+                    }
+                },
+                from    = new { email = REMITENTE_EMAIL, name = REMITENTE_NOMBRE },
                 subject = asunto,
-                html    = cuerpoHtml
+                content = new[]
+                {
+                    new { type = "text/html", value = cuerpoHtml }
+                }
             };
 
             var json    = JsonSerializer.Serialize(payload);
-            var request = new HttpRequestMessage(HttpMethod.Post, RESEND_API_URL)
+            var request = new HttpRequestMessage(HttpMethod.Post, SENDGRID_API_URL)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
@@ -78,7 +79,7 @@ public class ServicioCorreos
             if (!response.IsSuccessStatusCode)
             {
                 var body = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Resend API error {Status} al enviar a {Destinatario}: {Body}",
+                _logger.LogError("SendGrid API error {Status} al enviar a {Destinatario}: {Body}",
                     (int)response.StatusCode, destinatario, body);
             }
         }

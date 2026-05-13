@@ -26,7 +26,7 @@ builder.Services.AddScoped<ServicioPremios>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ServicioCorreos>();
 
-builder.Services.AddHttpClient();
+
 
 builder.Services.AddDbContext<ContextoAplicacion>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("ConexionPrincipal")));
