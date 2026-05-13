@@ -75,28 +75,35 @@
                                 <a asp-controller="Administrador" asp-action="DetalleUsuario" asp-route-id="@u.Id" class="btn btn-secondary btn-sm">Ver</a>
                         @if (u.EstadoUsuario == EstadoUsuario.Suspendido)
                         {
-                            <form asp-controller="Administrador" asp-action="Reactivar" asp-route-id="@u.Id" method="post">
+                            <form asp-controller="Administrador" asp-action="Reactivar"
+                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-success btn-sm">Reactivar</button>
+                                <button type="submit" class="btn btn-success btn-sm">✅ Activar</button>
                             </form>
                         }
                         else if (u.EstadoUsuario == EstadoUsuario.Pendiente)
                         {
-                            <form asp-controller="Administrador" asp-action="ActivarManualmente" asp-route-id="@u.Id" method="post">
+                            <form asp-controller="Administrador" asp-action="ActivarManualmente"
+                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-success btn-sm"
-                                        onclick="return confirm('¿Activar manualmente?')">⚡ Activar</button>
+                                        onclick="return confirm('¿Activar a @u.Nombres @u.Apellidos? No requiere pago confirmado.')">
+                                    ✅ Activar
+                                </button>
                             </form>
-                            <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@u.Id" method="post">
+                            <form asp-controller="Administrador" asp-action="Suspender"
+                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger btn-sm">Suspender</button>
+                                <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
                             </form>
                         }
                         else
                         {
-                            <form asp-controller="Administrador" asp-action="Suspender" asp-route-id="@u.Id" method="post">
+                            @* Activo: solo mostrar Suspender *@
+                            <form asp-controller="Administrador" asp-action="Suspender"
+                                  asp-route-id="@u.Id" asp-route-retorno="lista" method="post">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-danger btn-sm">Suspender</button>
+                                <button type="submit" class="btn btn-danger btn-sm">🚫 Suspender</button>
                             </form>
                         }
                             </div>

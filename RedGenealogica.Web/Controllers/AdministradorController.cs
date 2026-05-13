@@ -196,7 +196,7 @@ public class AdministradorController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Suspender(int id)
+    public async Task<IActionResult> Suspender(int id, string? retorno = null)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -211,12 +211,14 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} suspendido.";
-        return RedirectToAction("DetalleUsuario", new { id });
+        return retorno == "lista"
+            ? RedirectToAction("Usuarios")
+            : RedirectToAction("DetalleUsuario", new { id });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Reactivar(int id)
+    public async Task<IActionResult> Reactivar(int id, string? retorno = null)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -225,7 +227,9 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"Usuario {usuario.Nombres} {usuario.Apellidos} reactivado.";
-        return RedirectToAction("DetalleUsuario", new { id });
+        return retorno == "lista"
+            ? RedirectToAction("Usuarios")
+            : RedirectToAction("DetalleUsuario", new { id });
     }
 
     // ── Activación manual por el admin ─────────────────────────────────
@@ -233,7 +237,7 @@ public class AdministradorController : Controller
     // y el usuario quedó en estado Pendiente sin activarse.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ActivarManualmente(int id)
+    public async Task<IActionResult> ActivarManualmente(int id, string? retorno = null)
     {
         var usuario = await _contexto.Users.FindAsync(id);
         if (usuario == null) return NotFound();
@@ -249,7 +253,9 @@ public class AdministradorController : Controller
         await _contexto.SaveChangesAsync();
 
         TempData["Exito"] = $"✅ Usuario {usuario.Nombres} {usuario.Apellidos} activado manualmente.";
-        return RedirectToAction("DetalleUsuario", new { id });
+        return retorno == "lista"
+            ? RedirectToAction("Usuarios")
+            : RedirectToAction("DetalleUsuario", new { id });
     }
 
 
