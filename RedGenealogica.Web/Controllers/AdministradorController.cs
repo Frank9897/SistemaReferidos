@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RedGenealogica.Web.Data;
+using RedGenealogica.Web.ViewModels;
 using RedGenealogica.Web.Enumeraciones;
 using RedGenealogica.Web.Models;
 using RedGenealogica.Web.Services;
@@ -160,8 +161,22 @@ public class AdministradorController : Controller
             .OrderByDescending(u => u.FechaRegistro)
             .ToListAsync();
 
+        // Cargar todos los referidos en una sola query y agrupar en memoria
+        var usuarioIds = usuarios.Select(u => u.Id).ToList();
+        var todosLosReferidos = await _contexto.Referidos
+            .Where(r => usuarioIds.Contains(r.UsuarioId))
+            .Include(r => r.Producto)
+            .OrderByDescending(r => r.FechaRegistro)
+            .ToListAsync();
+
+        var viewModel = usuarios.Select(u => new AdminUsuarioConReferidosViewModel
+        {
+            Usuario   = u,
+            Referidos = todosLosReferidos.Where(r => r.UsuarioId == u.Id).ToList()
+        }).ToList();
+
         ViewBag.Busqueda = busqueda;
-        return View(usuarios);
+        return View(viewModel);
     }
 
     [HttpGet]
