@@ -65,7 +65,7 @@
 
                     @* ── Fila principal del usuario ── *@
                     <tr class="fila-usuario @(tieneReferidos ? "expandible" : "")"
-                        @(tieneReferidos ? $"onclick=\"toggleReferidos('{rowId}')\"" : "")
+                        data-row="@(tieneReferidos ? rowId : "")"
                         style="@(tieneReferidos ? "cursor:pointer;" : "")">
 
                         <td style="text-align:center; color:var(--text-muted); font-size:12px;">
@@ -272,13 +272,24 @@
 </style>
 
 <script>
-function toggleReferidos(rowId) {
-    const fila = document.getElementById(rowId);
-    const userId = rowId.replace('referidos-', '');
-    const icon = document.getElementById('icon-' + userId);
-    const visible = fila.style.display !== 'none';
+// Delegación de eventos — evita problemas de interpolación Razor en atributos onclick
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('tr.expandible[data-row]').forEach(function (tr) {
+        tr.addEventListener('click', function (e) {
+            // No expandir si el click fue en un botón o form
+            if (e.target.closest('button, a, form')) return;
 
-    fila.style.display = visible ? 'none' : 'table-row';
-    if (icon) icon.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
-}
+            var rowId = tr.getAttribute('data-row');
+            if (!rowId) return;
+
+            var fila = document.getElementById(rowId);
+            var userId = rowId.replace('referidos-', '');
+            var icon = document.getElementById('icon-' + userId);
+
+            var visible = fila.style.display !== 'none';
+            fila.style.display = visible ? 'none' : 'table-row';
+            if (icon) icon.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+        });
+    });
+});
 </script>
