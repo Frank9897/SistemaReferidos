@@ -48,7 +48,8 @@ public class ServicioUsuarios
             var padre = await _contexto.Users
                 .FirstOrDefaultAsync(u =>
                     u.CodigoReferido == modelo.CodigoReferidoPadre &&
-                    u.EstadoUsuario == EstadoUsuario.Activo); // solo padres activos
+                    u.EstadoUsuario != EstadoUsuario.Suspendido &&
+                    u.EstadoUsuario != EstadoUsuario.Inactivo); // acepta Activo Y Pendiente
 
             if (padre != null)
                 idPadre = padre.Id;
@@ -72,6 +73,32 @@ public class ServicioUsuarios
 
         if (!resultado.Succeeded)
             return (null, resultado.Errors.Select(e => e.Description));
+
+        // Crear el Referido en la tabla para que aparezca en el panel del sponsor
+        if (idPadre.HasValue)
+        {
+            var producto = await _contexto.Productos
+                .Where(p => p.Activo)
+                .OrderBy(p => p.FechaCreacion)
+                .FirstOrDefaultAsync();
+
+            if (producto != null)
+            {
+                var referido = new Referido
+                {
+                    UsuarioId         = idPadre.Value,
+                    NombreCompleto    = $"{usuario.Nombres} {usuario.Apellidos}",
+                    CorreoElectronico = usuario.Email!,
+                    ProductoId        = producto.Id,
+                    FechaRegistro     = DateTime.UtcNow,
+                    Estado            = EstadoReferido.Pendiente,
+                    EsAutoPago        = false,
+                    UsuarioConvertidoId = usuario.Id
+                };
+                _contexto.Referidos.Add(referido);
+                await _contexto.SaveChangesAsync();
+            }
+        }
 
 
         await _servicioCorreos.EnviarBienvenidaAsync(usuario.Email!, $"{usuario.Nombres} {usuario.Apellidos}");
