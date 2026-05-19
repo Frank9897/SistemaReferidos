@@ -259,11 +259,43 @@ public class AdministradorController : Controller
             return RedirectToAction("DetalleUsuario", new { id });
         }
 
+        // Activar cuenta
         usuario.EstadoUsuario = EstadoUsuario.Activo;
         usuario.FechaActivacion ??= DateTime.UtcNow;
+
+        // Desbloquear contenido — buscar producto activo y crear Pago confirmado
+        var producto = await _contexto.Productos
+            .Where(p => p.Activo)
+            .OrderBy(p => p.FechaCreacion)
+            .FirstOrDefaultAsync();
+
+        if (producto != null)
+        {
+            bool yaTienePago = await _contexto.Pagos.AnyAsync(p =>
+                p.UsuarioId == id &&
+                p.ProductoId == producto.Id &&
+                p.Confirmado);
+
+            if (!yaTienePago)
+            {
+                _contexto.Pagos.Add(new Pago
+                {
+                    UsuarioId         = id,
+                    ProductoId        = producto.Id,
+                    Monto             = producto.Precio,
+                    EstadoPago        = EstadoPago.Aprobado,
+                    PlataformaPago    = "Manual",
+                    Confirmado        = true,
+                    EsSimulado        = false,
+                    FechaSolicitud    = DateTime.UtcNow,
+                    FechaConfirmacion = DateTime.UtcNow
+                });
+            }
+        }
+
         await _contexto.SaveChangesAsync();
 
-        TempData["Exito"] = $"✅ Usuario {usuario.Nombres} {usuario.Apellidos} activado manualmente.";
+        TempData["Exito"] = $"✅ Usuario {usuario.Nombres} {usuario.Apellidos} activado y contenido desbloqueado.";
         return RedirectToAction("DetalleUsuario", new { id });
     }
 
