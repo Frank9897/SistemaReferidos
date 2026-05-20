@@ -79,7 +79,7 @@ public class AdministradorController : Controller
         // Ciclos y premios
         var totalCiclos     = await _contexto.Users.SumAsync(u => u.CiclosCompletados);
         var totalPremios    = await _contexto.MovimientosPuntos
-            .Where(m => m.Monto > 0 && m.Nivel == 0)
+            .Where(m => m.Monto > 0 && m.Nivel == 0) 
             .SumAsync(m => (decimal?)m.Monto) ?? 0m;
         var totalBonosAbuelo= await _contexto.MovimientosPuntos
             .Where(m => m.Monto > 0 && m.Nivel == 1)
