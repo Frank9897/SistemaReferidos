@@ -93,7 +93,6 @@ public class ServicioUsuarios
                     FechaRegistro     = DateTime.UtcNow,
                     Estado            = EstadoReferido.Pendiente,
                     EsAutoPago        = false,
-                    UsuarioConvertidoId = usuario.Id
                 };
                 _contexto.Referidos.Add(referido);
                 await _contexto.SaveChangesAsync();
