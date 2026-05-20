@@ -52,8 +52,8 @@ public class RankingController : Controller
         if (usuario != null)
         {
             // Usar referidos pagados directos (no puntos)
-            int referidosPagados = await _contexto.Referidos
-                .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado);
+        int referidosPagados = await _contexto.Referidos
+            .CountAsync(r => r.UsuarioId == usuario.Id && r.PagoConfirmado && !r.EsAutoPago);
 
             rangoActual    = rangos.FirstOrDefault(r => r.TipoRango == usuario.TipoRangoActual);
             rangoSiguiente = rangos.FirstOrDefault(r => r.Orden == (rangoActual?.Orden ?? 0) + 1);

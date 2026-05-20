@@ -103,14 +103,14 @@ public class UsuarioController : Controller
             .FirstOrDefaultAsync();
 
         int puntosFaltantes = siguienteRango != null
-            ? Math.Max(siguienteRango.PuntosMinimos - usuario.PuntosAcumulados, 0)
+            ? Math.Max(siguienteRango.PuntosMinimos - referidosPagadosDirectos, 0)
             : 0;
 
         int progreso = 100;
         if (rangoActual != null && siguienteRango != null)
         {
             var baseRango = siguienteRango.PuntosMinimos - rangoActual.PuntosMinimos;
-            var avanzados = usuario.PuntosAcumulados - rangoActual.PuntosMinimos;
+            var avanzados = referidosPagadosDirectos - rangoActual.PuntosMinimos;
 
             if (baseRango > 0)
                 progreso = (int)Math.Clamp((avanzados * 100m) / baseRango, 0, 100);
