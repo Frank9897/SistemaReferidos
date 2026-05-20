@@ -67,7 +67,7 @@ public class GenealogiaController : Controller
 
         // 🔍 traer referidos
         var referidos = await _contexto.Referidos
-            .Where(r => r.UsuarioId == usuarioId)
+            .Where(r => r.UsuarioId == usuarioId && !r.EsAutoPago)
             .ToListAsync();
 
         foreach (var r in referidos)
@@ -162,7 +162,7 @@ public class GenealogiaController : Controller
 
         // Referidos no convertidos (pendientes/pagados)
         var referidos = await _contexto.Referidos
-            .Where(r => r.UsuarioId == usuarioId && r.UsuarioConvertidoId == null)
+            .Where(r => r.UsuarioId == usuarioId && r.UsuarioConvertidoId == null && !r.EsAutoPago)
             .ToListAsync();
 
         foreach (var r in referidos)
