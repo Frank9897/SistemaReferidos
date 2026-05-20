@@ -153,7 +153,7 @@ public class ReferidosController : Controller
             return RedirectToAction("Login", "Autenticacion");
 
         var referidos = await _contexto.Referidos
-            .Where(r => r.UsuarioId == usuario.Id)
+            .Where(r => r.UsuarioId == usuario.Id && !r.EsAutoPago)
             .Include(r => r.Producto)
             .OrderByDescending(r => r.FechaRegistro)
             .ToListAsync();

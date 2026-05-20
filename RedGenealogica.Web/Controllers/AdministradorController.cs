@@ -56,11 +56,16 @@ public class AdministradorController : Controller
     public async Task<IActionResult> Index()
     {
         // Usuarios
-        var totalUsuarios   = await _contexto.Users.CountAsync();
-        var totalActivos    = await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Activo);
-        var totalPendientes = await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Pendiente);
-        var totalSuspendidos= await _contexto.Users.CountAsync(u => u.EstadoUsuario == EstadoUsuario.Suspendido);
+        var adminIds        = await _contexto.UserRoles
+            .Join(_contexto.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+            .Where(x => x.Name == "Admin")
+            .Select(x => x.UserId)
+            .ToListAsync();
 
+        var totalUsuarios   = await _contexto.Users.CountAsync(u => !adminIds.Contains(u.Id));
+        var totalActivos    = await _contexto.Users.CountAsync(u => !adminIds.Contains(u.Id) && u.EstadoUsuario == EstadoUsuario.Activo);
+        var totalPendientes = await _contexto.Users.CountAsync(u => !adminIds.Contains(u.Id) && u.EstadoUsuario == EstadoUsuario.Pendiente);
+        var totalSuspendidos= await _contexto.Users.CountAsync(u => !adminIds.Contains(u.Id) && u.EstadoUsuario == EstadoUsuario.Suspendido);
         // Referidos
         var totalReferidos  = await _contexto.Referidos.CountAsync();
         var referidosPagados= await _contexto.Referidos.CountAsync(r => r.PagoConfirmado);

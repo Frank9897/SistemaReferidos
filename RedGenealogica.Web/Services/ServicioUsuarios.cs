@@ -75,7 +75,7 @@ public class ServicioUsuarios
             return (null, resultado.Errors.Select(e => e.Description));
 
         // Crear el Referido en la tabla para que aparezca en el panel del sponsor
-        if (idPadre.HasValue)
+        if (idPadre.HasValue && idPadre.Value != usuario.Id)
         {
             var producto = await _contexto.Productos
                 .Where(p => p.Activo)

@@ -65,7 +65,7 @@ public class ServicioPremios
         if (producto == null) return;
 
         var cantidadPagados = await _contexto.Referidos
-            .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado);
+            .CountAsync(r => r.UsuarioId == sponsor.Id && r.PagoConfirmado && !r.EsAutoPago);
 
         int ciclosCalculados = cantidadPagados / REFERIDOS_POR_CICLO;
 
