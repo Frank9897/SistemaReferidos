@@ -62,10 +62,18 @@ builder.Services.AddAuthentication()
         options.ClientId     = builder.Configuration["Google:ClientId"]!;
         options.ClientSecret = builder.Configuration["Google:ClientSecret"]!;
         options.CallbackPath = "/signin-google";
+        options.CorrelationCookie.SameSite    = SameSiteMode.None;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Events.OnRedirectToAuthorizationEndpoint = context =>
         {
             var redirectUri = context.RedirectUri.Replace("http://", "https://");
             context.Response.Redirect(redirectUri);
+            return Task.CompletedTask;
+        };
+        options.Events.OnRemoteFailure = context =>
+        {
+            context.Response.Redirect("/Autenticacion/Login?error=google");
+            context.HandleResponse();
             return Task.CompletedTask;
         };
     });
