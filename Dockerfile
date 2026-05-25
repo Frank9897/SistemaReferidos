@@ -18,7 +18,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Crear carpeta para PDFs DESPUÉS del COPY para que no se pise
-RUN mkdir -p wwwroot/pdfs && chmod 777 wwwroot/pdfs
+RUN mkdir -p /app/storage/pdfs && chmod 777 /app/storage/pdfs
 
 # Railway asigna el puerto via variable PORT
 ENV ASPNETCORE_URLS=http://+:${PORT:-8080}

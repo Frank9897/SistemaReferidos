@@ -15,6 +15,6 @@ public class PanelUsuarioViewModel
     public int PuntosFaltantesParaSiguienteRango { get; set; }
     public int ProgresoRangoPorcentaje { get; set; }
     public int ReferidosActuales { get; set; }
-    public int ProgresoCiclo => (ReferidosActuales * 100) / 3;
+   public int ProgresoCiclo => ReferidosActuales > 0 ? (int)Math.Min((ReferidosActuales * 100.0 / 3), 100) : 0;
     public List<MovimientoPuntos> UltimosMovimientos { get; set; } = new();
 }

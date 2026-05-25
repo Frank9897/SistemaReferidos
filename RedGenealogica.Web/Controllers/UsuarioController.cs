@@ -209,6 +209,12 @@ public class UsuarioController : Controller
         var usuario = await _userManager.GetUserAsync(User);
         if (usuario == null)
             return RedirectToAction("Login", "Autenticacion");
+            
+        if (usuario.EstadoUsuario != EstadoUsuario.Activo)
+        {
+            TempData["Error"] = "Tu cuenta no está activa para solicitar retiros.";
+            return RedirectToAction("Panel");
+        }
 
         var historial = await _contexto.SolicitudesRetiro
             .Where(s => s.UsuarioId == usuario.Id)
