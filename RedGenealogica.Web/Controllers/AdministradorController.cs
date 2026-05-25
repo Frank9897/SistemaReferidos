@@ -485,7 +485,6 @@ public class AdministradorController : Controller
     }
 
     [HttpGet]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditarProducto(int id)
     {
         var producto = await _contexto.Productos
