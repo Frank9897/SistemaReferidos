@@ -1,0 +1,481 @@
+@using RedGenealogica.Web.Models
+@{ ViewData["Title"] = "Simulador"; }
+
+<div class="admin-tabs">
+    <a href="/Administrador" class="admin-tab">Dashboard</a>
+    <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
+    <a href="/Administrador/Productos" class="admin-tab">Productos</a>
+    <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
+    <a href="/Administrador/Configuracion" class="admin-tab">Configuración</a>
+    <a href="/Administrador/Simulador" class="admin-tab active">Simulador</a>
+    <a href="/Administrador/Arbol" class="admin-tab">Árbol global</a>
+</div>
+
+@{
+    decimal precioDefault = (decimal)(ViewBag.PrecioDefault ?? 100m);
+    decimal pctDefault    = (decimal)(ViewBag.PctDefault    ?? 10m);
+    var rangos = (List<RangoUsuario>)(ViewBag.Rangos ?? new List<RangoUsuario>());
+}
+
+<div class="page-wide" style="max-width:1100px;">
+
+<div style="margin-bottom:24px;">
+    <h2 style="font-size:22px; margin-bottom:6px;">🧮 Simulador financiero</h2>
+    <p style="color:var(--text-muted); font-size:13px;">
+        Explorá cómo fluye el dinero en cada escenario. Los valores por defecto se toman del producto activo.
+        Para cambiarlos permanentemente, editá el producto en <a href="/Administrador/Productos" style="color:var(--sky);">Productos</a>
+        o los rangos en <a href="/Administrador/Configuracion" style="color:var(--sky);">Configuración</a>.
+    </p>
+</div>
+
+@* ── CONTROLES GLOBALES ─────────────────────────────────────────── *@
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">⚙️ Parámetros del simulador</span></div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-top:14px;">
+        <div>
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Precio del producto ($)</label>
+            <input id="sim-precio" type="number" min="1" step="0.01" value="@precioDefault"
+                   style="width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; color:var(--text); font-size:14px;"
+                   oninput="recalcularTodo()" />
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Editable en Productos → Editar</div>
+        </div>
+        <div>
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">% comisión al abuelo</label>
+            <input id="sim-pct" type="number" min="0" max="66" step="0.1" value="@pctDefault"
+                   style="width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; color:var(--text); font-size:14px;"
+                   oninput="recalcularTodo()" />
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Editable en Productos → Editar</div>
+        </div>
+        <div>
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Rango del abuelo</label>
+            <select id="sim-rango"
+                    style="width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; color:var(--text); font-size:14px;"
+                    onchange="recalcularTodo()">
+                @foreach (var r in rangos)
+                {
+                    <option value="@r.BonusComisionPorcentaje">@r.NombreVisible (+@r.BonusComisionPorcentaje%)</option>
+                }
+            </select>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Editable en Configuración → Rangos</div>
+        </div>
+        <div>
+            <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Niveles de red (simulador árbol)</label>
+            <select id="sim-niveles"
+                    style="width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; color:var(--text); font-size:14px;"
+                    onchange="recalcularTodo()">
+                <option value="1">1 nivel (solo referidos directos)</option>
+                <option value="2" selected>2 niveles (sponsor + sus referidos)</option>
+                <option value="3">3 niveles (abuelo + sponsor + referidos)</option>
+            </select>
+            <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Requiere desarrollador para agregar más niveles</div>
+        </div>
+    </div>
+</div>
+
+@* ── SECCIÓN 1: ÁRBOL EXPLICATIVO DINÁMICO ─────────────────────── *@
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <span class="card-title">🌳 ¿Cómo fluye el dinero? — Árbol explicativo</span>
+    </div>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:10px; margin-bottom:16px;">
+        Hacé clic en cualquier nodo para ver cuánto recibe ese actor según los parámetros configurados arriba.
+    </p>
+    <div id="sim-arbol-wrap" style="height:380px; position:relative; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden;"></div>
+    <div id="sim-arbol-panel" style="display:none; margin-top:14px; padding:16px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);">
+        <div id="sim-arbol-titulo" style="font-weight:600; font-size:15px; margin-bottom:8px;"></div>
+        <div id="sim-arbol-detalle" style="font-size:13px; color:var(--text-muted); line-height:1.8;"></div>
+    </div>
+</div>
+
+@* ── SECCIÓN 2: SIMULADOR DE UN PAGO ───────────────────────────── *@
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">💳 Simulador de un pago individual</span></div>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:10px; margin-bottom:16px;">
+        ¿Qué pasa cuando <strong>una sola persona paga</strong> el producto?
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+        <div id="bar-negocio" style="display:flex; align-items:center; gap:12px;">
+            <div style="width:90px; font-size:12px; color:var(--text-muted); text-align:right; flex-shrink:0;">Negocio</div>
+            <div style="flex:1; background:var(--bg3); border-radius:4px; height:24px; overflow:hidden;">
+                <div id="bar-negocio-fill" style="height:100%; background:var(--green); width:0%; transition:width 0.4s; border-radius:4px;"></div>
+            </div>
+            <div id="bar-negocio-val" style="width:80px; font-size:13px; font-weight:600; color:var(--green);">$0</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:90px; font-size:12px; color:var(--text-muted); text-align:right; flex-shrink:0;">MercadoPago</div>
+            <div style="flex:1; background:var(--bg3); border-radius:4px; height:24px; overflow:hidden;">
+                <div id="bar-mp-fill" style="height:100%; background:var(--red); width:0%; transition:width 0.4s; border-radius:4px;"></div>
+            </div>
+            <div id="bar-mp-val" style="width:80px; font-size:13px; font-weight:600; color:var(--red);">$0</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:90px; font-size:12px; color:var(--text-muted); text-align:right; flex-shrink:0;">Sponsor</div>
+            <div style="flex:1; background:var(--bg3); border-radius:4px; height:24px; overflow:hidden;">
+                <div id="bar-sponsor-fill" style="height:100%; background:var(--sky); width:0%; transition:width 0.4s; border-radius:4px;"></div>
+            </div>
+            <div id="bar-sponsor-val" style="width:80px; font-size:13px; font-weight:600; color:var(--sky);">$0 (x ciclo)</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:90px; font-size:12px; color:var(--text-muted); text-align:right; flex-shrink:0;">Abuelo</div>
+            <div style="flex:1; background:var(--bg3); border-radius:4px; height:24px; overflow:hidden;">
+                <div id="bar-abuelo-fill" style="height:100%; background:var(--amber); width:0%; transition:width 0.4s; border-radius:4px;"></div>
+            </div>
+            <div id="bar-abuelo-val" style="width:80px; font-size:13px; font-weight:600; color:var(--amber);">$0</div>
+        </div>
+    </div>
+
+    <div id="sim-pago-nota" style="font-size:12px; color:var(--text-dim); padding:10px 14px; background:var(--bg3); border-radius:var(--radius-sm);"></div>
+</div>
+
+@* ── SECCIÓN 3: SIMULADOR DE CICLO COMPLETO ────────────────────── *@
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">🔁 Simulador de ciclo completo (3 referidos)</span></div>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:10px; margin-bottom:16px;">
+        Un <strong>ciclo</strong> se completa cuando el sponsor logra <strong>3 referidos pagados</strong>.
+        Al completarlo, recibe el valor del producto como premio.
+    </p>
+
+    <table class="table" style="margin-bottom:16px;">
+        <thead>
+            <tr>
+                <th>Actor</th>
+                <th>Concepto</th>
+                <th>Monto</th>
+                <th>% del ingreso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>🏢 Negocio</td>
+                <td>Ingreso bruto del ciclo (3 × precio)</td>
+                <td id="ciclo-ingreso" style="color:var(--green); font-weight:600;">$0</td>
+                <td>100%</td>
+            </tr>
+            <tr>
+                <td>💳 MercadoPago</td>
+                <td>Comisión 6.29% sobre ingresos MP</td>
+                <td id="ciclo-mp" style="color:var(--red);">-$0</td>
+                <td id="ciclo-mp-pct" style="color:var(--red);">-6.3%</td>
+            </tr>
+            <tr>
+                <td>👨 Sponsor</td>
+                <td>Premio al completar el ciclo (1 × precio)</td>
+                <td id="ciclo-sponsor" style="color:var(--sky);">-$0</td>
+                <td id="ciclo-sponsor-pct" style="color:var(--sky);">0%</td>
+            </tr>
+            <tr>
+                <td>👴 Abuelo</td>
+                <td>Bono por ciclo del sponsor</td>
+                <td id="ciclo-abuelo" style="color:var(--amber);">-$0</td>
+                <td id="ciclo-abuelo-pct" style="color:var(--amber);">0%</td>
+            </tr>
+            <tr style="border-top:2px solid var(--border);">
+                <td colspan="2" style="font-weight:600;">💰 Margen neto del negocio</td>
+                <td id="ciclo-margen" style="font-weight:700; color:var(--green);">$0</td>
+                <td id="ciclo-margen-pct" style="font-weight:700; color:var(--green);">0%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="ciclo-resumen" style="padding:12px 16px; border-radius:var(--radius-sm); font-size:13px; line-height:1.7;"></div>
+</div>
+
+@* ── SECCIÓN 4: SIMULADOR DE RED PROFUNDA ──────────────────────── *@
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><span class="card-title">🕸️ Simulador de red profunda</span></div>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:10px; margin-bottom:16px;">
+        Visualizá cómo se distribuye el dinero en una red de múltiples niveles.
+        Cada nodo muestra el flujo de $ hacia ese actor en el escenario simulado.
+        Los niveles se configuran en el panel de parámetros arriba.
+    </p>
+    <div id="sim-red-wrap" style="height:500px; background:var(--bg3); border-radius:var(--radius-sm); overflow:hidden; position:relative;"></div>
+    <div style="margin-top:12px; display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text-muted);">
+        <span>🟢 Verde = recibe dinero (premio/bono)</span>
+        <span>🟡 Amarillo = recibe bono de abuelo</span>
+        <span>🔵 Azul = el negocio</span>
+        <span>⚪ Gris = paga el producto (referido)</span>
+    </div>
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// ── Constantes ───────────────────────────────────────────────────────
+const MP_COMISION = 0.0629;
+const CICLO_REFERIDOS = 3;
+
+const RANGO_COLOR = {
+    Diamante: '#60A5FA', Platino: '#22D3EE', Oro: '#FFD700',
+    Plata: '#C0C0C0', Bronce: '#F97316', Cobre: '#A0522D',
+    Negocio: '#22c55e', Sponsor: '#38bdf8', Abuelo: '#f59e0b', Referido: '#475569'
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function fmt(n) {
+    return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function fmtD(n) {
+    return '$' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getParams() {
+    const precio  = parseFloat(document.getElementById('sim-precio').value) || 0;
+    const pct     = parseFloat(document.getElementById('sim-pct').value) || 0;
+    const bonus   = parseFloat(document.getElementById('sim-rango').value) || 0;
+    const niveles = parseInt(document.getElementById('sim-niveles').value) || 2;
+    const bonoEfectivo = precio * pct / 100 * (1 + bonus / 100);
+    const comisionMP   = precio * MP_COMISION;
+    const premioSponsor = precio / CICLO_REFERIDOS; // por pago individual
+    return { precio, pct, bonus, niveles, bonoEfectivo, comisionMP, premioSponsor };
+}
+
+// ── Recalcular todo ──────────────────────────────────────────────────
+function recalcularTodo() {
+    actualizarBarrasPago();
+    actualizarCiclo();
+    dibujarArbolExplicativo();
+    dibujarRedProfunda();
+}
+
+// ── Sección 2: Barras de un pago individual ──────────────────────────
+function actualizarBarrasPago() {
+    const { precio, bonoEfectivo, comisionMP, premioSponsor } = getParams();
+    if (precio <= 0) return;
+
+    // Por pago individual el sponsor recibe 1/3 del precio (se completa en ciclo de 3)
+    const sponsorPorPago = precio / CICLO_REFERIDOS;
+    const negocioPorPago = precio - comisionMP - sponsorPorPago - bonoEfectivo;
+
+    const total = precio;
+    const pcts = {
+        negocio: Math.max(0, negocioPorPago / total * 100),
+        mp:      comisionMP / total * 100,
+        sponsor: sponsorPorPago / total * 100,
+        abuelo:  bonoEfectivo / total * 100
+    };
+
+    document.getElementById('bar-negocio-fill').style.width = pcts.negocio + '%';
+    document.getElementById('bar-mp-fill').style.width      = pcts.mp + '%';
+    document.getElementById('bar-sponsor-fill').style.width = pcts.sponsor + '%';
+    document.getElementById('bar-abuelo-fill').style.width  = pcts.abuelo + '%';
+
+    document.getElementById('bar-negocio-val').textContent = fmtD(negocioPorPago);
+    document.getElementById('bar-mp-val').textContent      = '-' + fmtD(comisionMP);
+    document.getElementById('bar-sponsor-val').textContent = fmtD(sponsorPorPago) + ' (×ciclo)';
+    document.getElementById('bar-abuelo-val').textContent  = '-' + fmtD(bonoEfectivo);
+
+    document.getElementById('sim-pago-nota').innerHTML =
+        `<strong>Nota:</strong> El sponsor acumula ${fmtD(sponsorPorPago)} por cada pago. Al completar ${CICLO_REFERIDOS} referidos recibe ${fmt(precio)} de premio. ` +
+        `El abuelo recibe ${fmtD(bonoEfectivo)} por cada pago de su nieto. ` +
+        `El negocio retiene aproximadamente ${fmtD(negocioPorPago)} por pago (${(negocioPorPago/precio*100).toFixed(1)}%).`;
+}
+
+// ── Sección 3: Ciclo completo ────────────────────────────────────────
+function actualizarCiclo() {
+    const { precio, bonoEfectivo, comisionMP } = getParams();
+    if (precio <= 0) return;
+
+    const ingreso      = precio * CICLO_REFERIDOS;
+    const totalMP      = comisionMP * CICLO_REFERIDOS;
+    const totalSponsor = precio; // el premio es 1x precio
+    const totalAbuelo  = bonoEfectivo * CICLO_REFERIDOS;
+    const margen       = ingreso - totalMP - totalSponsor - totalAbuelo;
+    const margenPct    = ingreso > 0 ? margen / ingreso * 100 : 0;
+
+    document.getElementById('ciclo-ingreso').textContent     = fmt(ingreso);
+    document.getElementById('ciclo-mp').textContent          = '-' + fmtD(totalMP);
+    document.getElementById('ciclo-mp-pct').textContent      = '-' + (totalMP/ingreso*100).toFixed(1) + '%';
+    document.getElementById('ciclo-sponsor').textContent     = '-' + fmt(totalSponsor);
+    document.getElementById('ciclo-sponsor-pct').textContent = '-' + (totalSponsor/ingreso*100).toFixed(1) + '%';
+    document.getElementById('ciclo-abuelo').textContent      = '-' + fmtD(totalAbuelo);
+    document.getElementById('ciclo-abuelo-pct').textContent  = '-' + (totalAbuelo/ingreso*100).toFixed(1) + '%';
+    document.getElementById('ciclo-margen').textContent      = fmt(margen);
+    document.getElementById('ciclo-margen-pct').textContent  = margenPct.toFixed(1) + '%';
+
+    const colorMargen = margen < 0 ? 'var(--red)' : margen < precio ? 'var(--amber)' : 'var(--green)';
+    document.getElementById('ciclo-margen').style.color = colorMargen;
+    document.getElementById('ciclo-margen-pct').style.color = colorMargen;
+
+    document.getElementById('ciclo-resumen').innerHTML =
+        `<strong>Resumen del ciclo:</strong> Por cada ${CICLO_REFERIDOS} pagos de ${fmt(precio)}, ` +
+        `el negocio recibe ${fmt(ingreso)} bruto. Después de pagar a MercadoPago (${fmtD(totalMP)}), ` +
+        `el premio al sponsor (${fmt(totalSponsor)}) y el bono al abuelo (${fmtD(totalAbuelo)}), ` +
+        `el <strong style="color:${colorMargen}">margen neto es ${fmt(margen)} (${margenPct.toFixed(1)}%)</strong>.`;
+}
+
+// ── Sección 1: Árbol explicativo dinámico ───────────────────────────
+function dibujarArbolExplicativo() {
+    const { precio, bonoEfectivo, comisionMP } = getParams();
+
+    const wrap = document.getElementById('sim-arbol-wrap');
+    wrap.innerHTML = '';
+
+    const data = [
+        { id: 'negocio', padreId: null, label: '🏢 Negocio', color: RANGO_COLOR.Negocio,
+          info: `Ingresa ${fmt(precio)} por cada pago.\nDescuento MP: -${fmtD(comisionMP)}\nMargen estimado por pago: ${fmtD(precio - comisionMP - precio/3 - bonoEfectivo)}`,
+          rol: 'Es el sistema. Retiene el margen después de todos los costos.' },
+        { id: 'abuelo', padreId: 'negocio', label: '👴 Abuelo', color: RANGO_COLOR.Abuelo,
+          info: `Recibe ${fmtD(bonoEfectivo)} por cada pago del nieto.\nBono por ciclo completo: ${fmtD(bonoEfectivo * 3)}`,
+          rol: 'Es el sponsor del sponsor. Recibe un bono en cada pago de su red de segundo nivel.' },
+        { id: 'sponsor', padreId: 'abuelo', label: '👨 Sponsor', color: RANGO_COLOR.Sponsor,
+          info: `Acumula ${fmtD(precio/3)} por cada pago de referido.\nPremio al completar ciclo: ${fmt(precio)}`,
+          rol: 'Registra referidos. Al lograr 3 pagados recibe el precio del producto como premio.' },
+        { id: 'r1', padreId: 'sponsor', label: '👤 Referido 1', color: RANGO_COLOR.Referido,
+          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital.`,
+          rol: 'Paga el producto. Activa su cuenta y puede empezar a referir.' },
+        { id: 'r2', padreId: 'sponsor', label: '👤 Referido 2', color: RANGO_COLOR.Referido,
+          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital.`,
+          rol: 'Paga el producto. Activa su cuenta y puede empezar a referir.' },
+        { id: 'r3', padreId: 'sponsor', label: '👤 Referido 3', color: RANGO_COLOR.Referido,
+          info: `Paga ${fmt(precio)} para activar su cuenta.\nAl pagar este, el sponsor completa el ciclo y cobra ${fmt(precio)}.`,
+          rol: 'El tercer pago completa el ciclo del sponsor. Se dispara el premio.' },
+    ];
+
+    renderArbolD3(wrap, data, 'sim-arbol-panel', 'sim-arbol-titulo', 'sim-arbol-detalle');
+}
+
+// ── Sección 4: Red profunda ──────────────────────────────────────────
+function dibujarRedProfunda() {
+    const { precio, bonoEfectivo, comisionMP, niveles } = getParams();
+
+    const wrap = document.getElementById('sim-red-wrap');
+    wrap.innerHTML = '';
+
+    let data = [
+        { id: 'negocio', padreId: null, label: '🏢 Negocio', color: RANGO_COLOR.Negocio,
+          monto: null, rol: 'El sistema. Retiene el margen de toda la red.' }
+    ];
+
+    if (niveles >= 1) {
+        data.push({ id: 'a1', padreId: 'negocio', label: '👴 Abuelo', color: RANGO_COLOR.Abuelo,
+            monto: bonoEfectivo * 3, rol: `Recibe bono por ciclos del sponsor. Total ciclo: ${fmtD(bonoEfectivo * 3)}` });
+
+        data.push({ id: 's1', padreId: 'a1', label: '👨 Sponsor', color: RANGO_COLOR.Sponsor,
+            monto: precio, rol: `Premio al completar ciclo: ${fmt(precio)}` });
+
+        ['r1','r2','r3'].forEach((id, i) => {
+            data.push({ id, padreId: 's1', label: `👤 Ref ${i+1}`, color: RANGO_COLOR.Referido,
+                monto: -precio, rol: `Paga ${fmt(precio)}. Accede al contenido.` });
+        });
+    }
+
+    if (niveles >= 2) {
+        data.push({ id: 's2', padreId: 'r1', label: '👨 Sponsor 2', color: RANGO_COLOR.Sponsor,
+            monto: precio, rol: `El Referido 1 refiere a 3 personas y cobra su ciclo: ${fmt(precio)}` });
+        ['r4','r5','r6'].forEach((id, i) => {
+            data.push({ id, padreId: 's2', label: `👤 Ref ${i+4}`, color: RANGO_COLOR.Referido,
+                monto: -precio, rol: `Paga ${fmt(precio)}.` });
+        });
+    }
+
+    if (niveles >= 3) {
+        data.push({ id: 's3', padreId: 'r4', label: '👨 Sponsor 3', color: RANGO_COLOR.Sponsor,
+            monto: precio, rol: `Tercer nivel. Cobra ciclo: ${fmt(precio)}` });
+        ['r7','r8','r9'].forEach((id, i) => {
+            data.push({ id, padreId: 's3', label: `👤 Ref ${i+7}`, color: RANGO_COLOR.Referido,
+                monto: -precio, rol: `Paga ${fmt(precio)}.` });
+        });
+    }
+
+    renderArbolD3(wrap, data, null, null, null, true);
+}
+
+// ── Motor D3 reutilizable ────────────────────────────────────────────
+function renderArbolD3(wrap, data, panelId, tituloId, detalleId, mostrarMontos = false) {
+    const R = 26;
+    const VG = 110;
+    const HG = 70;
+
+    const w = wrap.clientWidth  || 600;
+    const h = wrap.clientHeight || 400;
+
+    const svg = d3.select(wrap).append('svg')
+        .attr('width', '100%').attr('height', '100%');
+
+    const g = svg.append('g');
+
+    const zoom = d3.zoom().scaleExtent([0.2, 3])
+        .on('zoom', e => g.attr('transform', e.transform));
+    svg.call(zoom).on('dblclick.zoom', null);
+
+    let root;
+    try {
+        root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
+    } catch(e) { return; }
+
+    d3.tree().nodeSize([HG + R * 2, VG])(root);
+
+    // Links
+    g.selectAll('.sim-link')
+        .data(root.links())
+        .join('path')
+        .attr('class', 'sim-link')
+        .attr('fill', 'none')
+        .attr('stroke', 'rgba(148,163,184,0.25)')
+        .attr('stroke-width', 1.5)
+        .attr('d', d3.linkVertical()
+            .x(d => d.x)
+            .y(d => d.y));
+
+    // Nodos
+    const nodo = g.selectAll('.sim-nodo')
+        .data(root.descendants())
+        .join('g')
+        .attr('class', 'sim-nodo')
+        .attr('transform', d => `translate(${d.x},${d.y})`)
+        .style('cursor', panelId ? 'pointer' : 'default')
+        .on('click', (event, d) => {
+            if (!panelId) return;
+            document.getElementById(panelId).style.display = 'block';
+            document.getElementById(tituloId).textContent = d.data.label + ' — ' + d.data.rol;
+            document.getElementById(detalleId).innerHTML =
+                d.data.info.split('\n').map(l => `• ${l}`).join('<br>');
+        });
+
+    nodo.append('circle')
+        .attr('r', R)
+        .attr('fill', d => d.data.color || '#475569')
+        .attr('fill-opacity', 0.15)
+        .attr('stroke', d => d.data.color || '#475569')
+        .attr('stroke-width', 2);
+
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '0.35em')
+        .attr('font-size', '14px')
+        .text(d => d.data.label.split(' ')[0]); // solo el emoji
+
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', R + 14)
+        .attr('font-size', '10px')
+        .attr('fill', 'var(--text-muted)')
+        .text(d => {
+            const words = d.data.label.split(' ');
+            return words.slice(1).join(' ');
+        });
+
+    if (mostrarMontos) {
+        nodo.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', R + 26)
+            .attr('font-size', '10px')
+            .attr('fill', d => d.data.monto > 0 ? 'var(--green)' : d.data.monto < 0 ? 'var(--red)' : 'var(--sky)')
+            .text(d => d.data.monto != null ? (d.data.monto > 0 ? '+' : '') + fmt(d.data.monto) : '');
+    }
+
+    // Centrar
+    const bounds = g.node().getBBox();
+    const scale = Math.min(0.9, Math.min(w / bounds.width, h / bounds.height)) * 0.85;
+    const tx = w/2 - scale * (bounds.x + bounds.width/2);
+    const ty = 40;
+    svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    recalcularTodo();
+});
+</script>

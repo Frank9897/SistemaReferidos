@@ -810,76 +810,24 @@ public class AdministradorController : Controller
     }
 
     // ----------------------------------------------------------------
-    // GET /Administrador/Finanzas
+    // GET /Administrador/Simulador
     // ----------------------------------------------------------------
     [HttpGet]
-    public async Task<IActionResult> Finanzas()
+    public async Task<IActionResult> Simulador()
     {
-        const decimal COMISION_MP = 0.0629m;
+        var producto = await _contexto.Productos
+            .Where(p => p.Activo)
+            .OrderBy(p => p.FechaCreacion)
+            .FirstOrDefaultAsync();
 
-        // Ingresos
-        var ingresoBruto = await _contexto.Pagos
-            .Where(p => p.Confirmado && p.PlataformaPago == "MercadoPago")
-            .SumAsync(p => (decimal?)p.Monto) ?? 0m;
-
-        var ingresoManual = await _contexto.Pagos
-            .Where(p => p.Confirmado && p.PlataformaPago == "Manual")
-            .SumAsync(p => (decimal?)p.Monto) ?? 0m;
-
-        var ingresoTotal = ingresoBruto + ingresoManual;
-
-        // Costos
-        var comisionMP = ingresoBruto * COMISION_MP;
-
-        var premiosSponsor = await _contexto.MovimientosPuntos
-            .Where(m => m.Monto > 0 && m.Nivel == 0)
-            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
-
-        var bonosAbuelo = await _contexto.MovimientosPuntos
-            .Where(m => m.Monto > 0 && m.Nivel == 1)
-            .SumAsync(m => (decimal?)m.Monto) ?? 0m;
-
-        var totalRetirado = await _contexto.SolicitudesRetiro
-            .Where(s => s.Estado == EstadoRetiro.Completado)
-            .SumAsync(s => (decimal?)s.Monto) ?? 0m;
-
-        var pendienteRetiro = await _contexto.SolicitudesRetiro
-            .Where(s => s.Estado == EstadoRetiro.Pendiente)
-            .SumAsync(s => (decimal?)s.Monto) ?? 0m;
-
-        var saldoEnCirculacion = await _contexto.Users
-            .SumAsync(u => u.SaldoDisponible + u.SaldoPendienteRetiro);
-
-        // Margen
-        var costoTotal = comisionMP + premiosSponsor + bonosAbuelo;
-        var margenNeto = ingresoTotal - costoTotal;
-        var margenPct  = ingresoTotal > 0 ? margenNeto / ingresoTotal * 100 : 0;
-
-        // Por producto
-        var porProducto = await _contexto.Pagos
-            .Where(p => p.Confirmado)
-            .Include(p => p.Producto)
-            .GroupBy(p => p.Producto!.Nombre)
-            .Select(g => new {
-                Producto = g.Key,
-                Cantidad = g.Count(),
-                Total    = g.Sum(p => p.Monto)
-            })
+        var rangos = await _contexto.RangosUsuario
+            .Where(r => r.Activo)
+            .OrderBy(r => r.Orden)
             .ToListAsync();
 
-        ViewBag.IngresoBruto        = ingresoBruto;
-        ViewBag.IngresoManual       = ingresoManual;
-        ViewBag.IngresoTotal        = ingresoTotal;
-        ViewBag.ComisionMP          = comisionMP;
-        ViewBag.PremiosSponsor      = premiosSponsor;
-        ViewBag.BonosAbuelo         = bonosAbuelo;
-        ViewBag.CostoTotal          = costoTotal;
-        ViewBag.MargenNeto          = margenNeto;
-        ViewBag.MargenPct           = margenPct;
-        ViewBag.TotalRetirado       = totalRetirado;
-        ViewBag.PendienteRetiro     = pendienteRetiro;
-        ViewBag.SaldoEnCirculacion  = saldoEnCirculacion;
-        ViewBag.PorProducto         = porProducto;
+        ViewBag.PrecioDefault     = producto?.Precio ?? 100m;
+        ViewBag.PctDefault        = producto?.PorcentajeAbueloComision ?? 10m;
+        ViewBag.Rangos            = rangos;
 
         return View();
     }
