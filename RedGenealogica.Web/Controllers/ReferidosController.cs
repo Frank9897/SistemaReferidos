@@ -31,17 +31,20 @@ public class ReferidosController : Controller
     private readonly UserManager<Usuario> _userManager;
     private readonly ServicioReferidos _servicioReferidos;
     private readonly ServicioCorreos _servicioCorreos;
+    private readonly ServicioPagos _servicioPagos;
 
     public ReferidosController(
         ContextoAplicacion contexto,
         UserManager<Usuario> userManager,
         ServicioReferidos servicioReferidos,
-        ServicioCorreos servicioCorreos)
+        ServicioCorreos servicioCorreos,
+        ServicioPagos servicioPagos)
     {
         _contexto = contexto;
         _userManager = userManager;
         _servicioReferidos = servicioReferidos;
         _servicioCorreos = servicioCorreos;
+        _servicioPagos = servicioPagos;
     }
 
     // ----------------------------------------------------------------
@@ -51,6 +54,15 @@ public class ReferidosController : Controller
     [HttpGet]
     public async Task<IActionResult> Crear()
     {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null) return RedirectToAction("Login", "Autenticacion");
+
+        if (usuario.EstadoUsuario != EstadoUsuario.Activo)
+        {
+            TempData["Error"] = "Tu cuenta no está activa. Primero debés pagar el producto para poder referir.";
+            return RedirectToAction("Panel", "Usuario");
+        }
+
         var productos = await _contexto.Productos
             .Where(p => p.Activo)
             .OrderBy(p => p.Nombre)
@@ -193,5 +205,31 @@ public class ReferidosController : Controller
 
         TempData["Exito"] = $"{referido.NombreCompleto} fue eliminado de tu lista de referidos.";
         return RedirectToAction("MisReferidos");
+    }
+
+    // ----------------------------------------------------------------
+    // GET /Referidos/GenerarLinkMP/{id}
+    // Devuelve el link de checkout de MercadoPago como JSON
+    // ----------------------------------------------------------------
+    [HttpGet]
+    public async Task<IActionResult> GenerarLinkMP(int id)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null) return Unauthorized();
+
+        var referido = await _contexto.Referidos
+            .FirstOrDefaultAsync(r => r.Id == id && r.UsuarioId == usuario.Id);
+
+        if (referido == null) return NotFound();
+
+        try
+        {
+            var urlPago = await _servicioPagos.CrearPreferencia(id);
+            return Json(new { url = urlPago });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = ex.Message });
+        }
     }
 }

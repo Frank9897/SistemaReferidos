@@ -215,6 +215,35 @@ async function compartirNativoRef() {
 document.addEventListener('DOMContentLoaded', () => {
     if (navigator.share) document.getElementById('btn-share-ref').style.display = 'flex';
 });
+
+async function generarLinkMP(referidoId, btn) {
+    btn.textContent = '⏳ Generando...';
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/Referidos/GenerarLinkMP/${referidoId}`);
+        const data = await res.json();
+        if (data.url) {
+            document.getElementById(`url-mp-${referidoId}`).textContent = data.url;
+            document.getElementById(`link-mp-${referidoId}`).style.display = 'block';
+            btn.textContent = '✅ Link generado';
+        } else {
+            btn.textContent = '❌ Error';
+            btn.disabled = false;
+        }
+    } catch {
+        btn.textContent = '❌ Error';
+        btn.disabled = false;
+    }
+}
+
+function copiarLinkMP(referidoId) {
+    const url = document.getElementById(`url-mp-${referidoId}`).textContent;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ ¡Copiado!';
+        setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+    });
+}
 </script>
 
 <!-- REFERIDOS -->
@@ -265,7 +294,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td data-label="Acción">
                         @if (r.Estado == EstadoReferido.Pendiente)
                         {
-                            <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">💳 Link pago</a>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <a href="/Referidos/LinkPago/@r.Id" class="btn btn-secondary btn-sm">
+                                    💳 Link pago
+                                </a>
+                                <button onclick="generarLinkMP(@r.Id, this)" 
+                                        class="btn btn-sm"
+                                        style="background:rgba(0,132,61,0.12); border:1px solid rgba(0,132,61,0.25); color:#00843d; font-size:11px;">
+                                    🟢 Link MercadoPago
+                                </button>
+                                <div id="link-mp-@r.Id" style="display:none; background:var(--bg3); border:1px solid var(--border);
+                                    border-radius:var(--radius-sm); padding:8px; font-size:11px; word-break:break-all;">
+                                    <span id="url-mp-@r.Id" style="color:var(--sky); font-family:monospace;"></span>
+                                    <button onclick="copiarLinkMP('@r.Id')" 
+                                            style="margin-top:6px; width:100%; background:var(--surface); border:1px solid var(--border);
+                                                border-radius:4px; color:var(--text-muted); font-size:11px; padding:4px; cursor:pointer;">
+                                        📋 Copiar
+                                    </button>
+                                </div>
+                            </div>
                         }
                         else if (r.Estado == EstadoReferido.Convertido)
                         {
