@@ -217,7 +217,7 @@
                     <div style="font-size:15px; font-weight:600;">
                         <span style="color:var(--sky);">@pdf.Orden.</span> @pdf.Nombre
                     </div>
-                    <button onclick="descargarPdf('/Contento/DescargarPdf/@pdf.Id','@pdf.Nombre')"
+                    <button onclick="descargarPdf('/Archivos/Pdf?id=@pdf.Id&download=1','@pdf.Nombre')"
                             class="btn btn-secondary btn-sm">
                         ⬇️ Descargar PDF
                     </button>
@@ -303,7 +303,7 @@ const VS = {};
 // ── Cargar PDF ────────────────────────────────────────────────────
 async function cargarPdf(idx, url) {
     try {
-        const pdf = await pdfjsLib.getDocument('/Administrador/ServirPdf?ruta=' + encodeURIComponent(url)).promise;
+        const pdf = await pdfjsLib.getDocument(url).promise;
         VS[idx] = { pdf, pag: 1, zoom: 1.0, doble: false };
 
         document.getElementById('loading-' + idx).style.display = 'none';
@@ -507,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Esto previene que el servidor sirva el archivo como text/plain
 async function descargarPdf(url, nombre) {
     try {
-        const res  = await fetch('/Administrador/ServirPdf?ruta=' + encodeURIComponent(url));
+        const res  = await fetch(url);
         const blob = await res.blob();
         const obj  = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
         const a    = document.createElement('a');
@@ -516,7 +516,7 @@ async function descargarPdf(url, nombre) {
         a.click();
         setTimeout(() => URL.revokeObjectURL(obj), 5000);
     } catch(e) {
-        window.location.href = '/Administrador/ServirPdf?ruta=' + encodeURIComponent(url);
+        window.location.href = url;
     }
 }
 
@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 @foreach (var pdf in pdfs)
 {
     _i++;
-    @:    cargarPdf(@_i, '@pdf.Url');
+    @:    cargarPdf(@_i, '/Archivos/Pdf?id=@pdf.Id');
 }
 });
 </script>
