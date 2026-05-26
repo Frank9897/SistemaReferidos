@@ -100,7 +100,7 @@ public class ServicioCorreos
             <p>Tu cuenta fue creada exitosamente en <strong>RedGenealogica</strong>.</p>
             <p>Para activar tu cuenta y empezar a ganar, tu primer referido debe completar el pago.</p>
             <div style="text-align:center; margin:28px 0;">
-                <a href="https://sistemareferidos.up.railway.app/Usuario/Panel"
+                <a href="https://redgenealogico.up.railway.app/Usuario/Panel"
                    style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
                           text-decoration:none; font-weight:600; font-size:15px;">
                     Ir a mi panel
@@ -127,7 +127,7 @@ public class ServicioCorreos
             </div>
             <p style="color:#f59e0b; font-size:13px;">⚠️ Por tu seguridad, cambiá tu contraseña después de iniciar sesión.</p>
             <div style="text-align:center; margin:28px 0;">
-                <a href="https://sistemareferidos.up.railway.app/Autenticacion/Login"
+                <a href="https://redgenealogico.up.railway.app/Autenticacion/Login"
                    style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
                           text-decoration:none; font-weight:600; font-size:15px;">
                     Iniciar sesión
@@ -171,7 +171,7 @@ public class ServicioCorreos
             <p><strong>{nombreReferido}</strong> completó su pago y ya está activo en tu red.</p>
             <p>Revisá tu panel para ver tu progreso de ciclo y saldo actualizado.</p>
             <div style="text-align:center; margin:28px 0;">
-                <a href="https://sistemareferidos.up.railway.app/Usuario/Panel"
+                <a href="https://redgenealogico.up.railway.app/Usuario/Panel"
                    style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
                           text-decoration:none; font-weight:600; font-size:15px;">
                     Ver mi panel
@@ -192,7 +192,7 @@ public class ServicioCorreos
             <p>Tu solicitud de retiro de <strong style="color:#22c55e;">${monto:N0}</strong> fue aprobada.</p>
             <p>El dinero será transferido a tu cuenta en las próximas horas.</p>
             <div style="text-align:center; margin:28px 0;">
-                <a href="https://sistemareferidos.up.railway.app/Usuario/Panel"
+                <a href="https://redgenealogico.up.railway.app/Usuario/Panel"
                    style="background:#22c55e; color:#fff; padding:13px 32px; border-radius:8px;
                           text-decoration:none; font-weight:600; font-size:15px;">
                     Ver mi saldo
