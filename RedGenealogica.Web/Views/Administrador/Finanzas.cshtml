@@ -130,7 +130,7 @@
                 <tr>
                     <td>@p.Producto</td>
                     <td>@p.Cantidad</td>
-                    <td style="color:var(--green);">$@((decimal)p.Total).ToString("N0")</td>
+                    <td style="color:var(--green);">$@string.Format("{0:N0}", p.Total)</td>
                 </tr>
             }
         </tbody>
