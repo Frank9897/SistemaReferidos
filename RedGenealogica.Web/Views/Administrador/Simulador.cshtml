@@ -307,30 +307,39 @@ function actualizarCiclo() {
 
 // ── Sección 1: Árbol explicativo dinámico ───────────────────────────
 function dibujarArbolExplicativo() {
-    const { precio, bonoEfectivo, comisionMP } = getParams();
+    const { precio, pct, bonus, comisionMP } = getParams();
+
+    const bonoBase     = precio * pct / 100;
+    const bonoCobre    = bonoBase * 1.00; // rango Cobre, sin bonus
+    const bonoDiamante = bonoBase * 1.80; // rango Diamante, +80%
 
     const wrap = document.getElementById('sim-arbol-wrap');
     wrap.innerHTML = '';
 
     const data = [
         { id: 'negocio', padreId: null, label: '🏢 Negocio', color: RANGO_COLOR.Negocio,
-          info: `Ingresa ${fmt(precio)} por cada pago.\nDescuento MP: -${fmtD(comisionMP)}\nMargen estimado por pago: ${fmtD(precio - comisionMP - precio/3 - bonoEfectivo)}`,
-          rol: 'Es el sistema. Retiene el margen después de todos los costos.' },
+          info: `Recibe ${fmt(precio)} por cada pago.\nDescuento MP (6.29%): -${fmtD(comisionMP)}\nMargen neto por pago (mejor caso): ${fmtD(precio - comisionMP - precio/3 - bonoCobre)}\nMargen neto por pago (peor caso): ${fmtD(precio - comisionMP - precio/3 - bonoDiamante)}`,
+          rol: 'El sistema. Retiene el margen después de todos los costos.' },
+
         { id: 'abuelo', padreId: 'negocio', label: '👴 Abuelo', color: RANGO_COLOR.Abuelo,
-          info: `Recibe ${fmtD(bonoEfectivo)} por cada pago del nieto.\nBono por ciclo completo: ${fmtD(bonoEfectivo * 3)}`,
-          rol: 'Es el sponsor del sponsor. Recibe un bono en cada pago de su red de segundo nivel.' },
+          info: `Recibe bono cuando su referido (sponsor) completa un ciclo de 3 pagos.\nBono si es Cobre (0% bonus): ${fmtD(bonoCobre)}\nBono si es Diamante (+80%): ${fmtD(bonoDiamante)}\n⚠️ Se paga UNA VEZ por ciclo, no por cada pago individual.`,
+          rol: 'Sponsor del sponsor. Cobra una vez por cada ciclo completado de su red.' },
+
         { id: 'sponsor', padreId: 'abuelo', label: '👨 Sponsor', color: RANGO_COLOR.Sponsor,
-          info: `Acumula ${fmtD(precio/3)} por cada pago de referido.\nPremio al completar ciclo: ${fmt(precio)}`,
-          rol: 'Registra referidos. Al lograr 3 pagados recibe el precio del producto como premio.' },
+          info: `Premio al completar 3 referidos pagados: ${fmt(precio)}\nAcumula ${fmtD(precio/3)} de "progreso" por cada pago.\nSolo cobra cuando completa el ciclo completo.`,
+          rol: 'Registra referidos. Al completar 3 pagados recibe el precio del producto.' },
+
         { id: 'r1', padreId: 'sponsor', label: '👤 Referido 1', color: RANGO_COLOR.Referido,
-          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital.`,
-          rol: 'Paga el producto. Activa su cuenta y puede empezar a referir.' },
+          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital permanente.\nPuede empezar a referir y ganar desde su primer ciclo.`,
+          rol: 'Paga el producto. Activa su cuenta y puede referir.' },
+
         { id: 'r2', padreId: 'sponsor', label: '👤 Referido 2', color: RANGO_COLOR.Referido,
-          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital.`,
-          rol: 'Paga el producto. Activa su cuenta y puede empezar a referir.' },
+          info: `Paga ${fmt(precio)} para activar su cuenta.\nRecibe acceso al contenido digital permanente.`,
+          rol: 'Paga el producto. Activa su cuenta y puede referir.' },
+
         { id: 'r3', padreId: 'sponsor', label: '👤 Referido 3', color: RANGO_COLOR.Referido,
-          info: `Paga ${fmt(precio)} para activar su cuenta.\nAl pagar este, el sponsor completa el ciclo y cobra ${fmt(precio)}.`,
-          rol: 'El tercer pago completa el ciclo del sponsor. Se dispara el premio.' },
+          info: `Paga ${fmt(precio)} — este es el TERCER pago.\n🎉 Al confirmarse este pago se dispara el ciclo del sponsor.\nEl sponsor cobra ${fmt(precio)} y el abuelo cobra su bono.`,
+          rol: 'El tercer pago completa el ciclo. Dispara premios al sponsor y al abuelo.' },
     ];
 
     renderArbolD3(wrap, data, 'sim-arbol-panel', 'sim-arbol-titulo', 'sim-arbol-detalle');
@@ -338,7 +347,10 @@ function dibujarArbolExplicativo() {
 
 // ── Sección 4: Red profunda ──────────────────────────────────────────
 function dibujarRedProfunda() {
-    const { precio, bonoEfectivo, comisionMP, niveles } = getParams();
+    const { precio, pct, bonus, comisionMP, niveles } = getParams();
+
+    const bonoBase     = precio * pct / 100;
+    const bonoEfectivo = bonoBase * (1 + bonus / 100);
 
     const wrap = document.getElementById('sim-red-wrap');
     wrap.innerHTML = '';
@@ -349,37 +361,47 @@ function dibujarRedProfunda() {
     ];
 
     if (niveles >= 1) {
+        // Abuelo recibe bono POR CICLO (no por pago)
         data.push({ id: 'a1', padreId: 'negocio', label: '👴 Abuelo', color: RANGO_COLOR.Abuelo,
-            monto: bonoEfectivo * 3, rol: `Recibe bono por ciclos del sponsor. Total ciclo: ${fmtD(bonoEfectivo * 3)}` });
+            monto: bonoEfectivo, positivo: true,
+            rol: `Bono por ciclo del sponsor: +${fmtD(bonoEfectivo)}` });
 
+        // Sponsor recibe premio al ciclo completo
         data.push({ id: 's1', padreId: 'a1', label: '👨 Sponsor', color: RANGO_COLOR.Sponsor,
-            monto: precio, rol: `Premio al completar ciclo: ${fmt(precio)}` });
+            monto: precio, positivo: true,
+            rol: `Premio al completar ciclo: +${fmt(precio)}` });
 
+        // Referidos pagan
         ['r1','r2','r3'].forEach((id, i) => {
             data.push({ id, padreId: 's1', label: `👤 Ref ${i+1}`, color: RANGO_COLOR.Referido,
-                monto: -precio, rol: `Paga ${fmt(precio)}. Accede al contenido.` });
+                monto: precio, positivo: false,
+                rol: `Paga ${fmt(precio)} para activar su cuenta.` });
         });
     }
 
     if (niveles >= 2) {
         data.push({ id: 's2', padreId: 'r1', label: '👨 Sponsor 2', color: RANGO_COLOR.Sponsor,
-            monto: precio, rol: `El Referido 1 refiere a 3 personas y cobra su ciclo: ${fmt(precio)}` });
+            monto: precio, positivo: true,
+            rol: `El Ref 1 se convierte en sponsor y cobra su ciclo: +${fmt(precio)}` });
         ['r4','r5','r6'].forEach((id, i) => {
             data.push({ id, padreId: 's2', label: `👤 Ref ${i+4}`, color: RANGO_COLOR.Referido,
-                monto: -precio, rol: `Paga ${fmt(precio)}.` });
+                monto: precio, positivo: false,
+                rol: `Paga ${fmt(precio)}.` });
         });
     }
 
     if (niveles >= 3) {
         data.push({ id: 's3', padreId: 'r4', label: '👨 Sponsor 3', color: RANGO_COLOR.Sponsor,
-            monto: precio, rol: `Tercer nivel. Cobra ciclo: ${fmt(precio)}` });
+            monto: precio, positivo: true,
+            rol: `Tercer nivel. Cobra ciclo: +${fmt(precio)}` });
         ['r7','r8','r9'].forEach((id, i) => {
             data.push({ id, padreId: 's3', label: `👤 Ref ${i+7}`, color: RANGO_COLOR.Referido,
-                monto: -precio, rol: `Paga ${fmt(precio)}.` });
+                monto: precio, positivo: false,
+                rol: `Paga ${fmt(precio)}.` });
         });
     }
 
-    renderArbolD3(wrap, data, null, null, null, true);
+    renderArbolD3Red(wrap, data);
 }
 
 // ── Motor D3 reutilizable ────────────────────────────────────────────
@@ -473,6 +495,85 @@ function renderArbolD3(wrap, data, panelId, tituloId, detalleId, mostrarMontos =
     const ty = 40;
     svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
 }
+
+function renderArbolD3Red(wrap, data) {
+    const R = 26;
+    const VG = 120;
+    const HG = 70;
+
+    const w = wrap.clientWidth  || 600;
+    const h = wrap.clientHeight || 500;
+
+    const svg = d3.select(wrap).append('svg')
+        .attr('width', '100%').attr('height', '100%');
+    const g = svg.append('g');
+
+    const zoom = d3.zoom().scaleExtent([0.2, 3])
+        .on('zoom', e => g.attr('transform', e.transform));
+    svg.call(zoom).on('dblclick.zoom', null);
+
+    let root;
+    try {
+        root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
+    } catch(e) { return; }
+
+    d3.tree().nodeSize([HG + R * 2, VG])(root);
+
+    g.selectAll('.sim-link')
+        .data(root.links())
+        .join('path')
+        .attr('fill', 'none')
+        .attr('stroke', 'rgba(148,163,184,0.25)')
+        .attr('stroke-width', 1.5)
+        .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
+
+    const nodo = g.selectAll('.sim-nodo')
+        .data(root.descendants())
+        .join('g')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+
+    nodo.append('circle')
+        .attr('r', R)
+        .attr('fill', d => d.data.color || '#475569')
+        .attr('fill-opacity', 0.15)
+        .attr('stroke', d => d.data.color || '#475569')
+        .attr('stroke-width', 2);
+
+    // Emoji
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '0.35em')
+        .attr('font-size', '14px')
+        .text(d => d.data.label.split(' ')[0]);
+
+    // Nombre
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', R + 14)
+        .attr('font-size', '10px')
+        .attr('fill', 'var(--text-muted)')
+        .text(d => d.data.label.split(' ').slice(1).join(' '));
+
+    // Monto con signo correcto
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', R + 26)
+        .attr('font-size', '10px')
+        .attr('fill', d => {
+            if (d.data.monto == null) return 'var(--sky)';
+            return d.data.positivo ? 'var(--green)' : 'var(--red)';
+        })
+        .text(d => {
+            if (d.data.monto == null) return '';
+            return (d.data.positivo ? '+' : '-') + fmt(d.data.monto);
+        });
+
+    const bounds = g.node().getBBox();
+    const scale = Math.min(0.9, Math.min(w / bounds.width, h / bounds.height)) * 0.85;
+    const tx = w/2 - scale * (bounds.x + bounds.width/2);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(tx, 40).scale(scale));
+}
+
 
 // ── Init ────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {

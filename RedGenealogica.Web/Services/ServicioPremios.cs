@@ -112,6 +112,13 @@ public class ServicioPremios
 
         if (abuelo == null) return;
 
+        // El admin no recibe bonos — es el dueño del negocio
+        var esAdmin = await _contexto.UserRoles
+            .Join(_contexto.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+            .AnyAsync(x => x.UserId == abuelo.Id && x.Name == "Admin");
+
+        if (esAdmin) return;
+
         // Bono base desde el producto
         decimal porcentajeBase = producto.PorcentajeAbueloComision;
         decimal bonoBase = producto.Precio * (porcentajeBase / 100m);
