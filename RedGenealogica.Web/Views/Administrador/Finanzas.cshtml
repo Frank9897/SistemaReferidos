@@ -1,19 +1,32 @@
 @{ ViewData["Title"] = "Finanzas"; }
 
 <div class="admin-tabs">
-    <a href="/Administrador" class="admin-tab active">Dashboard</a>
+    <a href="/Administrador" class="admin-tab">Dashboard</a>
     <a href="/Administrador/Usuarios" class="admin-tab">Usuarios</a>
     <a href="/Administrador/Productos" class="admin-tab">Productos</a>
     <a href="/Administrador/Retiros" class="admin-tab">Retiros</a>
     <a href="/Administrador/Configuracion" class="admin-tab">Configuración</a>
-    <a href="/Administrador/Finanzas" class="tab-btn @(ViewData["Title"]?.ToString() == "Finanzas" ? "active" : "")">
-    💰 Finanzas
-    </a>
+    <a href="/Administrador/Finanzas" class="admin-tab active">Finanzas</a>
     <a href="/Administrador/Arbol" class="admin-tab">Árbol global</a>
 </div>
 
 <div class="page-wide">
 <h2 style="font-size:20px; margin-bottom:20px;">💰 Dashboard Financiero</h2>
+
+@{
+    decimal ingresoBruto       = (decimal)(ViewBag.IngresoBruto       ?? 0m);
+    decimal ingresoManual      = (decimal)(ViewBag.IngresoManual      ?? 0m);
+    decimal ingresoTotal       = (decimal)(ViewBag.IngresoTotal       ?? 0m);
+    decimal comisionMP         = (decimal)(ViewBag.ComisionMP         ?? 0m);
+    decimal premiosSponsor     = (decimal)(ViewBag.PremiosSponsor     ?? 0m);
+    decimal bonosAbuelo        = (decimal)(ViewBag.BonosAbuelo        ?? 0m);
+    decimal costoTotal         = (decimal)(ViewBag.CostoTotal         ?? 0m);
+    decimal margenNeto         = (decimal)(ViewBag.MargenNeto         ?? 0m);
+    decimal margenPct          = (decimal)(ViewBag.MargenPct          ?? 0m);
+    decimal totalRetirado      = (decimal)(ViewBag.TotalRetirado      ?? 0m);
+    decimal pendienteRetiro    = (decimal)(ViewBag.PendienteRetiro    ?? 0m);
+    decimal saldoEnCirculacion = (decimal)(ViewBag.SaldoEnCirculacion ?? 0m);
+}
 
 @* ── Ingresos ── *@
 <div class="card" style="margin-bottom:16px;">
@@ -21,17 +34,17 @@
     <div class="grid" style="margin-top:12px;">
         <div class="metric-card green">
             <div class="metric-icon">💳</div>
-            <div class="metric-value">$@((decimal)ViewBag.IngresoBruto).ToString("N0")</div>
+            <div class="metric-value">$@ingresoBruto.ToString("N0")</div>
             <div class="metric-label">Ingresos MercadoPago</div>
         </div>
         <div class="metric-card blue">
             <div class="metric-icon">🏦</div>
-            <div class="metric-value">$@((decimal)ViewBag.IngresoManual).ToString("N0")</div>
+            <div class="metric-value">$@ingresoManual.ToString("N0")</div>
             <div class="metric-label">Ingresos manuales</div>
         </div>
         <div class="metric-card purple">
             <div class="metric-icon">💰</div>
-            <div class="metric-value">$@((decimal)ViewBag.IngresoTotal).ToString("N0")</div>
+            <div class="metric-value">$@ingresoTotal.ToString("N0")</div>
             <div class="metric-label">Ingreso total</div>
         </div>
     </div>
@@ -43,17 +56,17 @@
     <div class="grid" style="margin-top:12px;">
         <div class="metric-card amber">
             <div class="metric-icon">🏢</div>
-            <div class="metric-value">$@((decimal)ViewBag.ComisionMP).ToString("N0")</div>
+            <div class="metric-value">$@comisionMP.ToString("N0")</div>
             <div class="metric-label">Comisión MP (6.29%)</div>
         </div>
         <div class="metric-card cyan">
             <div class="metric-icon">🎁</div>
-            <div class="metric-value">$@((decimal)ViewBag.PremiosSponsor).ToString("N0")</div>
+            <div class="metric-value">$@premiosSponsor.ToString("N0")</div>
             <div class="metric-label">Premios a sponsors</div>
         </div>
         <div class="metric-card amber">
             <div class="metric-icon">👴</div>
-            <div class="metric-value">$@((decimal)ViewBag.BonosAbuelo).ToString("N0")</div>
+            <div class="metric-value">$@bonosAbuelo.ToString("N0")</div>
             <div class="metric-label">Bonos al abuelo</div>
         </div>
     </div>
@@ -62,18 +75,18 @@
 @* ── Margen ── *@
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header"><span class="card-title">📊 Margen neto</span></div>
-    <div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:12px;">
+    <div style="display:flex; gap:32px; flex-wrap:wrap; margin-top:12px; align-items:flex-end;">
         <div>
-            <div style="font-size:12px; color:var(--text-muted);">Costo total</div>
-            <div style="font-size:20px; font-weight:700; color:var(--red);">-$@((decimal)ViewBag.CostoTotal).ToString("N0")</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Costo total</div>
+            <div style="font-size:22px; font-weight:700; color:var(--red);">-$@costoTotal.ToString("N0")</div>
         </div>
         <div>
-            <div style="font-size:12px; color:var(--text-muted);">Margen neto estimado</div>
-            <div style="font-size:28px; font-weight:700; color:var(--green);">$@((decimal)ViewBag.MargenNeto).ToString("N0")</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Margen neto estimado</div>
+            <div style="font-size:30px; font-weight:700; color:var(--green);">$@margenNeto.ToString("N0")</div>
         </div>
         <div>
-            <div style="font-size:12px; color:var(--text-muted);">Margen %</div>
-            <div style="font-size:28px; font-weight:700; color:var(--sky);">@((decimal)ViewBag.MargenPct).ToString("N1")%</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Margen %</div>
+            <div style="font-size:30px; font-weight:700; color:var(--sky);">@margenPct.ToString("N1")%</div>
         </div>
     </div>
 </div>
@@ -84,17 +97,17 @@
     <div class="grid" style="margin-top:12px;">
         <div class="metric-card green">
             <div class="metric-icon">✅</div>
-            <div class="metric-value">$@((decimal)ViewBag.TotalRetirado).ToString("N0")</div>
+            <div class="metric-value">$@totalRetirado.ToString("N0")</div>
             <div class="metric-label">Total retirado</div>
         </div>
         <div class="metric-card amber">
             <div class="metric-icon">⏳</div>
-            <div class="metric-value">$@((decimal)ViewBag.PendienteRetiro).ToString("N0")</div>
+            <div class="metric-value">$@pendienteRetiro.ToString("N0")</div>
             <div class="metric-label">Pendiente de retiro</div>
         </div>
         <div class="metric-card blue">
             <div class="metric-icon">🔄</div>
-            <div class="metric-value">$@((decimal)ViewBag.SaldoEnCirculacion).ToString("N0")</div>
+            <div class="metric-value">$@saldoEnCirculacion.ToString("N0")</div>
             <div class="metric-label">Saldo en circulación</div>
         </div>
     </div>
@@ -112,7 +125,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var p in (dynamic)ViewBag.PorProducto)
+            @foreach (dynamic p in ViewBag.PorProducto)
             {
                 <tr>
                     <td>@p.Producto</td>
