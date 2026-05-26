@@ -71,17 +71,21 @@ function actualizarCalculadora() {
     var precio = parseFloat(inputPrecio.value) || 0;
     var pct    = parseFloat(inputPorcentaje.value) || 0;
 
-    var ingreso   = precio * 3;
-    var premio    = precio;
-    var bonoBase  = precio * pct / 100;
-    var bonoMax   = bonoBase * 1.80;
-    var margen    = ingreso - premio - bonoMax;
-    var margenPct = ingreso > 0 ? (margen / ingreso * 100) : 0;
+    var MP_COMISION = 0.0629; // 6.29% comisión MercadoPago
+
+    var ingreso      = precio * 3;
+    var premio       = precio;
+    var bonoBase     = precio * pct / 100;
+    var bonoMax      = bonoBase * 1.80;
+    var comisionMP   = ingreso * MP_COMISION;
+    var margen       = ingreso - premio - bonoMax - comisionMP;
+    var margenPct    = ingreso > 0 ? (margen / ingreso * 100) : 0;
 
     document.getElementById('calc-ingreso').textContent    = fmt(ingreso);
     document.getElementById('calc-premio').textContent     = '-' + fmt(premio);
     document.getElementById('calc-bono').textContent       = '-' + fmt(bonoBase);
     document.getElementById('calc-bono-max').textContent   = '-' + fmt(bonoMax);
+    document.getElementById('calc-comision-mp').textContent = '-' + fmt(comisionMP);
     document.getElementById('calc-margen').textContent     = fmt(margen);
     document.getElementById('calc-margen-pct').textContent = margenPct.toFixed(1) + '%';
 
@@ -127,9 +131,10 @@ function actualizarCalculadora() {
         zonaInfo.style.background = 'rgba(34,197,94,0.08)';
         zonaInfo.style.borderColor = 'rgba(34,197,94,0.2)';
         zonaInfo.style.color = '#4ADE80';
-        zonaInfo.textContent = 'El negocio retiene el ' + margenPct.toFixed(0) + '% del ingreso como margen minimo.';
+        zonaInfo.textContent = 'El negocio retiene el ' + margenPct.toFixed(0) + '% del ingreso como margen minimo (incluye comisión MP 6.29%).';
         if (btnSubmit) btnSubmit.disabled = false;
     }
 }
 
 document.addEventListener('DOMContentLoaded', actualizarCalculadora);
+
