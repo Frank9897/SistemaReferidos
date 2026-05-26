@@ -1,18 +1,31 @@
-<div class="pago-resultado success">
-    <h2>✅ Pago recibido</h2>
-
-    <p>
-        Estamos confirmando tu pago...<br>
-        Esto puede tardar unos segundos.
-    </p>
-
-    <div class="redirect">
-        Serás redirigido automáticamente al panel
+<div style="min-height:80vh; display:flex; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="max-width:480px; width:100%; padding:40px; text-align:center;">
+        <div style="font-size:56px; margin-bottom:16px;">✅</div>
+        <h2 style="font-size:22px; margin-bottom:12px; color:var(--green);">¡Pago recibido!</h2>
+        <p style="color:var(--text-muted); font-size:14px; margin-bottom:24px;">
+            Estamos confirmando tu pago. En unos instantes recibirás un email con tus credenciales de acceso.
+        </p>
+        <div style="background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.2);
+                    border-radius:var(--radius-sm); padding:14px; font-size:13px; color:var(--text-muted); margin-bottom:24px;">
+            📧 Revisá tu casilla de correo para acceder a tu cuenta.
+        </div>
+        <div id="btn-panel" style="display:none;">
+            <a href="/Usuario/Panel?activado=1" class="btn btn-primary" style="width:100%; justify-content:center;">
+                Ir a mi panel
+            </a>
+        </div>
     </div>
 </div>
 
 <script>
-    setTimeout(() => {
-        window.location.href = "/Usuario/Panel?activado=1";
-    }, 2500);
+// Si el usuario ya está logueado, mostrar botón al panel
+fetch('/Usuario/EstaLogueado')
+    .then(r => r.json())
+    .then(data => {
+        if (data.logueado) {
+            document.getElementById('btn-panel').style.display = 'block';
+            setTimeout(() => window.location.href = '/Usuario/Panel?activado=1', 2500);
+        }
+    })
+    .catch(() => {});
 </script>

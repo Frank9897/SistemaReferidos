@@ -38,8 +38,11 @@ public class PagosController : Controller
         return Redirect(url);
     }
 
+    [AllowAnonymous]
     public IActionResult Exito() => View();
+    [AllowAnonymous]
     public IActionResult Error() => View();
+    [AllowAnonymous]
     public IActionResult Pendiente() => View();
 
     [HttpPost]

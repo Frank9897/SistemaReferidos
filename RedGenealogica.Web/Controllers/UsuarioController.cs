@@ -297,4 +297,11 @@ public class UsuarioController : Controller
 
         return RedirectToAction("Panel");
     }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult EstaLogueado()
+    {
+        return Json(new { logueado = User.Identity?.IsAuthenticated ?? false });
+    }
 }
