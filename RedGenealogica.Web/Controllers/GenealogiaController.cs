@@ -160,9 +160,14 @@ public class GenealogiaController : Controller
             saldo    = usuario.SaldoDisponible
         });
 
-        // Referidos no convertidos (pendientes/pagados)
+        // Referidos no convertidos y sin cuenta creada con ese email
+        var emailsConCuenta = todos.Select(u => u.Email?.ToLower()).ToHashSet();
+
         var referidos = await _contexto.Referidos
-            .Where(r => r.UsuarioId == usuarioId && r.UsuarioConvertidoId == null && !r.EsAutoPago)
+            .Where(r => r.UsuarioId == usuarioId
+                    && r.UsuarioConvertidoId == null
+                    && !r.EsAutoPago
+                    && (r.CorreoElectronico == null || !emailsConCuenta.Contains(r.CorreoElectronico.ToLower())))
             .ToListAsync();
 
         foreach (var r in referidos)

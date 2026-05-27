@@ -431,15 +431,14 @@ function renderArbolD3(wrap, data, panelId, tituloId, detalleId, mostrarMontos =
 
     // Links
     g.selectAll('.sim-link')
-        .data(root.links())
-        .join('path')
-        .attr('class', 'sim-link')
-        .attr('fill', 'none')
-        .attr('stroke', 'rgba(148,163,184,0.25)')
-        .attr('stroke-width', 1.5)
-        .attr('d', d3.linkVertical()
-            .x(d => d.x)
-            .y(d => d.y));
+    .data(root.links())
+    .join('path')
+    .attr('fill', 'none')
+    .attr('stroke', 'rgba(148,163,184,0.25)')
+    .attr('stroke-width', 1.5)
+    .attr('d', d => {
+        return `M${d.source.x},${d.source.y}C${d.source.x},${(d.source.y + d.target.y)/2} ${d.target.x},${(d.source.y + d.target.y)/2} ${d.target.x},${d.target.y}`;
+    });
 
     // Nodos
     const nodo = g.selectAll('.sim-nodo')
@@ -517,7 +516,8 @@ function renderArbolD3Red(wrap, data) {
         root = d3.stratify().id(d => d.id).parentId(d => d.padreId)(data);
     } catch(e) { return; }
 
-    d3.tree().nodeSize([HG + R * 2, VG])(root);
+    const treeLayout = d3.tree().nodeSize([HG + R * 2, VG]);
+    treeLayout(root);
 
     g.selectAll('.sim-link')
         .data(root.links())
