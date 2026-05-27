@@ -98,6 +98,7 @@ public class ServicioPagos
                     var referidoDelSponsor = await _contexto.Referidos
                         .FirstOrDefaultAsync(r =>
                             r.UsuarioConvertidoId == usuarioAPagar.Id &&
+                            r.UsuarioId != usuarioAPagar.Id &&   // ← evita que se confirme a sí mismo
                             !r.EsAutoPago &&
                             !r.PagoConfirmado);
 
