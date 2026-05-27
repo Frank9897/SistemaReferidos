@@ -448,11 +448,11 @@ function dibujarRedProfunda() {
             const esRef4 = id === 'r4';
             data.push({ id, padreId: 's2',
                 label: esRef4 ? '👤→👨 Ref 4' : `👤 Ref ${i+4}`,
-                sublabel: esRef4 ? 'paga + Sponsor nivel 3' : 'paga',
+                sublabel: esRef4 ? 'paga + Sponsor 3' : 'paga',
                 color: esRef4 ? RANGO_COLOR.Sponsor : RANGO_COLOR.Referido,
                 monto: precio, positivo: false,
                 rol: esRef4
-                    ? `Paga ${fmt(precio)}. Cobra su ciclo: +${fmt(precio)}. Ref 1 cobra bono abuelo: +${fmtD(bonoEfectivo)}.`
+                    ? `Paga ${fmt(precio)}. Cobra su ciclo como Sponsor: +${fmt(precio)}. NO cobra bono abuelo — no hay nivel 4.`
                     : `Paga ${fmt(precio)}.` });
         });
         data.push({ id: 's3', padreId: 'r4',
