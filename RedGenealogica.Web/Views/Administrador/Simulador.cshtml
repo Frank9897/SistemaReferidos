@@ -280,7 +280,7 @@ function actualizarCiclo() {
     const ingreso      = precio * CICLO_REFERIDOS;
     const totalMP      = comisionMP * CICLO_REFERIDOS;
     const totalSponsor = precio; // el premio es 1x precio
-    const totalAbuelo  = bonoEfectivo * CICLO_REFERIDOS;
+    const totalAbuelo  = bonoEfectivo; // se paga UNA VEZ por ciclo completo
     const margen       = ingreso - totalMP - totalSponsor - totalAbuelo;
     const margenPct    = ingreso > 0 ? margen / ingreso * 100 : 0;
 
@@ -355,47 +355,116 @@ function dibujarRedProfunda() {
     const wrap = document.getElementById('sim-red-wrap');
     wrap.innerHTML = '';
 
-    let data = [
-        { id: 'negocio', padreId: null, label: '🏢 Negocio', color: RANGO_COLOR.Negocio,
-          monto: null, rol: 'El sistema. Retiene el margen de toda la red.' }
-    ];
+    // La cadena arranca desde el Sponsor original — sin nodo Negocio
+    // Los roles son dinámicos según el nivel
+    let data = [];
 
-    if (niveles >= 1) {
-        // Abuelo recibe bono POR CICLO (no por pago)
-        data.push({ id: 'a1', padreId: 'negocio', label: '👴 Abuelo', color: RANGO_COLOR.Abuelo,
-            monto: bonoEfectivo, positivo: true,
-            rol: `Bono por ciclo del sponsor: +${fmtD(bonoEfectivo)}` });
-
-        // Sponsor recibe premio al ciclo completo
-        data.push({ id: 's1', padreId: 'a1', label: '👨 Sponsor', color: RANGO_COLOR.Sponsor,
-            monto: precio, positivo: true,
-            rol: `Premio al completar ciclo: +${fmt(precio)}` });
-
-        // Referidos pagan
+    if (niveles === 1) {
+        // Solo 1 nivel: Sponsor + sus 3 refs
+        data = [
+            { id: 's1', padreId: null,
+              label: '👨 Sponsor',
+              sublabel: 'cobra ciclo',
+              color: RANGO_COLOR.Sponsor,
+              monto: precio, positivo: true,
+              rol: `Sponsor directo. Premio al completar ciclo: +${fmt(precio)}` },
+        ];
         ['r1','r2','r3'].forEach((id, i) => {
-            data.push({ id, padreId: 's1', label: `👤 Ref ${i+1}`, color: RANGO_COLOR.Referido,
+            data.push({ id, padreId: 's1',
+                label: `👤 Ref ${i+1}`,
+                sublabel: 'paga',
+                color: RANGO_COLOR.Referido,
                 monto: precio, positivo: false,
                 rol: `Paga ${fmt(precio)} para activar su cuenta.` });
         });
     }
 
-    if (niveles >= 2) {
-        data.push({ id: 's2', padreId: 'r1', label: '👨 Sponsor 2', color: RANGO_COLOR.Sponsor,
+    if (niveles === 2) {
+        // 2 niveles: Sponsor original + Ref1 que se convierte en Sponsor2
+        data = [
+            { id: 's1', padreId: null,
+              label: '👨 Sponsor',
+              sublabel: 'cobra ciclo + bono abuelo',
+              color: RANGO_COLOR.Sponsor,
+              monto: precio + bonoEfectivo, positivo: true,
+              rol: `Sponsor nivel 1. Premio ciclo: +${fmt(precio)}. Además cobra bono de abuelo cuando Ref1 completa su ciclo: +${fmtD(bonoEfectivo)}` },
+        ];
+        ['r1','r2','r3'].forEach((id, i) => {
+            const esRef1 = id === 'r1';
+            data.push({ id, padreId: 's1',
+                label: esRef1 ? '👤→👨 Ref 1' : `👤 Ref ${i+1}`,
+                sublabel: esRef1 ? 'paga + se convierte en Sponsor' : 'paga',
+                color: esRef1 ? RANGO_COLOR.Sponsor : RANGO_COLOR.Referido,
+                monto: esRef1 ? precio : precio, positivo: false,
+                rol: esRef1
+                    ? `Paga ${fmt(precio)} y luego refiere 3 personas. Se convierte en Sponsor del nivel 2. Cobra su propio ciclo: +${fmt(precio)}.`
+                    : `Paga ${fmt(precio)} para activar su cuenta.` });
+        });
+        // Ref1 como sponsor
+        data.push({ id: 's2', padreId: 'r1',
+            label: '👨 Sponsor 2',
+            sublabel: 'cobra ciclo (Ref 1)',
+            color: RANGO_COLOR.Sponsor,
             monto: precio, positivo: true,
-            rol: `El Ref 1 se convierte en sponsor y cobra su ciclo: +${fmt(precio)}` });
+            rol: `El Ref 1 completó su ciclo de 3 referidos y cobra: +${fmt(precio)}. El Sponsor original cobra bono de abuelo: +${fmtD(bonoEfectivo)}` });
         ['r4','r5','r6'].forEach((id, i) => {
-            data.push({ id, padreId: 's2', label: `👤 Ref ${i+4}`, color: RANGO_COLOR.Referido,
+            data.push({ id, padreId: 's2',
+                label: `👤 Ref ${i+4}`,
+                sublabel: 'paga',
+                color: RANGO_COLOR.Referido,
                 monto: precio, positivo: false,
                 rol: `Paga ${fmt(precio)}.` });
         });
     }
 
-    if (niveles >= 3) {
-        data.push({ id: 's3', padreId: 'r4', label: '👨 Sponsor 3', color: RANGO_COLOR.Sponsor,
+    if (niveles === 3) {
+        data = [
+            { id: 's1', padreId: null,
+              label: '👨 Sponsor',
+              sublabel: 'cobra ciclo + 2× bono abuelo',
+              color: RANGO_COLOR.Sponsor,
+              monto: precio + bonoEfectivo * 2, positivo: true,
+              rol: `Sponsor nivel 1. Premio ciclo: +${fmt(precio)}. Bono abuelo cuando Ref1 completa ciclo: +${fmtD(bonoEfectivo)}. Bono abuelo cuando Ref4 completa ciclo: +${fmtD(bonoEfectivo)}` },
+        ];
+        ['r1','r2','r3'].forEach((id, i) => {
+            const esRef1 = id === 'r1';
+            data.push({ id, padreId: 's1',
+                label: esRef1 ? '👤→👨→👴 Ref 1' : `👤 Ref ${i+1}`,
+                sublabel: esRef1 ? 'paga + Sponsor + Abuelo' : 'paga',
+                color: esRef1 ? RANGO_COLOR.Abuelo : RANGO_COLOR.Referido,
+                monto: esRef1 ? precio : precio, positivo: false,
+                rol: esRef1
+                    ? `Paga ${fmt(precio)}, luego es Sponsor del nivel 2 (cobra +${fmt(precio)}), y Abuelo del nivel 3 (cobra bono +${fmtD(bonoEfectivo)}).`
+                    : `Paga ${fmt(precio)}.` });
+        });
+        data.push({ id: 's2', padreId: 'r1',
+            label: '👨 Sponsor 2',
+            sublabel: 'cobra ciclo + bono abuelo',
+            color: RANGO_COLOR.Sponsor,
+            monto: precio + bonoEfectivo, positivo: true,
+            rol: `Ref 1 como Sponsor. Premio ciclo: +${fmt(precio)}. Bono abuelo cuando Ref4 completa ciclo: +${fmtD(bonoEfectivo)}` });
+        ['r4','r5','r6'].forEach((id, i) => {
+            const esRef4 = id === 'r4';
+            data.push({ id, padreId: 's2',
+                label: esRef4 ? '👤→👨 Ref 4' : `👤 Ref ${i+4}`,
+                sublabel: esRef4 ? 'paga + Sponsor' : 'paga',
+                color: esRef4 ? RANGO_COLOR.Sponsor : RANGO_COLOR.Referido,
+                monto: precio, positivo: false,
+                rol: esRef4
+                    ? `Paga ${fmt(precio)}, luego es Sponsor del nivel 3 (cobra +${fmt(precio)}).`
+                    : `Paga ${fmt(precio)}.` });
+        });
+        data.push({ id: 's3', padreId: 'r4',
+            label: '👨 Sponsor 3',
+            sublabel: 'cobra ciclo (Ref 4)',
+            color: RANGO_COLOR.Sponsor,
             monto: precio, positivo: true,
-            rol: `Tercer nivel. Cobra ciclo: +${fmt(precio)}` });
+            rol: `Ref 4 como Sponsor. Premio ciclo: +${fmt(precio)}. Ref 1 cobra bono abuelo: +${fmtD(bonoEfectivo)}` });
         ['r7','r8','r9'].forEach((id, i) => {
-            data.push({ id, padreId: 's3', label: `👤 Ref ${i+7}`, color: RANGO_COLOR.Referido,
+            data.push({ id, padreId: 's3',
+                label: `👤 Ref ${i+7}`,
+                sublabel: 'paga',
+                color: RANGO_COLOR.Referido,
                 monto: precio, positivo: false,
                 rol: `Paga ${fmt(precio)}.` });
         });
@@ -554,10 +623,19 @@ function renderArbolD3Red(wrap, data) {
         .attr('fill', 'var(--text-muted)')
         .text(d => d.data.label.split(' ').slice(1).join(' '));
 
+    // Sublabel (rol en contexto)
+    nodo.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', R + 25)
+        .attr('font-size', '9px')
+        .attr('fill', d => d.data.color || 'var(--text-dim)')
+        .attr('fill-opacity', 0.7)
+        .text(d => d.data.sublabel || '');
+
     // Monto con signo correcto
     nodo.append('text')
         .attr('text-anchor', 'middle')
-        .attr('dy', R + 26)
+        .attr('dy', R + 37)
         .attr('font-size', '10px')
         .attr('fill', d => {
             if (d.data.monto == null) return 'var(--sky)';
